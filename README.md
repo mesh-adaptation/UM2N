@@ -24,7 +24,7 @@ Just navigate to **project root** folder, open terminaland execute the `install/
 sh ./install/install.sh
 ```
 
-This will install [firedrake](https://www.firedrakeproject.org/download.html) and [movement](https://github.com/pyroteus/movement) under `install` folder.
+This will install [firedrake](https://www.firedrakeproject.org/download.html) and [movement](https://github.com/pyroteus/movement) under `install` folder, as well as the `WarpMesh` package.
 
 
 ### The hard way (in case the easy way did not goes well or you want to challenge yourself):
