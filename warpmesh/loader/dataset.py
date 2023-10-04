@@ -1,0 +1,260 @@
+# Author: Chunyang Wang
+# GitHub Username: acse-cw1722
+
+import torch
+import glob
+import os
+import numpy as np
+from torch.utils.data import Dataset, DataLoader
+from torch_geometric.data import Data
+# from torch_geometric.loader import DataLoader as geoDataLoader
+
+__all__ = [
+    'MeshDataset', "MeshLoader", "MeshData",
+    "normalise", "AggreateDataset"]
+
+
+class AggreateDataset(Dataset):
+    """Aggregate multiple datasets into a single dataset.
+
+    Attributes:
+        datasets (list): List of datasets.
+        datasets_len (list): Length of each dataset in `datasets`.
+    """
+    def __init__(self, datasets):
+        self.datasets = datasets
+        self.datasets_len = [len(dataset) for dataset in datasets]
+
+    def __len__(self):
+        """Return the total number of samples in all datasets."""
+        return sum(self.datasets_len)
+
+    def __getitem__(self, idx):
+        """Fetch an individual data point from the aggregated dataset.
+
+        Args:
+            idx (int): The index of the sample to fetch.
+
+        Returns:
+            tuple: The sample fetched from one of the aggregated datasets.
+        """
+        dataset_idx = 0
+        while (idx >= self.datasets_len[dataset_idx]):
+            idx -= self.datasets_len[dataset_idx]
+            dataset_idx += 1
+        return self.datasets[dataset_idx][idx]
+
+
+class MeshDataset(Dataset):
+    """Dataset for mesh-based data.
+
+    Attributes:
+        x_feature (list): List of feature names for node features.
+        mesh_feature (list): List of feature names for mesh features.
+        conv_feature (list): List of feature names for convolution features.
+        file_names (list): List of filenames containing mesh data.
+    """
+    def __init__(
+            self, file_dir,
+            transform=None, target_transform=None,
+            x_feature=[
+                "coord",
+                "bd_mask",
+                "bd_left_mask",
+                "bd_right_mask",
+                "bd_down_mask",
+                "bd_up_mask",
+            ],
+            mesh_feature=[
+                "coord",
+                "u",
+            ],
+            conv_feature=[
+                "conv_uh",
+            ],
+            load_analytical=False,
+            load_jacobian=False,
+            ):
+        # x feature contains the coordiate related features
+        self.x_feature = x_feature
+        # mesh feature is used to construct the edge realted features
+        self.mesh_feature = mesh_feature
+        # conv_feat, which is passed to a cnn list
+        self.conv_feature = conv_feature
+
+        self.file_dir = file_dir
+        file_path = os.path.join(self.file_dir, 'data_*.npy')
+        self.file_names = glob.glob(file_path)
+        self.transform = transform
+        self.target_transform = target_transform
+        # if True, load the params used to generate the data
+        self.load_analytical = load_analytical
+        # if True, load the jacobian and jacobian det
+        self.load_jacobian = load_jacobian
+
+    def get_x_feature(self, data):
+        """
+        Extracts and concatenates the x_features for each node from the data.
+
+        Args:
+            data (dict): The data dictionary loaded from a .npy file.
+
+        Returns:
+            tensor: The concatenated x_features for each node.
+        """
+
+        x_list = []
+        for key in self.x_feature:
+            feat = data.item().get(key)
+            if (len(feat.shape) == 1):
+                feat = feat.reshape(-1, 1)
+            x_list.append(feat)
+        x = np.concatenate(x_list, axis=1)
+        x = torch.from_numpy(x).float()
+        return x
+
+    def get_mesh_feature(self, data):
+        """
+        Extracts and concatenates the mesh_features from the data.
+
+        Args:
+            data (dict): The data dictionary loaded from a .npy file.
+
+        Returns:
+            tensor: The concatenated mesh_features.
+        """
+        mesh_list = []
+        for key in self.mesh_feature:
+            feat = data.item().get(key)
+            if (len(feat.shape) == 1):
+                feat = feat.reshape(-1, 1)
+            mesh_list.append(feat)
+        mesh = np.concatenate(mesh_list, axis=1)
+        mesh = torch.from_numpy(mesh).float()
+        return mesh
+
+    def get_conv_feature(self, data):
+        """
+        Extracts and concatenates the conv_features from the data.
+
+        Args:
+            data (dict): The data dictionary loaded from a .npy file.
+
+        Returns:
+            tensor: The concatenated conv_features.
+        """
+        conv_list = []
+        for key in self.conv_feature:
+            feat = data.item().get(key)
+            conv_list.append(feat)
+        conv = np.concatenate(conv_list, axis=0)
+        conv = torch.from_numpy(conv).float()
+        return conv
+
+    def __len__(self):
+        return len(self.file_names)
+
+    def __getitem__(self, idx):
+        """
+        Loads and returns a mesh data sample and its target from a .npy file.
+
+        Args:
+            idx (int): The index of the .npy file to load.
+
+        Returns:
+            MeshData: A MeshData object containing the sample and target.
+        """
+        data_path = self.file_names[idx]
+        data = np.load(data_path, allow_pickle=True)
+        num_nodes = torch.tensor([data.item().get('x').shape[0]])
+
+        # advance version
+        train_data = MeshData(
+            x=self.get_x_feature(data),  # noqa: x here is the coordinate related features
+            conv_feat=self.get_conv_feature(data),
+            mesh_feat=self.get_mesh_feature(data),
+            edge_index=torch.from_numpy(
+                data.item().get('edge_index')).to(torch.int64),
+            y=torch.from_numpy(data.item().get('y')).float(),
+            node_num=num_nodes,
+        )
+
+        if self.load_analytical:
+            train_data.dist_params = {
+                'σ_x': data.item().get('σ_x'),
+                'σ_y': data.item().get('σ_y'),
+                'μ_x': data.item().get('μ_x'),
+                'μ_y': data.item().get('μ_y'),
+                'z': data.item().get('z'),
+                'w': data.item().get('w'),
+                'simple_u': data.item().get('simple_u'),
+                'n_dist': data.item().get('n_dist'),
+            }
+
+        if self.load_jacobian:
+            train_data.jacobian = torch.from_numpy(
+                data.item().get('jacobian')
+            )
+            train_data.jacobian_det = torch.from_numpy(
+                data.item().get('jacobian_det')
+            )
+
+        if self.transform:
+            train_data = self.transform(train_data)
+        return train_data
+
+
+class MeshData(Data):
+    """
+    Custom PyTorch Data object designed to handle mesh data features.
+
+    This class is intended to be used as the base class of data samples
+    returned by the MeshDataset.
+    """
+    def __cat_dim__(self, key, value, *args, **kwargs):
+        # conv_feat is feeded into cnn, so another dim is needed
+        if key == 'conv_feat':
+            return None
+        if key == 'node_num':
+            return None
+        return super().__cat_dim__(key, value, *args, **kwargs)
+
+
+def MeshLoader(dataset, batch_size=10, shuffle=True):
+    def collate_fn(batch):
+        return [item for item in batch]
+    return DataLoader(dataset, batch_size=batch_size,
+                      shuffle=shuffle, collate_fn=collate_fn)
+
+
+def normalise(data):
+    """
+    Normalizes the mesh and convolution features of a given MeshData object.
+
+    Args:
+        data (MeshData): The MeshData object containing features to normalize.
+
+    Returns:
+        MeshData: The MeshData object with normalized features.
+    """
+    # normalise mesh feature (only last dims, first 2 dim is coordinate)
+    # Compute minimum and maximum values along the second axis
+    mesh_val_feat = data.mesh_feat[:, 2:]  # value feature (no coord)
+
+    min_val = torch.min(mesh_val_feat, dim=0).values
+    max_val = torch.max(mesh_val_feat, dim=0).values
+    max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
+    data.mesh_feat[:, 2:] = data.mesh_feat[:, 2:] / max_abs_val
+
+    # normalise conv feature (only last 2 dim, first 2 dim is coordinate)
+    # that is, uh and hessian norm
+    conv_feat_shape = data.conv_feat.shape
+    conv_feat = data.conv_feat
+    conv_feat = conv_feat.reshape(conv_feat_shape[0], -1)
+    min_val = torch.min(conv_feat, dim=1).values
+    max_val = torch.max(conv_feat, dim=1).values
+    max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
+    max_abs_val = max_abs_val.reshape(-1, 1)
+    conv_feat[:, :] = conv_feat[:, :] / max_abs_val[:, :]
+    data.conv_feat = conv_feat.reshape(conv_feat_shape)
+    return data

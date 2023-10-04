@@ -1,0 +1,19 @@
+numpy >= 1.13.0
+pandas
+meshio
+matplotlib
+mpltools
+pytest
+pytest-timeout
+jupyter
+ipython
+torch
+torch_geometric
+torch_sparse
+tensorboardX
+torch_scatter
+rich
+flake8
+ipython
+pep8
+sphinx

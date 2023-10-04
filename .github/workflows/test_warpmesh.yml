@@ -1,0 +1,37 @@
+name: Install and Test WarpMesh
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-warpmesh:
+    name: Test WarpMesh
+    runs-on: ubuntu-22.04
+    container:
+      image: firedrakeproject/firedrake:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install movement
+        run: |
+          git clone https://github.com/pyroteus/movement.git
+          cd movement
+          pip install -e .
+      - name: Install warpmesh
+        run: |
+          . /home/firedrake/firedrake/bin/activate
+          pwd
+          pip install -e .
+      - name: install warpmesh dependencies
+        run: |
+          . /home/firedrake/firedrake/bin/activate
+          pip install -r requirements.txt
+      - name: test warpmesh
+        run: |
+          . /home/firedrake/firedrake/bin/activate
+          cd ./tests
+          python -m pytest ./test* -v
+          
+
