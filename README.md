@@ -51,7 +51,7 @@ after download, you should put the downloaded folder `helmholtz` under `data/dat
 ### Generate the dataset by yourself
 
 ```{shell}
-python script/make_dataset.sh
+. script/make_dataset.sh
 ```
 This command will make datasets of sizes from 15 to 35, both isotropic and anisotropic datasets. The datasets will be saved in `data/dataset` folder.
 
@@ -71,7 +71,7 @@ The number of samples in the dataset can be changed by modifying the variable `n
 
 A training notebook is provided: `script/train_warpmesh.ipynb`. Further training details can be found in the notebook.
 
-Here is also a link to pretrained models: [link] (https://drive.google.com/drive/folders/1P_JMpU1qmLdmbGTz8fL5VO-lEBoP3_2n?usp=sharing)
+Here is also a link to pretrained models: [link](https://drive.google.com/drive/folders/1P_JMpU1qmLdmbGTz8fL5VO-lEBoP3_2n?usp=sharing)
 
 ## 📊 Evaluate the model
 
