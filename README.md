@@ -11,7 +11,7 @@ In the famous TV series Star Trek, the starship Enterprise is able to travel fas
 
 The latest test status:
 
-[![WarpMesh](https://github.com/chunyang-w/WarpMesh/actions/workflows/test_warpmesh.yml)](https://github.com/chunyang-w/WarpMesh/actions/workflows/test_warpmesh.yml)
+<!-- [![WarpMesh](https://github.com/chunyang-w/WarpMesh/actions/workflows/test_warpmesh.yml)](https://github.com/chunyang-w/WarpMesh/actions/workflows/test_warpmesh.yml) -->
 
 
 ## 🛠️ Installation
