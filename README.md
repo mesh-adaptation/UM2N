@@ -81,6 +81,12 @@ This will install [firedrake](https://www.firedrakeproject.org/download.html) an
 
 ## 💿 Dataset generation
 
+In case you do not wish to generate the dataset by yourself, here is a pre-generated dataset on google drive: [link](https://drive.google.com/drive/folders/1suY-WyECV_-UlWds8tR1gMlD7oxDOlqx?usp=sharing). The naming convention of the file is 'z=<0,1>_n_dist={number_of_distribution_used}_max_dist={maximum_distribution_used}_<{number_of_grid_in_x_direction}_{number_of_grid_in_y_direction}>_n={number_of_samples}_{data_set_type}'
+
+if `n_dist = None`, then the number of gaussian distribution used will be randomly choosed from 1 to `max_dist`, otherwise, `n_dist` will be used to generate a fixed number of gaussian distribution version dataset.
+
+the {data_set_type} will be either 'smpl' or 'cmplx', indicating whether the dataset is isotropic or anisotropic.
+
 ```{shell}
 python script/make_dataset.sh
 ```
@@ -101,6 +107,8 @@ The number of samples in the dataset can be changed by modifying the variable `n
 ## 🚀 Train the model
 
 A training notebook is provided: `script/train_warpmesh.ipynb`. Further training details can be found in the notebook.
+
+Here is also a link to pretrained models: [link] (https://drive.google.com/drive/folders/1P_JMpU1qmLdmbGTz8fL5VO-lEBoP3_2n?usp=sharing)
 
 ## 📊 Evaluate the model
 
