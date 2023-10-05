@@ -27,7 +27,7 @@ sh ./install/install.sh
 This will install [firedrake](https://www.firedrakeproject.org/download.html) and [movement](https://github.com/pyroteus/movement) under `install` folder, as well as the `WarpMesh` package.
 
 
-### The hard way (in case the easy way did not goes well or you want to challenge yourself):
+### The hard way (in case the easy way did not went well or you want to challenge yourself):
 
 1. The mesh generation relies on firedrake, which is a python package. To install firedrake, please follow the instructions on [firedrakeproject.org](https://www.firedrakeproject.org/download.html).
 
