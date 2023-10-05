@@ -36,6 +36,7 @@ jobs:
       run: |
         . /home/firedrake/firedrake/bin/activate
         sphinx-build -b html docs docs/html
+        ls -al
     - name: Commit files
       run: |
         ls -al
