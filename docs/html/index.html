@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>WarpMesh: A Machin Learning Based Mesh Movement Package &#8212; warpmesh 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=039e1c02" />
+    <script src="_static/documentation_options.js?v=2709fde1"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="warpmesh-a-machin-learning-based-mesh-movement-package">
+<h1>WarpMesh: A Machin Learning Based Mesh Movement Package<a class="headerlink" href="#warpmesh-a-machin-learning-based-mesh-movement-package" title="Link to this heading">¶</a></h1>
+<section id="warpmesh-package-docs">
+<h2>WarpMesh package docs<a class="headerlink" href="#warpmesh-package-docs" title="Link to this heading">¶</a></h2>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">caption<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Contents:</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="py class" id="module-generator">
+<dt class="sig sig-object py" id="generator.MeshGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">generator.</span></span><span class="sig-name descname"><span class="pre">MeshGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'helmholtz_eq':</span> <span class="pre">None,</span> <span class="pre">'mesh':</span> <span class="pre">None,</span> <span class="pre">'num_grid_x':</span> <span class="pre">None,</span> <span class="pre">'num_grid_y':</span> <span class="pre">None}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Responsible for generating and moving a mesh based on a given Helmholtz</dt><dd><p>equation.</p>
+</dd>
+</dl>
+<p>This method is based on Pyroteus/movement.</p>
+<p>Attributes:
+- eq: The Helmholtz equation object.
+- num_grid_x: Number of grid points in the x-dimension.
+- num_grid_y: Number of grid points in the y-dimension.
+- mesh: The initial mesh.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.MeshGenerator.get_hessian">
+<span class="sig-name descname"><span class="pre">get_hessian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.get_hessian" title="Link to this definition">¶</a></dt>
+<dd><p>Computes and returns the Hessian of the Helmholtz equation on the
+given mesh.</p>
+<p>Parameters:
+- mesh: The mesh on which to compute the Hessian.</p>
+<p>Returns:
+- The Hessian as a projection in the function space.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.MeshGenerator.get_jacobian">
+<span class="sig-name descname"><span class="pre">get_jacobian</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.get_jacobian" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the Jacobian of the mesh movement.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.MeshGenerator.get_jacobian_det">
+<span class="sig-name descname"><span class="pre">get_jacobian_det</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.get_jacobian_det" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the determinant of the Jacobian of the mesh movement.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.MeshGenerator.get_monitor_val">
+<span class="sig-name descname"><span class="pre">get_monitor_val</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.get_monitor_val" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the monitor function value used for mesh movement.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.MeshGenerator.monitor_func">
+<span class="sig-name descname"><span class="pre">monitor_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.monitor_func" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the monitor function value based on the Hessian of the
+Helmholtz equation.</p>
+<p>Parameters:
+- mesh: The mesh on which to compute the monitor function.</p>
+<p>Returns:
+- The monitor function value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.MeshGenerator.move_mesh">
+<span class="sig-name descname"><span class="pre">move_mesh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.move_mesh" title="Link to this definition">¶</a></dt>
+<dd><p>Moves the mesh using the Monge-Ampere equation.
+Computes and stores the Jacobian and its determinant.</p>
+<p>Returns:
+- The moved mesh</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">generator.</span></span><span class="sig-name descname"><span class="pre">RandomHelmholtzGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simple_u</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'max_dist':</span> <span class="pre">10,</span> <span class="pre">'n_dist':</span> <span class="pre">None,</span> <span class="pre">'w_max':</span> <span class="pre">0.2,</span> <span class="pre">'w_min':</span> <span class="pre">0.05,</span> <span class="pre">'x_end':</span> <span class="pre">1,</span> <span class="pre">'x_start':</span> <span class="pre">0,</span> <span class="pre">'y_end':</span> <span class="pre">1,</span> <span class="pre">'y_start':</span> <span class="pre">0,</span> <span class="pre">'z_max':</span> <span class="pre">1,</span> <span class="pre">'z_min':</span> <span class="pre">0}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.RandomHelmholtzGenerator" title="Link to this definition">¶</a></dt>
+<dd><p>Class for generating a random Helmholtz equation based on a
+Gaussian distribution.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.simple_u">
+<span class="sig-name descname"><span class="pre">simple_u</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.simple_u" title="Link to this definition">¶</a></dt>
+<dd><p>Flag for using simpler form of u.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.dist_params">
+<span class="sig-name descname"><span class="pre">dist_params</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.dist_params" title="Link to this definition">¶</a></dt>
+<dd><p>Parameters for Gaussian distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.u_exact">
+<span class="sig-name descname"><span class="pre">u_exact</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.u_exact" title="Link to this definition">¶</a></dt>
+<dd><p>Analytical Helmholtz equation solution.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.f">
+<span class="sig-name descname"><span class="pre">f</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.f" title="Link to this definition">¶</a></dt>
+<dd><p>Simulated source function.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.function_space">
+<span class="sig-name descname"><span class="pre">function_space</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.function_space" title="Link to this definition">¶</a></dt>
+<dd><p>Function space for problem.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.LHS">
+<span class="sig-name descname"><span class="pre">LHS</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.LHS" title="Link to this definition">¶</a></dt>
+<dd><p>Left-hand side of Helmholtz equation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.RHS">
+<span class="sig-name descname"><span class="pre">RHS</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.RHS" title="Link to this definition">¶</a></dt>
+<dd><p>Right-hand side of Helmholtz equation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.bc">
+<span class="sig-name descname"><span class="pre">bc</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.bc" title="Link to this definition">¶</a></dt>
+<dd><p>Dirichlet boundary condition.</p>
+</dd></dl>
+
+<p>Initialize RandomHelmholtzGenerator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>simple_u</strong> (<em>bool</em>) – Use simpler form of u (isotripic dataset) if True.
+Default False.</p></li>
+<li><p><strong>dist_params</strong> (<em>dict</em>) – Parameters for Gaussian distribution.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.discretise">
+<span class="sig-name descname"><span class="pre">discretise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">firedrake.UnitSquareMesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.discretise" title="Link to this definition">¶</a></dt>
+<dd><p>Discretize source distribution on given mesh.
+Constructs LHS, RHS, and bc for Helmholtz equation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mesh</strong> – Mesh to discretize distribution.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Dictionary of mesh, function_space, u_exact,</dt><dd><p>LHS, RHS, bc, and f.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.get_dist_params">
+<span class="sig-name descname"><span class="pre">get_dist_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.get_dist_params" title="Link to this definition">¶</a></dt>
+<dd><p>Return dictionary containing distribution parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary of distribution parameters.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.set_dist_params">
+<span class="sig-name descname"><span class="pre">set_dist_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.set_dist_params" title="Link to this definition">¶</a></dt>
+<dd><p>Set parameters for Gaussian distribution from dist_params.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class" id="module-processor">
+<dt class="sig sig-object py" id="processor.MeshProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">processor.</span></span><span class="sig-name descname"><span class="pre">MeshProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimal_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_4_edge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'grad_uh':</span> <span class="pre">None,</span> <span class="pre">'uh':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'hessian_norm':</span> <span class="pre">None,</span> <span class="pre">'uh':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'n_dist':</span> <span class="pre">None,</span> <span class="pre">'simple_u':</span> <span class="pre">None,</span> <span class="pre">'w':</span> <span class="pre">None,</span> <span class="pre">'z':</span> <span class="pre">None,</span> <span class="pre">'μ_x':</span> <span class="pre">None,</span> <span class="pre">'μ_y':</span> <span class="pre">None,</span> <span class="pre">'σ_x':</span> <span class="pre">None,</span> <span class="pre">'σ_y':</span> <span class="pre">None}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>MeshProcessor class for pre-processing mesh data, attaching features to</dt><dd><p>nodes,</p>
+</dd>
+</dl>
+<p>and converting them to training data.</p>
+<p>Parameters:
+- original_mesh: The initial mesh.
+- optimal_mesh: The optimal mesh after adaptation.
+- function_space: The function space over which the mesh is defined.
+- use_4_edge: Whether to use four edges for finding boundaries.
+- feature: Dictionary containing features like ‘uh’, ‘grad_uh’ etc.
+- raw_feature: Dictionary containing raw features like ‘uh’, ‘hessian_norm</p>
+<blockquote>
+<div><p>etc.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>dist_params: Dictionary containing distribution parameters.</p></li>
+</ul>
+<p>Attributes:
+- dist_params: Distribution parameters.
+- mesh: The original mesh.
+- optimal_mesh: The optimal mesh.
+- function_space: The function space.
+- feature: The attached features.
+- raw_feature: The raw features.
+- coordinates: The coordinates of the original mesh.
+- optimal_coordinates: The coordinates of the optimal mesh.
+- cell_node_list: The list of nodes for each cell.
+- num_nodes: The number of nodes in each cell.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="processor.MeshProcessor.attach_feature">
+<span class="sig-name descname"><span class="pre">attach_feature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor.attach_feature" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Attach features to nodes of the mesh. The features to be attached are</dt><dd><p>specified</p>
+</dd>
+</dl>
+<p>in the ‘feature’ attribute.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="processor.MeshProcessor.find_bd">
+<span class="sig-name descname"><span class="pre">find_bd</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor.find_bd" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Identify the boundary nodes of the mesh and update various boundary</dt><dd><p>masks.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="processor.MeshProcessor.find_edges">
+<span class="sig-name descname"><span class="pre">find_edges</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor.find_edges" title="Link to this definition">¶</a></dt>
+<dd><p>Find the edges of the mesh and update the ‘edges’ attribute.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="processor.MeshProcessor.get_conv_feat">
+<span class="sig-name descname"><span class="pre">get_conv_feat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor.get_conv_feat" title="Link to this definition">¶</a></dt>
+<dd><p>Generate features for convolution. This involves grid spacing and other
+related features.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="processor.MeshProcessor.save_taining_data">
+<span class="sig-name descname"><span class="pre">save_taining_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor.save_taining_data" title="Link to this definition">¶</a></dt>
+<dd><p>Save the processed data into disk for future use.</p>
+<p>Parameters:
+- path: The directory where to save the data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="processor.MeshProcessor.to_train_data">
+<span class="sig-name descname"><span class="pre">to_train_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor.to_train_data" title="Link to this definition">¶</a></dt>
+<dd><p>Convert mesh and associated features to PyTorch Geometric Data format.
+This can be used directly for machine learning training.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class" id="module-model">
+<dt class="sig sig-object py" id="model.GlobalFeatExtractor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">GlobalFeatExtractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.GlobalFeatExtractor" title="Link to this definition">¶</a></dt>
+<dd><p>Custom PyTorch layer for global feature extraction.</p>
+<p>The class employs multiple convolutional layers and dropout layers.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">conv1,</span> <span class="pre">conv2,</span> <span class="pre">conv3,</span> <span class="pre">conv4</span></span></dt>
+<dd><p>Convolutional layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Conv2d</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.GlobalFeatExtractor.dropout">
+<span class="sig-name descname"><span class="pre">dropout</span></span><a class="headerlink" href="#model.GlobalFeatExtractor.dropout" title="Link to this definition">¶</a></dt>
+<dd><p>Dropout layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Dropout</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.GlobalFeatExtractor.final_pool">
+<span class="sig-name descname"><span class="pre">final_pool</span></span><a class="headerlink" href="#model.GlobalFeatExtractor.final_pool" title="Link to this definition">¶</a></dt>
+<dd><p>Final pooling layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.AdaptiveAvgPool2d</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="model.GlobalFeatExtractor.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.GlobalFeatExtractor.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Forward pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>Tensor</em>) – Input data.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Extracted global features.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="model.LocalFeatExtractor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">LocalFeatExtractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.LocalFeatExtractor" title="Link to this definition">¶</a></dt>
+<dd><p>Custom PyTorch geometric layer that performs feature extraction
+on local graph structure.</p>
+<p>The class extends the torch_geometric.nn.MessagePassing class
+and employs additive aggregation as the message-passing scheme.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.LocalFeatExtractor.lin_1">
+<span class="sig-name descname"><span class="pre">lin_1</span></span><a class="headerlink" href="#model.LocalFeatExtractor.lin_1" title="Link to this definition">¶</a></dt>
+<dd><p>First linear layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Linear</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.LocalFeatExtractor.lin_2">
+<span class="sig-name descname"><span class="pre">lin_2</span></span><a class="headerlink" href="#model.LocalFeatExtractor.lin_2" title="Link to this definition">¶</a></dt>
+<dd><p>Second linear layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Linear</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.LocalFeatExtractor.lin_3">
+<span class="sig-name descname"><span class="pre">lin_3</span></span><a class="headerlink" href="#model.LocalFeatExtractor.lin_3" title="Link to this definition">¶</a></dt>
+<dd><p>Third linear layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Linear</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.LocalFeatExtractor.activate">
+<span class="sig-name descname"><span class="pre">activate</span></span><a class="headerlink" href="#model.LocalFeatExtractor.activate" title="Link to this definition">¶</a></dt>
+<dd><p>Activation function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.SELU</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>Initialize the layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_feat</strong> (<em>int</em>) – Number of input features per node.</p></li>
+<li><p><strong>out</strong> (<em>int</em>) – Number of output features per node.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="model.LocalFeatExtractor.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.LocalFeatExtractor.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Forward pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input</strong> (<em>Tensor</em>) – Node features.</p></li>
+<li><p><strong>edge_index</strong> (<em>Tensor</em>) – Edge indices.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Updated node features.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="model.MRN">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">MRN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.MRN" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Mesh Refinement Network (MRN) implementing global and local feature</dt><dd><p>extraction</p>
+</dd>
+</dl>
+<p>and recurrent graph-based deformations.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.MRN.num_loop">
+<span class="sig-name descname"><span class="pre">num_loop</span></span><a class="headerlink" href="#model.MRN.num_loop" title="Link to this definition">¶</a></dt>
+<dd><p>Number of loops for the recurrent layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.MRN.gfe_out_c">
+<span class="sig-name descname"><span class="pre">gfe_out_c</span></span><a class="headerlink" href="#model.MRN.gfe_out_c" title="Link to this definition">¶</a></dt>
+<dd><p>Output channels for global feature extractor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.MRN.lfe_out_c">
+<span class="sig-name descname"><span class="pre">lfe_out_c</span></span><a class="headerlink" href="#model.MRN.lfe_out_c" title="Link to this definition">¶</a></dt>
+<dd><p>Output channels for local feature extractor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.MRN.hidden_size">
+<span class="sig-name descname"><span class="pre">hidden_size</span></span><a class="headerlink" href="#model.MRN.hidden_size" title="Link to this definition">¶</a></dt>
+<dd><p>Size of the hidden layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.MRN.gfe">
+<span class="sig-name descname"><span class="pre">gfe</span></span><a class="headerlink" href="#model.MRN.gfe" title="Link to this definition">¶</a></dt>
+<dd><p>Global feature extractor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#model.GlobalFeatExtractor" title="model.GlobalFeatExtractor">GlobalFeatExtractor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.MRN.lfe">
+<span class="sig-name descname"><span class="pre">lfe</span></span><a class="headerlink" href="#model.MRN.lfe" title="Link to this definition">¶</a></dt>
+<dd><p>Local feature extractor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#model.LocalFeatExtractor" title="model.LocalFeatExtractor">LocalFeatExtractor</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.MRN.lin">
+<span class="sig-name descname"><span class="pre">lin</span></span><a class="headerlink" href="#model.MRN.lin" title="Link to this definition">¶</a></dt>
+<dd><p>Linear layer for feature transformation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nn.Linear</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.MRN.deformer">
+<span class="sig-name descname"><span class="pre">deformer</span></span><a class="headerlink" href="#model.MRN.deformer" title="Link to this definition">¶</a></dt>
+<dd><p>GAT-based deformer block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#model.RecurrentGATConv" title="model.MRN.RecurrentGATConv">RecurrentGATConv</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>Initialize MRN.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gfe_in_c</strong> (<em>int</em>) – Input channels for the global feature extractor.</p></li>
+<li><p><strong>lfe_in_c</strong> (<em>int</em>) – Input channels for the local feature extractor.</p></li>
+<li><p><strong>deform_in_c</strong> (<em>int</em>) – Input channels for the deformer block.</p></li>
+<li><p><strong>num_loop</strong> (<em>int</em>) – Number of loops for the recurrent layer.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="model.MRN.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.MRN.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Forward pass for MRN.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>Data</em>) – Input data object containing mesh and feature info.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Deformed coordinates.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>coord (Tensor)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="model.MRN.move">
+<span class="sig-name descname"><span class="pre">move</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.MRN.move" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Move the mesh according to the deformation learned, with given number</dt><dd><p>steps.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Data</em>) – Input data object containing mesh and feature info.</p></li>
+<li><p><strong>num_step</strong> (<em>int</em>) – Number of deformation steps.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Deformed coordinates.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>coord (Tensor)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="model.RecurrentGATConv">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">RecurrentGATConv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.RecurrentGATConv" title="Link to this definition">¶</a></dt>
+<dd><p>Implements a Recurrent Graph Attention Network (GAT) Convolution layer.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.RecurrentGATConv.to_hidden">
+<span class="sig-name descname"><span class="pre">to_hidden</span></span><a class="headerlink" href="#model.RecurrentGATConv.to_hidden" title="Link to this definition">¶</a></dt>
+<dd><p>Graph Attention layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>GATv2Conv</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.RecurrentGATConv.to_coord">
+<span class="sig-name descname"><span class="pre">to_coord</span></span><a class="headerlink" href="#model.RecurrentGATConv.to_coord" title="Link to this definition">¶</a></dt>
+<dd><p>Output layer for coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nn.Sequential</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="model.RecurrentGATConv.activation">
+<span class="sig-name descname"><span class="pre">activation</span></span><a class="headerlink" href="#model.RecurrentGATConv.activation" title="Link to this definition">¶</a></dt>
+<dd><p>Activation function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nn.SELU</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="model.TangleCounter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">TangleCounter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.TangleCounter" title="Link to this definition">¶</a></dt>
+<dd><p>A PyTorch Geometric Message Passing class for counting tangles in the mesh.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="model.evaluate">
+<span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_jacob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.evaluate" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluates a model using the given data loader and loss function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loader</strong> (<em>DataLoader</em>) – DataLoader object for the evaluation data.</p></li>
+<li><p><strong>model</strong> (<em>torch.nn.Module</em>) – The PyTorch model to evaluate.</p></li>
+<li><p><strong>device</strong> (<em>torch.device</em>) – The device to run the computation on.</p></li>
+<li><p><strong>loss_func</strong> (<em>callable</em>) – Loss function (e.g., MSE, Cross-Entropy).</p></li>
+<li><p><strong>use_jacob</strong> (<em>bool</em>) – Whether or not to use Jacobian loss. Defaults to.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The average evaluation loss across all batches.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="model.load_model">
+<span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.load_model" title="Link to this definition">¶</a></dt>
+<dd><p>Loads pre-trained weights into a PyTorch model from a given file path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>torch.nn.Module</em>) – The PyTorch model.</p></li>
+<li><p><strong>weight_path</strong> (<em>str</em>) – File path to the pre-trained model weights.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The model with loaded weights.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Module</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="model.train">
+<span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_jacob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.train" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Trains a PyTorch model using the given data loader, optimizer,</dt><dd><p>and loss function.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loader</strong> (<em>DataLoader</em>) – DataLoader object for the training data.</p></li>
+<li><p><strong>model</strong> (<em>torch.nn.Module</em>) – The PyTorch model to train.</p></li>
+<li><p><strong>optimizer</strong> (<em>Optimizer</em>) – The optimizer (e.g., Adam, SGD).</p></li>
+<li><p><strong>device</strong> (<em>torch.device</em>) – The device to run the computation on.</p></li>
+<li><p><strong>loss_func</strong> (<em>callable</em>) – Loss function (e.g., MSE, Cross-Entropy).</p></li>
+<li><p><strong>use_jacob</strong> (<em>bool</em>) – Whether or not to use Jacobian loss.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The average training loss across all batches.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class" id="module-loader">
+<dt class="sig sig-object py" id="loader.MeshData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">loader.</span></span><span class="sig-name descname"><span class="pre">MeshData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_attr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshData" title="Link to this definition">¶</a></dt>
+<dd><p>Custom PyTorch Data object designed to handle mesh data features.</p>
+<p>This class is intended to be used as the base class of data samples
+returned by the MeshDataset.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="loader.MeshDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">loader.</span></span><span class="sig-name descname"><span class="pre">MeshDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['coord',</span> <span class="pre">'bd_mask',</span> <span class="pre">'bd_left_mask',</span> <span class="pre">'bd_right_mask',</span> <span class="pre">'bd_down_mask',</span> <span class="pre">'bd_up_mask']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['coord',</span> <span class="pre">'u']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conv_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['conv_uh']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_analytical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_jacobian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshDataset" title="Link to this definition">¶</a></dt>
+<dd><p>Dataset for mesh-based data.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="loader.MeshDataset.x_feature">
+<span class="sig-name descname"><span class="pre">x_feature</span></span><a class="headerlink" href="#loader.MeshDataset.x_feature" title="Link to this definition">¶</a></dt>
+<dd><p>List of feature names for node features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="loader.MeshDataset.mesh_feature">
+<span class="sig-name descname"><span class="pre">mesh_feature</span></span><a class="headerlink" href="#loader.MeshDataset.mesh_feature" title="Link to this definition">¶</a></dt>
+<dd><p>List of feature names for mesh features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="loader.MeshDataset.conv_feature">
+<span class="sig-name descname"><span class="pre">conv_feature</span></span><a class="headerlink" href="#loader.MeshDataset.conv_feature" title="Link to this definition">¶</a></dt>
+<dd><p>List of feature names for convolution features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="loader.MeshDataset.file_names">
+<span class="sig-name descname"><span class="pre">file_names</span></span><a class="headerlink" href="#loader.MeshDataset.file_names" title="Link to this definition">¶</a></dt>
+<dd><p>List of filenames containing mesh data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="loader.MeshDataset.get_conv_feature">
+<span class="sig-name descname"><span class="pre">get_conv_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshDataset.get_conv_feature" title="Link to this definition">¶</a></dt>
+<dd><p>Extracts and concatenates the conv_features from the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>dict</em>) – The data dictionary loaded from a .npy file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The concatenated conv_features.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="loader.MeshDataset.get_mesh_feature">
+<span class="sig-name descname"><span class="pre">get_mesh_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshDataset.get_mesh_feature" title="Link to this definition">¶</a></dt>
+<dd><p>Extracts and concatenates the mesh_features from the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>dict</em>) – The data dictionary loaded from a .npy file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The concatenated mesh_features.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="loader.MeshDataset.get_x_feature">
+<span class="sig-name descname"><span class="pre">get_x_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshDataset.get_x_feature" title="Link to this definition">¶</a></dt>
+<dd><p>Extracts and concatenates the x_features for each node from the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>dict</em>) – The data dictionary loaded from a .npy file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The concatenated x_features for each node.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="loader.normalise">
+<span class="sig-prename descclassname"><span class="pre">loader.</span></span><span class="sig-name descname"><span class="pre">normalise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.normalise" title="Link to this definition">¶</a></dt>
+<dd><p>Normalizes the mesh and convolution features of a given MeshData object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<a class="reference internal" href="#loader.MeshData" title="loader.MeshData"><em>MeshData</em></a>) – The MeshData object containing features to normalize.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The MeshData object with normalized features.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#loader.MeshData" title="loader.MeshData">MeshData</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">warpmesh</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

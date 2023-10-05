@@ -7,8 +7,6 @@ data/dataset/*
 data/output/*
 data/temp/*
 
-docs/html/*
-
 install/movement/*
 install/firedrake/*
 install/firedrake-install.log
