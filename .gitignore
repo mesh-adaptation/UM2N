@@ -20,5 +20,7 @@ scirpt/play_tangle.ipynb
 .gitmodules
 
 temp/*
+results/*
+```
 
 
