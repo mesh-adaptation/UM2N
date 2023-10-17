@@ -1,5 +1,6 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
+# Code for training the model locally. May require modification to run this.
 
 import os
 import warpmesh as wm
