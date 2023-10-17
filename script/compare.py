@@ -109,7 +109,6 @@ res_mrn = compare_on_dataset(model_MRN, data_set)
 
 # %%
 
-
 def remove_elems(res):
     invalid = []
     large_error = []
