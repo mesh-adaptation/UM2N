@@ -10,9 +10,9 @@ import numpy as np  # noqa
 import matplotlib.pyplot as plt  # noqa
 
 # %% plot model training loss, test tangle
-model_name = "M2N_orignal"
-loss_path = "/Users/cw1722/Downloads/M2N_og_20_iso/train_log/loss.csv" # noqa
-tangle_path = "/Users/cw1722/Downloads/M2N_og_20_iso/train_log/tangle.csv" # noqa
+model_name = "M2N_modified"
+loss_path = "/Users/cw1722/Downloads/M2N_modi_20_iso/train_log/loss.csv" # noqa
+tangle_path = "/Users/cw1722/Downloads/M2N_modi_20_iso/train_log/tangle.csv" # noqa
 
 loss_data = pd.read_csv(loss_path)
 tangle_data = pd.read_csv(tangle_path)
@@ -24,7 +24,7 @@ tangle_data_filtered = tangle_data[
     tangle_data['Test Tangle'] <= 10]
 
 # Combined subplot with loss on the left and tangle on the right
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(48, 14))
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 7))
 
 # Left subplot: Loss plot
 final_epoch = loss_data_filtered['Epoch'].iloc[-1]
