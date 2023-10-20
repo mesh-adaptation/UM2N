@@ -1,7 +1,5 @@
 # Author: Chunyang Wang
-# GitHub Username: acse-cw1722
-
-# This file is deprecated. Please use build_dataset.py instead.
+# GitHub Username: chunyang-w
 
 import os
 import warpmesh as wm
@@ -26,7 +24,7 @@ def arg_parse():
     parser.add_argument('--n_grid', type=int, default=20,
                         help='number of grids of a\
                             discretized mesh')
-    parser.add_argument('--data_type', type=str, default="cmplx",
+    parser.add_argument('--data_type', type=str, default="aniso",
                         help='complex or simple data type(cmplx/smpl)')
     args_ = parser.parse_args()
     return args_
@@ -37,7 +35,7 @@ args = arg_parse()
 # ====  Parameters ======================
 problem = "holmholtz"
 data_type = args.data_type
-simple_u = True if data_type == "smpl" else False
+use_iso = True if data_type == "iso" else False
 
 n_samples = 40
 
@@ -132,10 +130,9 @@ if __name__ == "__main__":
                 print("Generating Sample: " + str(i))
                 mesh = fd.RectangleMesh(
                     num_grid_x, num_grid_y, scale_x, scale_y)
-                # Generate Random solution
-                helmholtz_eq = wm.RandomHelmholtzGenerator(
-                    simple_u=simple_u,
-                    dist_params={
+                # Generate Random solution field
+                rand_u_generator = wm.RandSourceGenerator(
+                    use_iso=use_iso, dist_params={
                         "max_dist": max_dist,
                         "n_dist": n_dist,
                         "x_start": 0,
@@ -147,8 +144,10 @@ if __name__ == "__main__":
                         "w_min": w_min,
                         "w_max": w_max,
                     })
+                helmholtz_eq = wm.RandHelmholtzEqGenerator(
+                    rand_u_generator)
                 res = helmholtz_eq.discretise(mesh)  # discretise the equation
-                dist_params = helmholtz_eq.get_dist_params()
+                dist_params = rand_u_generator.get_dist_params()
                 # Solve the equation
                 solver = wm.EquationSolver(params={
                     "function_space": res["function_space"],
