@@ -177,7 +177,7 @@ class MeshProcessor():
             "μ_y": self.dist_params["μ_y"],
             "z": self.dist_params["z"],
             "w": self.dist_params["w"],
-            "simple_u": self.dist_params["simple_u"],
+            "use_iso": self.dist_params["use_iso"],
             "n_dist": self.dist_params["n_dist"],
         }
         print("data saved, details:")
