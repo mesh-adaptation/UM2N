@@ -7,8 +7,7 @@ import movement as mv
 # import matplotlib.pyplot as plt
 
 os.environ['OMP_NUM_THREADS'] = "1"
-__all__ = ["MeshGenerator", "HelmholtzSolver",
-           "RandomHelmholtzGenerator", "HelmholtzGenerator"]
+__all__ = ["RandomHelmholtzGenerator", "HelmholtzGenerator"]
 random.seed(42)
 
 
@@ -22,7 +21,8 @@ class MeshGenerator():
     - eq: The Helmholtz equation object.
     - num_grid_x: Number of grid points in the x-dimension.
     - num_grid_y: Number of grid points in the y-dimension.
-    - mesh: The initial mesh.
+    - mesh: The initial m
+    esh.
     """
     def __init__(self, params={
         "num_grid_x": None,
