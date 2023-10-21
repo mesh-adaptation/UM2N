@@ -25,7 +25,7 @@ def arg_parse():
                         help='number of grids of a\
                             discretized mesh')
     parser.add_argument('--data_type', type=str, default="aniso",
-                        help='complex or simple data type(cmplx/smpl)')
+                        help='anisotropic or isotropic data type(aniso/iso)')
     args_ = parser.parse_args()
     return args_
 
@@ -37,7 +37,7 @@ problem = "holmholtz"
 data_type = args.data_type
 use_iso = True if data_type == "iso" else False
 
-n_samples = 40
+n_samples = 10
 
 scale_x = 1
 scale_y = 1
