@@ -72,6 +72,9 @@ class MeshDataset(Dataset):
             conv_feature=[
                 "conv_uh",
             ],
+            conv_feature_fix=[
+                "conv_uh_fix",
+            ],
             load_analytical=False,
             load_jacobian=False,
             ):
@@ -81,6 +84,8 @@ class MeshDataset(Dataset):
         self.mesh_feature = mesh_feature
         # conv_feat, which is passed to a cnn list
         self.conv_feature = conv_feature
+        # conv_feat_fix, which is passed to a cnn list
+        self.conv_feature_fix = conv_feature_fix
 
         self.file_dir = file_dir
         file_path = os.path.join(self.file_dir, 'data_*.npy')
@@ -151,6 +156,24 @@ class MeshDataset(Dataset):
         conv = torch.from_numpy(conv).float()
         return conv
 
+    def get_conv_feature_fix(self, data):
+        """
+        Extracts and concatenates the conv_features from the data.
+
+        Args:
+            data (dict): The data dictionary loaded from a .npy file.
+
+        Returns:
+            tensor: The concatenated conv_features.
+        """
+        conv_list = []
+        for key in self.conv_feature_fix:
+            feat = data.item().get(key)
+            conv_list.append(feat)
+        conv = np.concatenate(conv_list, axis=0)
+        conv = torch.from_numpy(conv).float()
+        return conv
+
     def __len__(self):
         return len(self.file_names)
 
@@ -172,6 +195,7 @@ class MeshDataset(Dataset):
         train_data = MeshData(
             x=self.get_x_feature(data),  # noqa: x here is the coordinate related features
             conv_feat=self.get_conv_feature(data),
+            conv_feat_fix=self.get_conv_feature_fix(data),
             mesh_feat=self.get_mesh_feature(data),
             edge_index=torch.from_numpy(
                 data.item().get('edge_index')).to(torch.int64),
@@ -246,7 +270,7 @@ def normalise(data):
     max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
     data.mesh_feat[:, 2:] = data.mesh_feat[:, 2:] / max_abs_val
 
-    # normalise conv feature (only last 2 dim, first 2 dim is coordinate)
+    # normalise conv feature
     # that is, uh and hessian norm
     conv_feat_shape = data.conv_feat.shape
     conv_feat = data.conv_feat
@@ -257,4 +281,16 @@ def normalise(data):
     max_abs_val = max_abs_val.reshape(-1, 1)
     conv_feat[:, :] = conv_feat[:, :] / max_abs_val[:, :]
     data.conv_feat = conv_feat.reshape(conv_feat_shape)
+
+    # normalise conv_fix feature
+    conv_feat_fix_shape = data.conv_feat_fix.shape
+    conv_feat_fix = data.conv_feat_fix
+    conv_feat_fix = conv_feat_fix.reshape(conv_feat_fix_shape[0], -1)
+    min_val = torch.min(conv_feat_fix, dim=1).values
+    max_val = torch.max(conv_feat_fix, dim=1).values
+    max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
+    max_abs_val = max_abs_val.reshape(-1, 1)
+    conv_feat_fix[:, :] = conv_feat_fix[:, :] / max_abs_val[:, :]
+    data.conv_feat_fix = conv_feat_fix.reshape(conv_feat_fix_shape)
+
     return data

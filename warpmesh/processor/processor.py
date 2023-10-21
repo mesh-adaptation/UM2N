@@ -58,7 +58,7 @@ class MeshProcessor():
                 "μ_y": None,
                 "z": None,
                 "w": None,
-                "simple_u": None,
+                "use_iso": None,
             }
     ):
         self.dist_params = dist_params
@@ -80,7 +80,7 @@ class MeshProcessor():
         self.conv_feat = self.get_conv_feat()
         self.to_train_data()
 
-    def get_conv_feat(self):
+    def get_conv_feat(self, fix_reso_x=20, fix_reso_y=20):
         """
         Generate features for convolution. This involves grid spacing and other
         related features.
@@ -88,6 +88,29 @@ class MeshProcessor():
         coords = self.mesh.coordinates.dat.data_ro
         x_start, y_start = np.min(coords, axis=0)
         x_end, y_end = np.max(coords, axis=0)
+
+        # fix resolution sampling (sample at fixed grid)
+        conv_x_fix = np.linspace(x_start, x_end, fix_reso_x)
+        conv_y_fix = np.linspace(y_start, y_end, fix_reso_y)
+        conv_xy_fix = np.zeros((2, fix_reso_x, fix_reso_y))
+        conv_uh_fix = np.zeros((1, len(conv_x_fix), len(conv_y_fix)))
+        conv_hessian_norm_fix = np.zeros((1, len(conv_x_fix), len(conv_y_fix)))
+        for i in range(len(conv_x_fix)):
+            for j in range(len(conv_y_fix)):
+                # (x, y) conv_feat
+                conv_xy_fix[:, i, j] = np.array([conv_x_fix[i], conv_y_fix[j]])
+                conv_uh_fix[:, i, j] = self.raw_feature["uh"].at(
+                    [conv_x_fix[i],
+                     conv_y_fix[j]])
+                conv_hessian_norm_fix[:, i, j] = self.raw_feature[
+                    "hessian_norm"].at(
+                    [conv_x_fix[i],
+                     conv_y_fix[j]])
+        self.conv_xy_fix = conv_xy_fix
+        self.conv_uh_fix = conv_uh_fix
+        self.conv_hessian_norm_fix = conv_hessian_norm_fix
+
+        # dynamic resolution sampling (sampled at mesh nodes)
         x_coords_unique = np.unique(coords[:, 0])
         y_coords_unique = np.unique(coords[:, 1])
         conv_x = np.linspace(x_start, x_end, len(x_coords_unique))
@@ -103,12 +126,14 @@ class MeshProcessor():
                 # uh conv_feat
                 conv_uh[:, i, j] = self.raw_feature["uh"].at(
                     [conv_x[i],
-                     conv_y[j]])
+                     conv_y[j]],
+                    tolerance=1e-4)
                 # uh norm conv_feat
                 conv_hessian_norm[:, i, j] = self.raw_feature[
                     "hessian_norm"].at(
                     [conv_x[i],
-                     conv_y[j]])
+                     conv_y[j]],
+                    tolerance=1e-4)
         self.conv_xy = conv_xy
         self.conv_uh = conv_uh
         self.conv_hessian_norm = conv_hessian_norm
@@ -171,6 +196,9 @@ class MeshProcessor():
             "conv_xy": self.conv_xy,
             "conv_uh": self.conv_uh,
             "conv_hessian_norm": self.conv_hessian_norm,
+            "conv_xy_fix": self.conv_xy_fix,
+            "conv_uh_fix": self.conv_uh_fix,
+            "conv_hessian_norm_fix": self.conv_hessian_norm_fix,
             "σ_x": self.dist_params["σ_x"],
             "σ_y": self.dist_params["σ_y"],
             "μ_x": self.dist_params["μ_x"],
