@@ -18,7 +18,7 @@ from extractor import (  # noqa: E402
 )
 from gatdeformer import DeformGAT  # noqa: E402
 
-__all__ = ['M2N_og']
+__all__ = ['M2N_og_dynamic']
 
 
 class NetGATDeform(torch.nn.Module):
@@ -58,7 +58,7 @@ class NetGATDeform(torch.nn.Module):
         return out_coord_4
 
 
-class M2N_og(torch.nn.Module):
+class M2N_og_dynamic(torch.nn.Module):
     def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7):
         super().__init__()
         self.gfe_out_c = 16
@@ -72,8 +72,8 @@ class M2N_og(torch.nn.Module):
 
     def forward(self, data):
         x = data.x  # [num_nodes * batch_size, 2]
-        conv_feat_in = data.conv_feat  # [batch_size, feat, 20, 20], using fixed conv-sample. # noqa
-        mesh_feat = data.mesh_feat_fix  # [num_nodes * batch_size, 2]
+        conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
+        mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
 
