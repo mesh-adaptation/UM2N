@@ -37,21 +37,30 @@ problem = "holmholtz"
 data_type = args.data_type
 use_iso = True if data_type == "iso" else False
 
-n_samples = 10
+n_samples = 400
 
+# parameters for domain scale
 scale_x = 1
 scale_y = 1
-z_min = 0
-z_max = 1
+
+# parameters for random source
 max_dist = args.max_dist
 n_dist = args.n_dist
 num_grid = args.n_grid
 num_grid_x = num_grid
 num_grid_y = num_grid
 
+# parameters for anisotropic data - distribution height scaler
+z_min = 0
+z_max = 1
+
+# parameters for isotropic data
 w_min = 0.05
 w_max = 0.2
+c_min = 0.2
+c_max = 0.8
 
+# parameters for data split
 p_train = 0.75
 p_test = 0.15
 p_val = 0.1
@@ -143,6 +152,8 @@ if __name__ == "__main__":
                         "z_min": z_min,
                         "w_min": w_min,
                         "w_max": w_max,
+                        "c_min": c_min,
+                        "c_max": c_max,
                     })
                 helmholtz_eq = wm.RandHelmholtzEqGenerator(
                     rand_u_generator)

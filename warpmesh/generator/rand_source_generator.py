@@ -35,6 +35,8 @@ class RandSourceGenerator():
         "z_min": 0,
         "w_min": 0.05,
         "w_max": 0.2,
+        "c_min": 0.2,
+        "c_max": 0.8,
     }):
         """
         Initialize RandomHelmholtzGenerator.
@@ -81,11 +83,17 @@ class RandSourceGenerator():
             σ_sigma = random.gauss((
                 self.dist_params["y_end"] -
                 self.dist_params["y_start"])/48)
-
-            self.μ_dict["x"].append(round(random.uniform(
-                self.dist_params["x_start"], self.dist_params["x_end"]), 4))
-            self.μ_dict["y"].append(round(random.uniform(
-                self.dist_params["y_start"], self.dist_params["y_end"]), 4))
+            
+            if (self.use_iso):
+                self.μ_dict["x"].append(round(random.uniform(
+                    self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
+                self.μ_dict["y"].append(round(random.uniform(
+                    self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
+            else:
+                self.μ_dict["x"].append(round(random.uniform(
+                    self.dist_params["x_start"], self.dist_params["x_end"]), 4)) # noqa
+                self.μ_dict["y"].append(round(random.uniform(
+                    self.dist_params["y_start"], self.dist_params["y_end"]), 4)) # noqa
             self.σ_dict["x"].append(round(random.gauss(σ_mean, σ_sigma), 4))
             self.σ_dict["y"].append(round(random.gauss(σ_mean, σ_sigma), 4))
             self.z_list.append(round(random.uniform(
@@ -130,7 +138,7 @@ class RandSourceGenerator():
         x, y = (
             params[key] for key in ("x", "y"))
         self.u_exact = 0
-        if (self.use_iso):  # use more complex u
+        if (self.use_iso):  # use simpler form of u
             for i in range(self.n_dist):
                 μ_x = self.μ_dict["x"][i]
                 μ_y = self.μ_dict["y"][i]
@@ -138,7 +146,7 @@ class RandSourceGenerator():
                 self.u_exact += fd.exp(-1 * (
                     (((x-μ_x)**2) + ((y-μ_y)**2)) / w
                 ))
-        else:  # use simpler form of u
+        else:  # use more complex form of u
             for i in range(self.n_dist):
                 σ_x = self.σ_dict["x"][i]
                 σ_y = self.σ_dict["y"][i]
@@ -150,4 +158,3 @@ class RandSourceGenerator():
                     (((y-μ_y)**2) / (σ_y**2))
                 ))
         return self.u_exact
-

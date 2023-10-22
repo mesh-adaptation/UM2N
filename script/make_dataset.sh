@@ -4,7 +4,7 @@
 n_dist_start=1
 n_dist_end=10
 
-n_grid_start=20
+n_grid_start=15
 n_grid_end=20
 stride=5
 
