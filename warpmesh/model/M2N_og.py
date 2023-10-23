@@ -59,14 +59,14 @@ class NetGATDeform(torch.nn.Module):
 
 
 class M2N_og(torch.nn.Module):
-    def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7):
+    def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7, use_drop=False):
         super().__init__()
         self.gfe_out_c = 16
         self.lfe_out_c = 16
         self.deformer_in_feat = 7 + self.gfe_out_c + self.lfe_out_c
 
         self.gfe = GlobalFeatExtractor(
-            in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=False)
+            in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop)
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
         self.deformer = NetGATDeform(in_dim=self.deformer_in_feat)
 
