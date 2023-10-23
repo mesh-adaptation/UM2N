@@ -72,7 +72,7 @@ class M2N_og(torch.nn.Module):
 
     def forward(self, data):
         x = data.x  # [num_nodes * batch_size, 2]
-        conv_feat_in = data.conv_feat  # [batch_size, feat, 20, 20], using fixed conv-sample. # noqa
+        conv_feat_in = data.conv_feat_fix  # [batch_size, feat, 20, 20], using fixed conv-sample. # noqa
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
