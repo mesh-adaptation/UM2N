@@ -239,6 +239,8 @@ class MeshData(Data):
         # conv_feat is feeded into cnn, so another dim is needed
         if key == 'conv_feat':
             return None
+        if key == 'conv_feat_fix':
+            return None
         if key == 'node_num':
             return None
         return super().__cat_dim__(key, value, *args, **kwargs)
