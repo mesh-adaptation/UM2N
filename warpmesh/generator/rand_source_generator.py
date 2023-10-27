@@ -5,7 +5,6 @@ import random
 import firedrake as fd
 
 __all__ = ["RandSourceGenerator"]
-random.seed(42)
 
 
 class RandSourceGenerator():
@@ -24,7 +23,7 @@ class RandSourceGenerator():
         bc: Dirichlet boundary condition.
     """
 
-    def __init__(self, use_iso=False, dist_params={
+    def __init__(self, use_iso=False, rand_seed=42, dist_params={
         "max_dist": 10,
         "n_dist": None,  # if None, then random
         "x_start": 0,

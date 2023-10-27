@@ -271,6 +271,6 @@ class MeshProcessor():
         Parameters:
         - path: The directory where to save the data.
         """
-        torch.save(self.train_data, path + ".train")
+        # torch.save(self.train_data, path + ".train")
         np.save(path + ".npy", self.np_data)
         return

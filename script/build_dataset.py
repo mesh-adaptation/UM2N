@@ -6,9 +6,8 @@ import warpmesh as wm
 import firedrake as fd
 import shutil
 import matplotlib.pyplot as plt
+import random
 from argparse import ArgumentParser
-
-os.environ['OMP_NUM_THREADS'] = "1"
 
 
 def arg_parse():
@@ -24,8 +23,15 @@ def arg_parse():
     parser.add_argument('--n_grid', type=int, default=20,
                         help='number of grids of a\
                             discretized mesh')
-    parser.add_argument('--data_type', type=str, default="aniso",
+    parser.add_argument('--field_type', type=str, default="iso",
                         help='anisotropic or isotropic data type(aniso/iso)')
+    # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
+    parser.add_argument('--boundary_scheme', type=str, default="pad",
+                        help='scheme used to generate the dataset (pad/full))')
+    parser.add_argument('--n_samples', type=int, default=400,
+                        help='number of samples generated')
+    parser.add_argument('--rand_seed', type=int, default=63,
+                        help='number of samples generated')
     args_ = parser.parse_args()
     return args_
 
@@ -34,10 +40,13 @@ args = arg_parse()
 
 # ====  Parameters ======================
 problem = "holmholtz"
-data_type = args.data_type
+data_type = args.field_type
 use_iso = True if data_type == "iso" else False
+scheme = args.boundary_scheme
+rand_seed = args.rand_seed
+random.seed(rand_seed)
 
-n_samples = 400
+n_samples = args.n_samples
 
 # parameters for domain scale
 scale_x = 1
@@ -57,8 +66,13 @@ z_max = 1
 # parameters for isotropic data
 w_min = 0.05
 w_max = 0.2
-c_min = 0.2
-c_max = 0.8
+
+c_min = 0.2 * scale_x
+c_max = 0.8 * scale_x
+
+if (scheme == "full"):
+    c_min = 0
+    c_max = scale_x
 
 # parameters for data split
 p_train = 0.75
@@ -90,9 +104,11 @@ def move_data(target, source, start, num_file):
 project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 dataset_dir = os.path.join(project_dir, "data", "dataset", "helmholtz")
 problem_specific_dir = os.path.join(
-    dataset_dir, "z=<{},{}>_ndist={}_max_dist={}_<{}x{}>_n={}_{}".format(
-        z_min, z_max, n_dist, max_dist,
-        num_grid_x, num_grid_y, n_samples, data_type))
+        dataset_dir,
+        "z=<{},{}>_ndist={}_max_dist={}_<{}x{}>_n={}_{}_{}".format(
+            z_min, z_max, n_dist, max_dist,
+            num_grid_x, num_grid_y, n_samples,
+            data_type, scheme))
 
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
@@ -128,6 +144,8 @@ else:
     for f in filelist:
         os.remove(os.path.join(problem_log_dir, f))
 
+print("info: ", c_min, c_max, data_type, scheme)
+
 
 # ====  Data Generation Scripts ======================
 if __name__ == "__main__":
@@ -141,7 +159,7 @@ if __name__ == "__main__":
                     num_grid_x, num_grid_y, scale_x, scale_y)
                 # Generate Random solution field
                 rand_u_generator = wm.RandSourceGenerator(
-                    use_iso=use_iso, dist_params={
+                    use_iso=use_iso, rand_seed=rand_seed, dist_params={
                         "max_dist": max_dist,
                         "n_dist": n_dist,
                         "x_start": 0,

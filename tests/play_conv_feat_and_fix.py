@@ -40,6 +40,7 @@ sample = data_set[idx]
 
 
 print("sample:", sample)
+print("conv_feat_fix.shape", sample.conv_feat_fix.shape)
 
 
 fig, axs = plt.subplots(2, 2, figsize=(10, 10))

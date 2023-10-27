@@ -5,14 +5,16 @@
 #                Two curve, ie. training loss and validation loss, are plotted in the same figure  # noqa
 
 # %% import packages and setup
+import os
 import pandas as pd
 import numpy as np  # noqa
 import matplotlib.pyplot as plt  # noqa
 
 # %% plot model training loss, test tangle
-model_name = "M2N_modified"
-loss_path = "/Users/cw1722/Downloads/M2N_modi_20_iso/train_log/loss.csv" # noqa
-tangle_path = "/Users/cw1722/Downloads/M2N_modi_20_iso/train_log/tangle.csv" # noqa
+model_name = "M2N_combo"
+log_path = "/Users/cw1722/Downloads/2023-10-24-10_29_M2N_og_combo"  # noqa
+loss_path = os.path.join(log_path, "train_log/loss.csv")
+tangle_path = os.path.join(log_path, "train_log/tangle.csv")
 
 loss_data = pd.read_csv(loss_path)
 tangle_data = pd.read_csv(tangle_path)
@@ -79,21 +81,21 @@ ax2.scatter(
     tangle_data_filtered['Train Tangle'].iloc[no_train_tangle_idx] + epsilon,
     color='cyan', edgecolors='black',
     linewidths=1.2, s=40, zorder=6,
-    label=f'No train tangle({len(no_train_tangle_idx)})')
+    label=f'No tangle observed in test set, count:{len(no_train_tangle_idx)}')
 
 ax2.scatter(
     tangle_data_filtered["Epoch"].iloc[no_test_tangle_idx],
     tangle_data_filtered['Test Tangle'].iloc[no_test_tangle_idx] + epsilon,
     color='blue', edgecolors='black',
     linewidths=1.2, s=40, zorder=5,
-    label=f'No test tangle({len(no_test_tangle_idx)})')
+    label=f'No tangle observed in training set, count:{len(no_test_tangle_idx)}')  # noqa
 
 ax2.scatter(
     tangle_data_filtered["Epoch"].iloc[no_tangle_idx],
     tangle_data_filtered['Train Tangle'].iloc[no_tangle_idx] + epsilon,
     color='red', edgecolors='black', marker='P',
     linewidths=0.8, s=80, zorder=7,
-    label=f'No tangle({len(no_tangle_idx)})')
+    label=f'No tangle observed in both dataset, count:{len(no_tangle_idx)}')
 
 # Adjust the layout and display the combined subplot
 ax1.set_xlabel('Epoch', fontsize=22)
@@ -106,7 +108,7 @@ ax1.tick_params(axis='both', which='major', labelsize=20)
 
 ax2.set_ylim(0, 1)
 ax2.set_xlabel('Epoch', fontsize=22)
-ax2.set_ylabel('Tangle', fontsize=22)
+ax2.set_ylabel('Tangled Elements per Mesh', fontsize=22)
 ax2.legend(loc='upper right', fontsize=20)
 ax2.grid(True, which='both', linestyle='--', linewidth=0.5)
 ax2.spines['top'].set_visible(False)
