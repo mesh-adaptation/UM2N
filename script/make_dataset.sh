@@ -15,25 +15,25 @@
 # Please use different rand_seed for training and testing purpose.
 # This is because we want to make sure the training and testing dataset are different.
 
-n_samples=400
+n_samples=60
 
 # for training set
-rand_seed=63
+# rand_seed=63
 
 # for test set, generating small samples
-# rand_seed=42
+rand_seed=42
 
-n_grid_start=15
-n_grid_end=20
+n_grid_start=35
+n_grid_end=35
 
 stride=5
 
 for i in {$n_grid_start..$n_grid_end}; do
   if ((i % $stride == 0)); then
     echo "n_grid = $i"
-    python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="aniso" --boundary_scheme="full"
-    python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="aniso" --boundary_scheme="pad"
-    python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="iso" --boundary_scheme="full"
+    # python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="aniso" --boundary_scheme="full"
+    # python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="aniso" --boundary_scheme="pad"
+    # python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="iso" --boundary_scheme="full"
     python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="iso" --boundary_scheme="pad"
   fi
 done

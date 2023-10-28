@@ -18,6 +18,7 @@ from extractor import (  # noqa: E402
 )
 from gatdeformer import DeformGAT  # noqa: E402
 
+
 __all__ = ['M2N']
 
 
@@ -59,21 +60,20 @@ class NetGATDeform(torch.nn.Module):
 
 
 class M2N(torch.nn.Module):
-    def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7):
+    def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7, use_drop=False):
         super().__init__()
         self.gfe_out_c = 16
         self.lfe_out_c = 16
         self.deformer_in_feat = 7 + self.gfe_out_c + self.lfe_out_c
 
-        self.gfe = GlobalFeatExtractor(in_c=gfe_in_c, out_c=self.gfe_out_c)
+        self.gfe = GlobalFeatExtractor(
+            in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop)
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
         self.deformer = NetGATDeform(in_dim=self.deformer_in_feat)
-        # self.deformer = GATDeformerBlock(in_dim=self.deformer_in_feat)
 
     def forward(self, data):
-
         x = data.x  # [num_nodes * batch_size, 2]
-        conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
+        conv_feat_in = data.conv_feat_fix  # [batch_size, feat, 20, 20], using fixed conv-sample. # noqa
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num

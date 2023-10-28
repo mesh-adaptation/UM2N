@@ -112,6 +112,7 @@ def count_dataset_tangle(dataset, model, device):
     Returns:
         float: The average number of tangles in the dataset.
     """
+    model.eval()
     num_tangle = 0
     for i in range(len(dataset)):
         data = dataset[i].to(device)
@@ -130,7 +131,7 @@ def train(loader, model, optimizer, device, loss_func, use_jacob=False):
     """
     Trains a PyTorch model using the given data loader, optimizer,
         and loss function.
-    
+
     Args:
         loader (DataLoader): DataLoader object for the training data.
         model (torch.nn.Module): The PyTorch model to train.
@@ -138,7 +139,7 @@ def train(loader, model, optimizer, device, loss_func, use_jacob=False):
         device (torch.device): The device to run the computation on.
         loss_func (callable): Loss function (e.g., MSE, Cross-Entropy).
         use_jacob (bool): Whether or not to use Jacobian loss.
-    
+
     Returns:
         float: The average training loss across all batches.
     """

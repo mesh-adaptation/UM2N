@@ -4,6 +4,7 @@
 warpmesh.egg-info/*
 .eggs/*
 data/dataset/*
+data/helmholtz*
 data/output/*
 data/temp/*
 

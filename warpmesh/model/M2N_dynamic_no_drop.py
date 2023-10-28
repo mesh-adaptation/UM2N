@@ -18,7 +18,7 @@ from extractor import (  # noqa: E402
 )
 from gatdeformer import DeformGAT  # noqa: E402
 
-__all__ = ['M2N_og_dynamic']
+__all__ = ['M2N_dynamic_no_drop']
 
 
 class NetGATDeform(torch.nn.Module):
@@ -58,7 +58,7 @@ class NetGATDeform(torch.nn.Module):
         return out_coord_4
 
 
-class M2N_og_dynamic(torch.nn.Module):
+class M2N_dynamic_no_drop(torch.nn.Module):
     def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7):
         super().__init__()
         self.gfe_out_c = 16
