@@ -206,6 +206,7 @@ class MeshProcessor():
             "z": self.dist_params["z"],
             "w": self.dist_params["w"],
             "use_iso": self.dist_params["use_iso"],
+            "face_idxs": self.cell_node_list,
             "n_dist": self.dist_params["n_dist"],
         }
         print("data saved, details:")

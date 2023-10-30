@@ -9,6 +9,48 @@ __all__ = ['train', 'evaluate', 'load_model', 'TangleCounter',
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
+def get_face_area(coord, face):
+    """
+    Calculates the area of a face. using formula:
+        area = 0.5 * (x1(y2 - y3) + x2(y3 - y1) + x3(y1 - y2))
+    Args:
+        coord (torch.Tensor): The coordinates.
+        face (torch.Tensor): The face tensor.
+    """
+    x = coord[:, 0][face]
+    y = coord[:, 1][face]
+
+    area = 0.5 * (
+        x[0, :] * (y[1, :] - y[2, :]) +
+        x[1, :] * (y[2, :] - y[0, :]) +
+        x[2, :] * (y[0, :] - y[1, :])
+    )
+    return area
+
+
+def inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
+    """
+    Calculates the inversion loss for a batch of meshes.
+    Args:
+        out_coord (torch.Tensor): The output coordinates.
+        in_coord (torch.Tensor): The input coordinates.
+        face (torch.Tensor): The face tensor.
+        batch_size (int): The batch size.
+        alpha (float): The loss weight.
+    """
+    out_area = get_face_area(out_coord, face)
+    in_area = get_face_area(in_coord, face)
+    # restore the sign of the area
+    out_area = torch.sign(in_area) * out_area
+    # mask for negative area
+    neg_mask = out_area < 0
+    neg_area = out_area[neg_mask]
+    # calculate the loss, we want it normalized by the batch size
+    # and loss should be positive, so we are using -1 here.
+    loss = scaler * (-1 * (neg_area.sum()) / batch_size)
+    return loss
+
+
 def jacobLoss(model, out, data, loss_func):
     jacob_det = get_jacob_det(model, data)
     u_loss = loss_func(out, data.y)
@@ -127,7 +169,9 @@ def count_dataset_tangle(dataset, model, device):
     return num_tangle.item()
 
 
-def train(loader, model, optimizer, device, loss_func, use_jacob=False):
+def train(
+        loader, model, optimizer, device, loss_func,
+        use_jacob=False, use_inversion_loss=False, scaler=100):
     """
     Trains a PyTorch model using the given data loader, optimizer,
         and loss function.
@@ -143,26 +187,50 @@ def train(loader, model, optimizer, device, loss_func, use_jacob=False):
     Returns:
         float: The average training loss across all batches.
     """
+    bs = loader.batch_size
     model.train()
     total_loss = 0
+    total_deform_loss = 0
+    total_inversion_loss = 0
     for batch in loader:
         optimizer.zero_grad()
         data = batch.to(device)
         out = model(data)
-        loss = 1000*(
+        loss = 0
+        inversion_loss = 0
+        deform_loss = 0
+        # deformation loss
+        deform_loss = 1000*(
             loss_func(out, data.y) if not use_jacob else
             jacobLoss(model, out, data, loss_func)
         )
+        # Inversion loss
+        if use_inversion_loss:
+            inversion_loss = inversion_loss(
+                out, data.x[:, :2], data.face, bs, scaler)
+        loss = inversion_loss + deform_loss
+        # Jacobian loss
         if use_jacob:
             loss.backward(retain_graph=True)
         else:
             loss.backward()
+
         optimizer.step()
         total_loss += loss.item()
+        total_deform_loss += deform_loss.item()
+        total_inversion_loss += inversion_loss.item()
+    if (use_inversion_loss):
+        return {
+            "total_loss": total_loss / len(loader),
+            "deform_loss": total_deform_loss / len(loader),
+            "inversion_loss": total_inversion_loss / len(loader)
+        }
     return (total_loss / len(loader))
 
 
-def evaluate(loader, model, device, loss_func, use_jacob=False):
+def evaluate(
+        loader, model, device, loss_func, use_jacob=False,
+        use_inversion_loss=False, scaler=100):
     """
     Evaluates a model using the given data loader and loss function.
 
@@ -176,11 +244,16 @@ def evaluate(loader, model, device, loss_func, use_jacob=False):
     Returns:
         float: The average evaluation loss across all batches.
     """
+    bs = loader.batch_size
     model.eval()
     total_loss = 0
+    total_deform_loss = 0
+    total_inversion_loss = 0
     for batch in loader:
         data = batch.to(device)
         loss = 0
+        deform_loss = 0
+        inversion_loss = 0
         if use_jacob:
             out = model(data)
             loss = 1000*(
@@ -190,11 +263,24 @@ def evaluate(loader, model, device, loss_func, use_jacob=False):
         else:
             with torch.no_grad():
                 out = model(data)
-                loss = 1000*(
+                deform_loss = 1000*(
                     loss_func(out, data.y) if not use_jacob else
                     jacobLoss(model, out, data, loss_func)
                 )
-        total_loss += loss.item()
+                inversion_loss = 0
+                if use_inversion_loss:
+                    inversion_loss = inversion_loss(
+                        out, data.x[:, :2], data.face, bs, scaler)
+                loss = inversion_loss + deform_loss
+                total_loss += loss.item()
+                total_deform_loss += deform_loss.item()
+                total_inversion_loss += inversion_loss.item()
+    if (use_inversion_loss):
+        return {
+            "total_loss": total_loss / len(loader),
+            "deform_loss": total_deform_loss / len(loader),
+            "inversion_loss": total_inversion_loss / len(loader)
+        }
     return (total_loss / len(loader))
 
 
