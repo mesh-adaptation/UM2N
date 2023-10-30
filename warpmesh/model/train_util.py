@@ -28,7 +28,7 @@ def get_face_area(coord, face):
     return area
 
 
-def inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
+def get_inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
     """
     Calculates the inversion loss for a batch of meshes.
     Args:
@@ -206,7 +206,7 @@ def train(
         )
         # Inversion loss
         if use_inversion_loss:
-            inversion_loss = inversion_loss(
+            inversion_loss = get_inversion_loss(
                 out, data.x[:, :2], data.face, bs, scaler)
         loss = inversion_loss + deform_loss
         # Jacobian loss
@@ -269,7 +269,7 @@ def evaluate(
                 )
                 inversion_loss = 0
                 if use_inversion_loss:
-                    inversion_loss = inversion_loss(
+                    inversion_loss = get_inversion_loss(
                         out, data.x[:, :2], data.face, bs, scaler)
                 loss = inversion_loss + deform_loss
                 total_loss += loss.item()
