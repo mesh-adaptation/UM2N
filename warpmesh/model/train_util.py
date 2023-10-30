@@ -142,7 +142,7 @@ class TangleCounter(MessagePassing):
         return tangle
 
 
-def count_dataset_tangle(dataset, model, device):
+def count_dataset_tangle(dataset, model, device, method="inversion"):
     """
     Computes the average number of tangles in a dataset.
 
@@ -163,10 +163,24 @@ def count_dataset_tangle(dataset, model, device):
             input_edge = data.edge_index
             mesh = data.x[:, :2]
             mesh_new = output_data
-            Counter = TangleCounter()
-            num_tangle += Counter(mesh, mesh_new, input_edge)
+            # use message passing to count tangles
+            if method == "msg":
+                Counter = TangleCounter()
+                num_tangle += Counter(mesh, mesh_new, input_edge).item()
+            # use invserion element to count tangles
+            elif method == "inversion":
+                out_area = get_face_area(output_data, data.face)
+                in_area = get_face_area(data.x[:, :2], data.face)
+                # restore the sign of the area
+                out_area = torch.sign(in_area) * out_area
+                # mask for negative area
+                neg_mask = out_area < 0
+                neg_area = out_area[neg_mask]
+                # calculate the loss, we want it normalized by the batch size
+                # and loss should be positive, so we are using -1 here.
+                num_tangle += len(neg_area)
     num_tangle = num_tangle / len(dataset)
-    return num_tangle.item()
+    return num_tangle
 
 
 def train(
