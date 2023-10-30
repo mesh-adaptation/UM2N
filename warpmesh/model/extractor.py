@@ -110,8 +110,8 @@ class GlobalFeatExtractor(torch.nn.Module):
         self.conv2 = torch.nn.Conv2d(32, 64, 5, padding=2, stride=1)
         self.conv3 = torch.nn.Conv2d(64, 32, 3, padding=2, stride=1)
         self.conv4 = torch.nn.Conv2d(32, out_c, 3, padding=2, stride=1)
-        self.dropout = torch.nn.Dropout(drop_p)
         self.use_drop = use_drop
+        self.dropout = torch.nn.Dropout(drop_p) if use_drop else None
         self.final_pool = torch.nn.AdaptiveAvgPool2d(1)
 
     def forward(self, data):

@@ -23,7 +23,7 @@ class RandSourceGenerator():
         bc: Dirichlet boundary condition.
     """
 
-    def __init__(self, use_iso=False, rand_seed=42, dist_params={
+    def __init__(self, use_iso=False, dist_params={
         "max_dist": 10,
         "n_dist": None,  # if None, then random
         "x_start": 0,
@@ -82,17 +82,12 @@ class RandSourceGenerator():
             σ_sigma = random.gauss((
                 self.dist_params["y_end"] -
                 self.dist_params["y_start"])/48)
-            
-            if (self.use_iso):
-                self.μ_dict["x"].append(round(random.uniform(
-                    self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
-                self.μ_dict["y"].append(round(random.uniform(
-                    self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
-            else:
-                self.μ_dict["x"].append(round(random.uniform(
-                    self.dist_params["x_start"], self.dist_params["x_end"]), 4)) # noqa
-                self.μ_dict["y"].append(round(random.uniform(
-                    self.dist_params["y_start"], self.dist_params["y_end"]), 4)) # noqa
+    
+            self.μ_dict["x"].append(round(random.uniform(
+                self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
+            self.μ_dict["y"].append(round(random.uniform(
+                self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
+
             self.σ_dict["x"].append(round(random.gauss(σ_mean, σ_sigma), 4))
             self.σ_dict["y"].append(round(random.gauss(σ_mean, σ_sigma), 4))
             self.z_list.append(round(random.uniform(
@@ -129,7 +124,7 @@ class RandSourceGenerator():
             "v": None,
     }):
         """
-        Return analytical solution of Helmholtz equation. 
+        Return analytical solution of Helmholtz equation.
 
         Returns:
             firedrake.Function: Analytical solution.

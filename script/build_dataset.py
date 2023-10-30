@@ -2,6 +2,7 @@
 # GitHub Username: chunyang-w
 
 import os
+import pandas as pd
 import warpmesh as wm
 import firedrake as fd
 import shutil
@@ -33,18 +34,20 @@ def arg_parse():
     parser.add_argument('--rand_seed', type=int, default=63,
                         help='number of samples generated')
     args_ = parser.parse_args()
+    print(args_)
     return args_
 
 
 args = arg_parse()
 
-# ====  Parameters ======================
-problem = "holmholtz"
 data_type = args.field_type
 use_iso = True if data_type == "iso" else False
-scheme = args.boundary_scheme
+
 rand_seed = args.rand_seed
 random.seed(rand_seed)
+
+# ====  Parameters ======================
+problem = "holmholtz"
 
 n_samples = args.n_samples
 
@@ -67,12 +70,9 @@ z_max = 1
 w_min = 0.05
 w_max = 0.2
 
-c_min = 0.2 * scale_x
-c_max = 0.8 * scale_x
-
-if (scheme == "full"):
-    c_min = 0
-    c_max = scale_x
+scheme = args.boundary_scheme
+c_min = 0.2 if scheme == "pad" else 0
+c_max = 0.8 if scheme == "pad" else 1
 
 # parameters for data split
 p_train = 0.75
@@ -83,6 +83,16 @@ num_train = int(n_samples * p_train)
 num_test = int(n_samples * p_test)
 num_val = int(n_samples * p_val)
 # =======================================
+
+
+df = pd.DataFrame({
+    'cmin': [c_min],
+    'cmax': [c_max],
+    'data_type': [data_type],
+    'scheme': [scheme],
+    'n_samples': [n_samples],
+    'n_grid': [num_grid],
+})
 
 
 def move_data(target, source, start, num_file):
@@ -144,203 +154,202 @@ else:
     for f in filelist:
         os.remove(os.path.join(problem_log_dir, f))
 
-print("info: ", c_min, c_max, data_type, scheme)
+df.to_csv(os.path.join(problem_specific_dir, "info.csv"))
 
 
 # ====  Data Generation Scripts ======================
 if __name__ == "__main__":
     print("In build_dataset.py")
-    if (problem == "holmholtz" or problem == "test"):
-        i = 0
-        while (i < n_samples):
-            try:
-                print("Generating Sample: " + str(i))
-                mesh = fd.RectangleMesh(
-                    num_grid_x, num_grid_y, scale_x, scale_y)
-                # Generate Random solution field
-                rand_u_generator = wm.RandSourceGenerator(
-                    use_iso=use_iso, rand_seed=rand_seed, dist_params={
-                        "max_dist": max_dist,
-                        "n_dist": n_dist,
-                        "x_start": 0,
-                        "x_end": 1,
-                        "y_start": 0,
-                        "y_end": 1,
-                        "z_max": z_max,
-                        "z_min": z_min,
-                        "w_min": w_min,
-                        "w_max": w_max,
-                        "c_min": c_min,
-                        "c_max": c_max,
-                    })
-                helmholtz_eq = wm.RandHelmholtzEqGenerator(
-                    rand_u_generator)
-                res = helmholtz_eq.discretise(mesh)  # discretise the equation
-                dist_params = rand_u_generator.get_dist_params()
-                # Solve the equation
-                solver = wm.EquationSolver(params={
-                    "function_space": res["function_space"],
-                    "LHS": res["LHS"],
-                    "RHS": res["RHS"],
-                    "bc": res["bc"]
+    i = 0
+    while (i < n_samples):
+        try:
+            print("Generating Sample: " + str(i))
+            mesh = fd.RectangleMesh(
+                num_grid_x, num_grid_y, scale_x, scale_y)
+            # Generate Random solution field
+            rand_u_generator = wm.RandSourceGenerator(
+                use_iso=use_iso, dist_params={
+                    "max_dist": max_dist,
+                    "n_dist": n_dist,
+                    "x_start": 0,
+                    "x_end": 1,
+                    "y_start": 0,
+                    "y_end": 1,
+                    "z_max": z_max,
+                    "z_min": z_min,
+                    "w_min": w_min,
+                    "w_max": w_max,
+                    "c_min": c_min,
+                    "c_max": c_max,
                 })
-                uh = solver.solve_eq()
-                # Generate Mesh
-                hessian = wm.MeshGenerator(params={
-                        "num_grid_x": num_grid_x,
-                        "num_grid_y": num_grid_y,
-                        "helmholtz_eq": helmholtz_eq,
-                        "mesh": fd.RectangleMesh(
-                            num_grid_x, num_grid_y, scale_x, scale_y)
-                        }
-                ).get_hessian(mesh)
-
-                hessian_norm = wm.MeshGenerator(params={
-                        "num_grid_x": num_grid_x,
-                        "num_grid_y": num_grid_y,
-                        "helmholtz_eq": helmholtz_eq,
-                        "mesh": fd.RectangleMesh(
-                            num_grid_x, num_grid_y, scale_x, scale_y)
-                        }
-                ).monitor_func(mesh)
-
-                hessian_norm = fd.project(hessian_norm,
-                                          fd.FunctionSpace(mesh, "CG", 1))
-
-                func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-                grad_uh_interpolate = fd.interpolate(
-                    fd.grad(uh), func_vec_space)
-
-                mesh_gen = wm.MeshGenerator(params={
+            helmholtz_eq = wm.RandHelmholtzEqGenerator(
+                rand_u_generator)
+            res = helmholtz_eq.discretise(mesh)  # discretise the equation
+            dist_params = rand_u_generator.get_dist_params()
+            # Solve the equation
+            solver = wm.EquationSolver(params={
+                "function_space": res["function_space"],
+                "LHS": res["LHS"],
+                "RHS": res["RHS"],
+                "bc": res["bc"]
+            })
+            uh = solver.solve_eq()
+            # Generate Mesh
+            hessian = wm.MeshGenerator(params={
                     "num_grid_x": num_grid_x,
                     "num_grid_y": num_grid_y,
                     "helmholtz_eq": helmholtz_eq,
                     "mesh": fd.RectangleMesh(
                         num_grid_x, num_grid_y, scale_x, scale_y)
-                })
+                    }
+            ).get_hessian(mesh)
 
-                new_mesh = mesh_gen.move_mesh()
+            hessian_norm = wm.MeshGenerator(params={
+                    "num_grid_x": num_grid_x,
+                    "num_grid_y": num_grid_y,
+                    "helmholtz_eq": helmholtz_eq,
+                    "mesh": fd.RectangleMesh(
+                        num_grid_x, num_grid_y, scale_x, scale_y)
+                    }
+            ).monitor_func(mesh)
 
-                # this is the jacobian of x with respect to xi
-                jacobian = mesh_gen.get_jacobian()
-                jacobian = fd.project(
-                    jacobian, fd.TensorFunctionSpace(new_mesh, "CG", 1)
-                )
-                jacobian_det = mesh_gen.get_jacobian_det()
-                jacobian_det = fd.project(
-                    jacobian_det, fd.FunctionSpace(new_mesh, "CG", 1))
+            hessian_norm = fd.project(hessian_norm,
+                                      fd.FunctionSpace(mesh, "CG", 1))
 
-                # solve the equation on the new mesh
-                new_res = helmholtz_eq.discretise(new_mesh)
-                new_solver = wm.EquationSolver(params={
-                    "function_space": new_res["function_space"],
-                    "LHS": new_res["LHS"],
-                    "RHS": new_res["RHS"],
-                    "bc": new_res["bc"]
-                })
-                uh_new = new_solver.solve_eq()
+            func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
+            grad_uh_interpolate = fd.interpolate(
+                fd.grad(uh), func_vec_space)
 
-                # process the data for training
-                mesh_processor = wm.MeshProcessor(
-                    original_mesh=mesh, optimal_mesh=new_mesh,
-                    function_space=new_res["function_space"],
-                    use_4_edge=True,
-                    feature={
-                        "uh": uh.dat.data_ro.reshape(-1, 1),
-                        "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(
-                            -1, 2),
-                        "hessian": hessian.dat.data_ro.reshape(
-                            -1, 4),
-                        "hessian_norm": hessian_norm.dat.data_ro.reshape(
-                            -1, 1),
-                        "jacobian": jacobian.dat.data_ro.reshape(
-                            -1, 4),
-                        "jacobian_det": jacobian_det.dat.data_ro.reshape(
-                            -1, 1),
-                    },
-                    raw_feature={
-                        "uh": uh,
-                        "hessian_norm": hessian_norm,
-                        "jacobian": jacobian,
-                        "jacobian_det": jacobian_det,
-                    },
-                    dist_params=dist_params,
-                )
+            mesh_gen = wm.MeshGenerator(params={
+                "num_grid_x": num_grid_x,
+                "num_grid_y": num_grid_y,
+                "helmholtz_eq": helmholtz_eq,
+                "mesh": fd.RectangleMesh(
+                    num_grid_x, num_grid_y, scale_x, scale_y)
+            })
 
-                mesh_processor.save_taining_data(
-                    os.path.join(problem_data_dir, "data_{}".format(i))
-                )
+            new_mesh = mesh_gen.move_mesh()
 
-                # ====  Plot Scripts ======================
-                fig = plt.figure(figsize=(15, 10))
-                ax1 = fig.add_subplot(2, 3, 1, projection='3d')
-                # Plot the exact solution
-                ax1.set_title('Exact Solution')
-                fd.trisurf(fd.interpolate(
-                    res["u_exact"], res["function_space"]), axes=ax1)
-                # Plot the solved solution
-                ax2 = fig.add_subplot(2, 3, 2, projection='3d')
-                ax2.set_title('FEM Solution')
-                fd.trisurf(uh, axes=ax2)
+            # this is the jacobian of x with respect to xi
+            jacobian = mesh_gen.get_jacobian()
+            jacobian = fd.project(
+                jacobian, fd.TensorFunctionSpace(new_mesh, "CG", 1)
+            )
+            jacobian_det = mesh_gen.get_jacobian_det()
+            jacobian_det = fd.project(
+                jacobian_det, fd.FunctionSpace(new_mesh, "CG", 1))
 
-                # Plot the solution on a optimal mesh
-                ax3 = fig.add_subplot(2, 3, 3, projection='3d')
-                ax3.set_title('FEM Solution on Optimal Mesh')
-                fd.trisurf(uh_new, axes=ax3)
+            # solve the equation on the new mesh
+            new_res = helmholtz_eq.discretise(new_mesh)
+            new_solver = wm.EquationSolver(params={
+                "function_space": new_res["function_space"],
+                "LHS": new_res["LHS"],
+                "RHS": new_res["RHS"],
+                "bc": new_res["bc"]
+            })
+            uh_new = new_solver.solve_eq()
 
-                # Plot the mesh
-                ax4 = fig.add_subplot(2, 3, 4)
-                ax4.set_title('Original Mesh')
-                fd.triplot(mesh, axes=ax4)
-                ax5 = fig.add_subplot(2, 3, 5)
-                ax5.set_title('Optimal Mesh')
-                fd.triplot(new_mesh, axes=ax5)
+            # process the data for training
+            mesh_processor = wm.MeshProcessor(
+                original_mesh=mesh, optimal_mesh=new_mesh,
+                function_space=new_res["function_space"],
+                use_4_edge=True,
+                feature={
+                    "uh": uh.dat.data_ro.reshape(-1, 1),
+                    "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(
+                        -1, 2),
+                    "hessian": hessian.dat.data_ro.reshape(
+                        -1, 4),
+                    "hessian_norm": hessian_norm.dat.data_ro.reshape(
+                        -1, 1),
+                    "jacobian": jacobian.dat.data_ro.reshape(
+                        -1, 4),
+                    "jacobian_det": jacobian_det.dat.data_ro.reshape(
+                        -1, 1),
+                },
+                raw_feature={
+                    "uh": uh,
+                    "hessian_norm": hessian_norm,
+                    "jacobian": jacobian,
+                    "jacobian_det": jacobian_det,
+                },
+                dist_params=dist_params,
+            )
 
-                # plot mesh with function evaluated on it
-                ax6 = fig.add_subplot(2, 3, 6)
-                ax6.set_title('Soultion Projected on optimal mesh')
-                fd.tripcolor(
-                    uh_new, cmap='coolwarm', axes=ax6)
-                fd.triplot(new_mesh, axes=ax6)
+            mesh_processor.save_taining_data(
+                os.path.join(problem_data_dir, "data_{}".format(i))
+            )
 
-                fig.savefig(
+            # ====  Plot Scripts ======================
+            fig = plt.figure(figsize=(15, 10))
+            ax1 = fig.add_subplot(2, 3, 1, projection='3d')
+            # Plot the exact solution
+            ax1.set_title('Exact Solution')
+            fd.trisurf(fd.interpolate(
+                res["u_exact"], res["function_space"]), axes=ax1)
+            # Plot the solved solution
+            ax2 = fig.add_subplot(2, 3, 2, projection='3d')
+            ax2.set_title('FEM Solution')
+            fd.trisurf(uh, axes=ax2)
+
+            # Plot the solution on a optimal mesh
+            ax3 = fig.add_subplot(2, 3, 3, projection='3d')
+            ax3.set_title('FEM Solution on Optimal Mesh')
+            fd.trisurf(uh_new, axes=ax3)
+
+            # Plot the mesh
+            ax4 = fig.add_subplot(2, 3, 4)
+            ax4.set_title('Original Mesh')
+            fd.triplot(mesh, axes=ax4)
+            ax5 = fig.add_subplot(2, 3, 5)
+            ax5.set_title('Optimal Mesh')
+            fd.triplot(new_mesh, axes=ax5)
+
+            # plot mesh with function evaluated on it
+            ax6 = fig.add_subplot(2, 3, 6)
+            ax6.set_title('Soultion Projected on optimal mesh')
+            fd.tripcolor(
+                uh_new, cmap='coolwarm', axes=ax6)
+            fd.triplot(new_mesh, axes=ax6)
+
+            fig.savefig(
+                os.path.join(
+                    problem_plot_dir, "plot_{}.png".format(i))
+            )
+
+            # ==========================================
+
+            # generate log file
+            high_res_mesh = fd.UnitSquareMesh(80, 80)
+            high_res_function_space = fd.FunctionSpace(
+                high_res_mesh, "CG", 1)
+
+            res_high_res = helmholtz_eq.discretise(high_res_mesh)
+            u_exact = res_high_res["u_exact"]
+
+            uh = fd.project(uh, high_res_function_space)
+            uh_new = fd.project(uh_new, high_res_function_space)
+
+            error_original_mesh = fd.errornorm(
+                u_exact, uh
+            )
+            error_optimal_mesh = fd.errornorm(
+                u_exact, uh_new
+            )
+
+            with open(
                     os.path.join(
-                        problem_plot_dir, "plot_{}.png".format(i))
+                        problem_log_dir, "log{}.txt".format(i)), "a"
+                    ) as f:
+                f.write(
+                    "error on original mesh: {}\nerror on optimal mesh: {}"
+                    .format(error_original_mesh, error_optimal_mesh)
                 )
-
-                # ==========================================
-
-                # generate log file
-                high_res_mesh = fd.UnitSquareMesh(80, 80)
-                high_res_function_space = fd.FunctionSpace(
-                    high_res_mesh, "CG", 1)
-
-                res_high_res = helmholtz_eq.discretise(high_res_mesh)
-                u_exact = res_high_res["u_exact"]
-
-                uh = fd.project(uh, high_res_function_space)
-                uh_new = fd.project(uh_new, high_res_function_space)
-
-                error_original_mesh = fd.errornorm(
-                    u_exact, uh
-                )
-                error_optimal_mesh = fd.errornorm(
-                    u_exact, uh_new
-                )
-
-                with open(
-                        os.path.join(
-                            problem_log_dir, "log{}.txt".format(i)), "a"
-                        ) as f:
-                    f.write(
-                        "error on original mesh: {}\nerror on optimal mesh: {}"
-                        .format(error_original_mesh, error_optimal_mesh)
-                    )
-                print("error og/optimal:",
-                      error_original_mesh, error_optimal_mesh)
-                i += 1
-            except fd.exceptions.ConvergenceError:
-                pass
+            print("error og/optimal:",
+                  error_original_mesh, error_optimal_mesh)
+            i += 1
+        except fd.exceptions.ConvergenceError:
+            pass
 
     move_data(problem_train_dir, problem_data_dir, 0, num_train)
 
