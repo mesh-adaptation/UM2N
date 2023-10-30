@@ -40,14 +40,13 @@ def get_inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
     """
     out_area = get_face_area(out_coord, face)
     in_area = get_face_area(in_coord, face)
-    # restore the sign of the area
-    out_area = torch.sign(in_area) * out_area
+    # restore the sign of the area, ans scale it
+    out_area = scaler * torch.sign(in_area) * out_area
     # mask for negative area
     neg_mask = out_area < 0
     neg_area = out_area[neg_mask]
-    # calculate the loss, we want it normalized by the batch size
-    # and loss should be positive, so we are using -1 here.
-    loss = scaler * (-1 * (neg_area.sum()) / batch_size)
+    # loss should be positive, so we are using -1 here.
+    loss = (-1 * (neg_area.sum()) / batch_size)
     return loss
 
 
@@ -117,6 +116,8 @@ def get_jacob_det(model, in_data):
 class TangleCounter(MessagePassing):
     """
     A PyTorch Geometric Message Passing class for counting tangles in the mesh.
+    This class is deprecated, do not use this option unless you know what you
+    are doing.
     """
     def __init__(self, num_feat=10, out=16):
         super().__init__(aggr='add')
@@ -164,6 +165,8 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
             mesh = data.x[:, :2]
             mesh_new = output_data
             # use message passing to count tangles
+            # deprecated, do not use this option unless you know what
+            # you are doing
             if method == "msg":
                 Counter = TangleCounter()
                 num_tangle += Counter(mesh, mesh_new, input_edge).item()
