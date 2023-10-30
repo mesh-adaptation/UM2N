@@ -235,7 +235,7 @@ def train(
         optimizer.step()
         total_loss += loss.item()
         total_deform_loss += deform_loss.item() 
-        total_inversion_loss += inversion_loss.item() if not use_inversion_loss else 0 # noqa
+        total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
     if (use_inversion_loss):
         return {
             "total_loss": total_loss / len(loader),
