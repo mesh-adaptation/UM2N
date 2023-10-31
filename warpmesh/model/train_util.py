@@ -5,7 +5,9 @@ import torch
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing
 __all__ = ['train', 'evaluate', 'load_model', 'TangleCounter',
-           'count_dataset_tangle', 'get_jacob_det']
+           'count_dataset_tangle', 'get_jacob_det',
+           'get_inversion_diff_loss', 'get_face_area',
+           'get_inversion_loss',]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
