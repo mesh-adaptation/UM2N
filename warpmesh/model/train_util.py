@@ -274,13 +274,14 @@ def train(
         total_loss += loss.item()
         total_deform_loss += deform_loss.item()
         total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
+    res = {
+        "total_loss": total_loss / len(loader),
+        "deform_loss": total_deform_loss / len(loader),
+    }
     if (use_inversion_loss):
-        return {
-            "total_loss": total_loss / len(loader),
-            "deform_loss": total_deform_loss / len(loader),
-            "inversion_loss": total_inversion_loss / len(loader)
-        }
-    return (total_loss / len(loader))
+        res["inversion_loss"] = total_inversion_loss / len(loader)
+
+    return res
 
 
 def evaluate(
@@ -330,13 +331,14 @@ def evaluate(
                 total_loss += loss.item()
                 total_deform_loss += deform_loss.item()
                 total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+    res = {
+        "total_loss": total_loss / len(loader),
+        "deform_loss": total_deform_loss / len(loader),
+    }
     if (use_inversion_loss):
-        return {
-            "total_loss": total_loss / len(loader),
-            "deform_loss": total_deform_loss / len(loader),
-            "inversion_loss": total_inversion_loss / len(loader)
-        }
-    return (total_loss / len(loader))
+        res["inversion_loss"] = total_inversion_loss / len(loader)
+
+    return res
 
 
 def load_model(model, weight_path):
