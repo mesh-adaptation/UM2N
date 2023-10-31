@@ -4,10 +4,12 @@
 import torch
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing
+
 __all__ = ['train', 'evaluate', 'load_model', 'TangleCounter',
            'count_dataset_tangle', 'get_jacob_det',
            'get_inversion_diff_loss', 'get_face_area',
-           'get_inversion_loss',]
+           'count_dataset_tangle', 'get_jacob_det', 'get_face_area',
+           'get_inversion_loss']
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -48,8 +50,10 @@ def get_inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
     # mask for negative area
     neg_mask = out_area < 0
     neg_area = out_area[neg_mask]
+    # print("neg_area.shape: ", neg_area.shape)
     # loss should be positive, so we are using -1 here.
     loss = (-1 * (neg_area.sum()) / batch_size)
+    # print("loss: ", loss.item())
     return loss
 
 
