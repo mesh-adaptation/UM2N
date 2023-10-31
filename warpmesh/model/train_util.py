@@ -159,7 +159,7 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
     model.eval()
     num_tangle = 0
     if (method == "inversion"):
-        loader = DataLoader(dataset=dataset, batch_size=10,
+        loader = DataLoader(dataset=dataset, batch_size=1,
                             shuffle=False)
         for data in loader:
             output_data = model(data.to(device))
