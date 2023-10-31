@@ -40,190 +40,9 @@
 </dd>
 </dl>
 </div></blockquote>
-<dl class="py class" id="module-generator">
-<dt class="sig sig-object py" id="generator.MeshGenerator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">generator.</span></span><span class="sig-name descname"><span class="pre">MeshGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'helmholtz_eq':</span> <span class="pre">None,</span> <span class="pre">'mesh':</span> <span class="pre">None,</span> <span class="pre">'num_grid_x':</span> <span class="pre">None,</span> <span class="pre">'num_grid_y':</span> <span class="pre">None}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator" title="Link to this definition">¶</a></dt>
-<dd><dl class="simple">
-<dt>Responsible for generating and moving a mesh based on a given Helmholtz</dt><dd><p>equation.</p>
-</dd>
-</dl>
-<p>This method is based on Pyroteus/movement.</p>
-<p>Attributes:
-- eq: The Helmholtz equation object.
-- num_grid_x: Number of grid points in the x-dimension.
-- num_grid_y: Number of grid points in the y-dimension.
-- mesh: The initial mesh.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.MeshGenerator.get_hessian">
-<span class="sig-name descname"><span class="pre">get_hessian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.get_hessian" title="Link to this definition">¶</a></dt>
-<dd><p>Computes and returns the Hessian of the Helmholtz equation on the
-given mesh.</p>
-<p>Parameters:
-- mesh: The mesh on which to compute the Hessian.</p>
-<p>Returns:
-- The Hessian as a projection in the function space.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.MeshGenerator.get_jacobian">
-<span class="sig-name descname"><span class="pre">get_jacobian</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.get_jacobian" title="Link to this definition">¶</a></dt>
-<dd><p>Returns the Jacobian of the mesh movement.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.MeshGenerator.get_jacobian_det">
-<span class="sig-name descname"><span class="pre">get_jacobian_det</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.get_jacobian_det" title="Link to this definition">¶</a></dt>
-<dd><p>Returns the determinant of the Jacobian of the mesh movement.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.MeshGenerator.get_monitor_val">
-<span class="sig-name descname"><span class="pre">get_monitor_val</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.get_monitor_val" title="Link to this definition">¶</a></dt>
-<dd><p>Returns the monitor function value used for mesh movement.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.MeshGenerator.monitor_func">
-<span class="sig-name descname"><span class="pre">monitor_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.monitor_func" title="Link to this definition">¶</a></dt>
-<dd><p>Computes the monitor function value based on the Hessian of the
-Helmholtz equation.</p>
-<p>Parameters:
-- mesh: The mesh on which to compute the monitor function.</p>
-<p>Returns:
-- The monitor function value.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.MeshGenerator.move_mesh">
-<span class="sig-name descname"><span class="pre">move_mesh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.MeshGenerator.move_mesh" title="Link to this definition">¶</a></dt>
-<dd><p>Moves the mesh using the Monge-Ampere equation.
-Computes and stores the Jacobian and its determinant.</p>
-<p>Returns:
-- The moved mesh</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">generator.</span></span><span class="sig-name descname"><span class="pre">RandomHelmholtzGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simple_u</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'max_dist':</span> <span class="pre">10,</span> <span class="pre">'n_dist':</span> <span class="pre">None,</span> <span class="pre">'w_max':</span> <span class="pre">0.2,</span> <span class="pre">'w_min':</span> <span class="pre">0.05,</span> <span class="pre">'x_end':</span> <span class="pre">1,</span> <span class="pre">'x_start':</span> <span class="pre">0,</span> <span class="pre">'y_end':</span> <span class="pre">1,</span> <span class="pre">'y_start':</span> <span class="pre">0,</span> <span class="pre">'z_max':</span> <span class="pre">1,</span> <span class="pre">'z_min':</span> <span class="pre">0}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.RandomHelmholtzGenerator" title="Link to this definition">¶</a></dt>
-<dd><p>Class for generating a random Helmholtz equation based on a
-Gaussian distribution.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.simple_u">
-<span class="sig-name descname"><span class="pre">simple_u</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.simple_u" title="Link to this definition">¶</a></dt>
-<dd><p>Flag for using simpler form of u.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.dist_params">
-<span class="sig-name descname"><span class="pre">dist_params</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.dist_params" title="Link to this definition">¶</a></dt>
-<dd><p>Parameters for Gaussian distribution.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.u_exact">
-<span class="sig-name descname"><span class="pre">u_exact</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.u_exact" title="Link to this definition">¶</a></dt>
-<dd><p>Analytical Helmholtz equation solution.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.f">
-<span class="sig-name descname"><span class="pre">f</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.f" title="Link to this definition">¶</a></dt>
-<dd><p>Simulated source function.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.function_space">
-<span class="sig-name descname"><span class="pre">function_space</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.function_space" title="Link to this definition">¶</a></dt>
-<dd><p>Function space for problem.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.LHS">
-<span class="sig-name descname"><span class="pre">LHS</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.LHS" title="Link to this definition">¶</a></dt>
-<dd><p>Left-hand side of Helmholtz equation.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.RHS">
-<span class="sig-name descname"><span class="pre">RHS</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.RHS" title="Link to this definition">¶</a></dt>
-<dd><p>Right-hand side of Helmholtz equation.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.bc">
-<span class="sig-name descname"><span class="pre">bc</span></span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.bc" title="Link to this definition">¶</a></dt>
-<dd><p>Dirichlet boundary condition.</p>
-</dd></dl>
-
-<p>Initialize RandomHelmholtzGenerator.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>simple_u</strong> (<em>bool</em>) – Use simpler form of u (isotripic dataset) if True.
-Default False.</p></li>
-<li><p><strong>dist_params</strong> (<em>dict</em>) – Parameters for Gaussian distribution.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.discretise">
-<span class="sig-name descname"><span class="pre">discretise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">firedrake.UnitSquareMesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.discretise" title="Link to this definition">¶</a></dt>
-<dd><p>Discretize source distribution on given mesh.
-Constructs LHS, RHS, and bc for Helmholtz equation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>mesh</strong> – Mesh to discretize distribution.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>Dictionary of mesh, function_space, u_exact,</dt><dd><p>LHS, RHS, bc, and f.</p>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.get_dist_params">
-<span class="sig-name descname"><span class="pre">get_dist_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.get_dist_params" title="Link to this definition">¶</a></dt>
-<dd><p>Return dictionary containing distribution parameters.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary of distribution parameters.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="generator.RandomHelmholtzGenerator.set_dist_params">
-<span class="sig-name descname"><span class="pre">set_dist_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#generator.RandomHelmholtzGenerator.set_dist_params" title="Link to this definition">¶</a></dt>
-<dd><p>Set parameters for Gaussian distribution from dist_params.</p>
-</dd></dl>
-
-</dd></dl>
-
 <dl class="py class" id="module-processor">
 <dt class="sig sig-object py" id="processor.MeshProcessor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">processor.</span></span><span class="sig-name descname"><span class="pre">MeshProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimal_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_4_edge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'grad_uh':</span> <span class="pre">None,</span> <span class="pre">'uh':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'hessian_norm':</span> <span class="pre">None,</span> <span class="pre">'uh':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'n_dist':</span> <span class="pre">None,</span> <span class="pre">'simple_u':</span> <span class="pre">None,</span> <span class="pre">'w':</span> <span class="pre">None,</span> <span class="pre">'z':</span> <span class="pre">None,</span> <span class="pre">'μ_x':</span> <span class="pre">None,</span> <span class="pre">'μ_y':</span> <span class="pre">None,</span> <span class="pre">'σ_x':</span> <span class="pre">None,</span> <span class="pre">'σ_y':</span> <span class="pre">None}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">processor.</span></span><span class="sig-name descname"><span class="pre">MeshProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">original_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimal_mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_4_edge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'grad_uh':</span> <span class="pre">None,</span> <span class="pre">'uh':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'hessian_norm':</span> <span class="pre">None,</span> <span class="pre">'uh':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'n_dist':</span> <span class="pre">None,</span> <span class="pre">'use_iso':</span> <span class="pre">None,</span> <span class="pre">'w':</span> <span class="pre">None,</span> <span class="pre">'z':</span> <span class="pre">None,</span> <span class="pre">'μ_x':</span> <span class="pre">None,</span> <span class="pre">'μ_y':</span> <span class="pre">None,</span> <span class="pre">'σ_x':</span> <span class="pre">None,</span> <span class="pre">'σ_y':</span> <span class="pre">None}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor" title="Link to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>MeshProcessor class for pre-processing mesh data, attaching features to</dt><dd><p>nodes,</p>
 </dd>
@@ -280,7 +99,7 @@ Constructs LHS, RHS, and bc for Helmholtz equation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="processor.MeshProcessor.get_conv_feat">
-<span class="sig-name descname"><span class="pre">get_conv_feat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor.get_conv_feat" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_conv_feat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fix_reso_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_reso_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#processor.MeshProcessor.get_conv_feat" title="Link to this definition">¶</a></dt>
 <dd><p>Generate features for convolution. This involves grid spacing and other
 related features.</p>
 </dd></dl>
@@ -632,12 +451,14 @@ and employs additive aggregation as the message-passing scheme.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="model.TangleCounter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">TangleCounter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.TangleCounter" title="Link to this definition">¶</a></dt>
-<dd><p>A PyTorch Geometric Message Passing class for counting tangles in the mesh.</p>
+<dd><p>A PyTorch Geometric Message Passing class for counting tangles in the mesh.
+This class is deprecated, do not use this option unless you know what you
+are doing.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="model.evaluate">
-<span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_jacob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.evaluate" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_jacob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_inversion_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.evaluate" title="Link to this definition">¶</a></dt>
 <dd><p>Evaluates a model using the given data loader and loss function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -680,7 +501,7 @@ and employs additive aggregation as the message-passing scheme.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="model.train">
-<span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_jacob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.train" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">model.</span></span><span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_jacob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_inversion_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#model.train" title="Link to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Trains a PyTorch model using the given data loader, optimizer,</dt><dd><p>and loss function.</p>
 </dd>
@@ -715,7 +536,7 @@ returned by the MeshDataset.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="loader.MeshDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">loader.</span></span><span class="sig-name descname"><span class="pre">MeshDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['coord',</span> <span class="pre">'bd_mask',</span> <span class="pre">'bd_left_mask',</span> <span class="pre">'bd_right_mask',</span> <span class="pre">'bd_down_mask',</span> <span class="pre">'bd_up_mask']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['coord',</span> <span class="pre">'u']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conv_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['conv_uh']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_analytical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_jacobian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshDataset" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">loader.</span></span><span class="sig-name descname"><span class="pre">MeshDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['coord',</span> <span class="pre">'bd_mask',</span> <span class="pre">'bd_left_mask',</span> <span class="pre">'bd_right_mask',</span> <span class="pre">'bd_down_mask',</span> <span class="pre">'bd_up_mask']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['coord',</span> <span class="pre">'u']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conv_feature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['conv_uh']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conv_feature_fix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['conv_uh_fix']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_analytical</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_jacobian</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshDataset" title="Link to this definition">¶</a></dt>
 <dd><p>Dataset for mesh-based data.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="loader.MeshDataset.x_feature">
@@ -764,6 +585,23 @@ returned by the MeshDataset.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="loader.MeshDataset.get_conv_feature">
 <span class="sig-name descname"><span class="pre">get_conv_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshDataset.get_conv_feature" title="Link to this definition">¶</a></dt>
+<dd><p>Extracts and concatenates the conv_features from the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>dict</em>) – The data dictionary loaded from a .npy file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The concatenated conv_features.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="loader.MeshDataset.get_conv_feature_fix">
+<span class="sig-name descname"><span class="pre">get_conv_feature_fix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#loader.MeshDataset.get_conv_feature_fix" title="Link to this definition">¶</a></dt>
 <dd><p>Extracts and concatenates the conv_features from the data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
