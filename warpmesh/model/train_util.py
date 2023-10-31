@@ -2,6 +2,7 @@
 # GitHub Username: acse-cw1722
 
 import torch
+from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing
 __all__ = ['train', 'evaluate', 'load_model', 'TangleCounter',
            'count_dataset_tangle', 'get_jacob_det']
@@ -157,33 +158,36 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
     """
     model.eval()
     num_tangle = 0
-    for i in range(len(dataset)):
-        data = dataset[i].to(device)
-        with torch.no_grad():
-            output_data = model(data)
-            input_edge = data.edge_index
-            mesh = data.x[:, :2]
-            mesh_new = output_data
-            # use message passing to count tangles
-            # deprecated, do not use this option unless you know what
-            # you are doing
-            if method == "msg":
+    if (method == "inversion"):
+        loader = DataLoader(dataset=dataset, batch_size=10,
+                            shuffle=False)
+        for data in loader:
+            output_data = model(data.to(device))
+            out_area = get_face_area(output_data, data.face)
+            in_area = get_face_area(data.x[:, :2], data.face)
+            # restore the sign of the area
+            out_area = torch.sign(in_area) * out_area
+            # mask for negative area
+            neg_mask = out_area < 0
+            neg_area = out_area[neg_mask]
+            # calculate the loss, we want it normalized by the batch size
+            # and loss should be positive, so we are using -1 here.
+            num_tangle += len(neg_area)
+        return num_tangle / len(dataset)
+
+    # deprecated, do not use this option unless you know what you are doing
+    elif (method == "msg"):
+        for i in range(len(dataset)):
+            data = dataset[i].to(device)
+            with torch.no_grad():
+                output_data = model(data)
+                input_edge = data.edge_index
+                mesh = data.x[:, :2]
+                mesh_new = output_data
                 Counter = TangleCounter()
                 num_tangle += Counter(mesh, mesh_new, input_edge).item()
-            # use invserion element to count tangles
-            elif method == "inversion":
-                out_area = get_face_area(output_data, data.face)
-                in_area = get_face_area(data.x[:, :2], data.face)
-                # restore the sign of the area
-                out_area = torch.sign(in_area) * out_area
-                # mask for negative area
-                neg_mask = out_area < 0
-                neg_area = out_area[neg_mask]
-                # calculate the loss, we want it normalized by the batch size
-                # and loss should be positive, so we are using -1 here.
-                num_tangle += len(neg_area)
-    num_tangle = num_tangle / len(dataset)
-    return num_tangle
+        num_tangle = num_tangle / len(dataset)
+        return num_tangle
 
 
 def train(
@@ -234,7 +238,7 @@ def train(
 
         optimizer.step()
         total_loss += loss.item()
-        total_deform_loss += deform_loss.item() 
+        total_deform_loss += deform_loss.item()
         total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
     if (use_inversion_loss):
         return {
