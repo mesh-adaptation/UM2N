@@ -51,6 +51,34 @@ def get_inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
     return loss
 
 
+def get_inversion_diff_loss(out_coord, tar_coord, face,
+                            batch_size, scaler=100):
+    """
+    Calculates the inversion difference loss for a batch of meshes.
+    That is the difference between the output area and the input area,
+    in terms of the invereted elements.
+    Args:
+        out_coord (torch.Tensor): The output coordinates.
+        in_coord (torch.Tensor): The input coordinates.
+        face (torch.Tensor): The face tensor.
+        batch_size (int): The batch size.
+        alpha (float): The loss weight.
+    """
+    out_area = get_face_area(out_coord, face)
+    tar_area = get_face_area(tar_coord, face)
+    # restore the sign of the area, ans scale it
+    out_area = scaler * torch.sign(tar_area) * out_area
+    tar_area = scaler * torch.sign(tar_area) * tar_area
+    # mask for negative area
+    neg_mask = out_area < 0
+    inversion_diff = (
+        tar_area[neg_mask] - out_area[neg_mask]
+    )
+    # loss should be positive, so we are using -1 here.
+    loss = (inversion_diff.sum() / batch_size)
+    return loss
+
+
 def jacobLoss(model, out, data, loss_func):
     jacob_det = get_jacob_det(model, data)
     u_loss = loss_func(out, data.y)
