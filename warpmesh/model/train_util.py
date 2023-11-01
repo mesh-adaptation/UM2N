@@ -103,8 +103,8 @@ def get_inversion_node_loss(out_coord, tar_coord, face, batch_size,
     out_area = get_face_area(out_coord, face)
     tar_area = get_face_area(tar_coord, face)
     # restore the sign of the area, ans scale it
-    out_area = scaler * torch.sign(tar_area) * out_area
-    tar_area = scaler * torch.sign(tar_area) * tar_area
+    out_area = torch.sign(tar_area) * out_area
+    tar_area = torch.sign(tar_area) * tar_area
     # mask for negative area
     neg_mask = out_area < 0
     neg_face = face[:, neg_mask]
@@ -112,10 +112,15 @@ def get_inversion_node_loss(out_coord, tar_coord, face, batch_size,
     inv_nodes = out_coord[neg_face]
     tar_nodes = tar_coord[neg_face]
 
-    inversion_diff = scaler * loss(inv_nodes, tar_nodes)
+    node_diff = scaler * loss(inv_nodes, tar_nodes)
 
-    loss = inversion_diff / batch_size
-    return loss
+    loss = (node_diff / batch_size)
+    zero = torch.tensor(
+        0.0, device=out_coord.device,
+        dtype=out_coord.dtype,
+        requires_grad=True)
+
+    return loss if len(inv_nodes) > 0 else zero
 
 
 def get_area_loss(out_coord, tar_coord, face, batch_size, scaler=100):
