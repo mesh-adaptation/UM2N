@@ -330,7 +330,7 @@ def train(
             inversion_loss = get_inversion_diff_loss(
                 out, data.y, data.face, bs, scaler)
         if use_area_loss:
-            inversion_loss = get_area_loss(
+            area_loss = get_area_loss(
                 out, data.y, data.face, bs, scaler)
 
         loss = (
@@ -415,7 +415,7 @@ def evaluate(
                 inversion_diff_loss = get_inversion_diff_loss(
                     out, data.y, data.face, bs, scaler)
             if use_area_loss:
-                inversion_loss = get_area_loss(
+                area_loss = get_area_loss(
                     out, data.y, data.face, bs, scaler)
 
             loss = inversion_loss + deform_loss
