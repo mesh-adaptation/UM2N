@@ -283,6 +283,7 @@ def train(
         use_jacob=False,
         use_inversion_loss=False,
         use_inversion_diff_loss=False,
+        use_area_loss=False,
         scaler=100):
     """
     Trains a PyTorch model using the given data loader, optimizer,
@@ -305,6 +306,7 @@ def train(
     total_deform_loss = 0
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
+    total_area_loss = 0
     for batch in loader:
         optimizer.zero_grad()
         data = batch.to(device)
@@ -313,6 +315,7 @@ def train(
         inversion_loss = 0
         deform_loss = 0
         inversion_diff_loss = 0
+        area_loss = 0
         # deformation loss
         deform_loss = 1000*(
             loss_func(out, data.y) if not use_jacob else
@@ -326,8 +329,16 @@ def train(
         if use_inversion_loss:
             inversion_loss = get_inversion_diff_loss(
                 out, data.y, data.face, bs, scaler)
+        if use_area_loss:
+            inversion_loss = get_area_loss(
+                out, data.y, data.face, bs, scaler)
 
-        loss = inversion_loss + deform_loss + inversion_diff_loss
+        loss = (
+            deform_loss +
+            inversion_loss +
+            inversion_diff_loss +
+            area_loss
+        )
         # Jacobian loss
         if use_jacob:
             loss.backward(retain_graph=True)
@@ -339,6 +350,7 @@ def train(
         total_deform_loss += deform_loss.item()
         total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
         total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
+        total_area_loss += area_loss.item() if use_area_loss else 0
 
     res = {
         "total_loss": total_loss / len(loader),
@@ -348,6 +360,8 @@ def train(
         res["inversion_loss"] = total_inversion_loss / len(loader)
     if (use_inversion_diff_loss):
         res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
+    if (use_area_loss):
+        res["area_loss"] = total_area_loss / len(loader)
 
     return res
 
@@ -357,6 +371,7 @@ def evaluate(
         use_jacob=False,
         use_inversion_loss=False,
         use_inversion_diff_loss=False,
+        use_area_loss=False,
         scaler=100):
     """
     Evaluates a model using the given data loader and loss function.
@@ -377,37 +392,38 @@ def evaluate(
     total_deform_loss = 0
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
+    total_area_loss = 0
     for batch in loader:
         data = batch.to(device)
         loss = 0
         deform_loss = 0
         inversion_loss = 0
         inversion_diff_loss = 0
-        if use_jacob:
+        area_loss = 0
+
+        with torch.no_grad():
             out = model(data)
-            loss = 1000*(
+            deform_loss = 1000*(
                 loss_func(out, data.y) if not use_jacob else
                 jacobLoss(model, out, data, loss_func)
             )
-        else:
-            with torch.no_grad():
-                out = model(data)
-                deform_loss = 1000*(
-                    loss_func(out, data.y) if not use_jacob else
-                    jacobLoss(model, out, data, loss_func)
-                )
-                inversion_loss = 0
-                if use_inversion_loss:
-                    inversion_loss = get_inversion_loss(
-                        out, data.x[:, :2], data.face, bs, scaler)
-                if use_inversion_diff_loss:
-                    inversion_diff_loss = get_inversion_diff_loss(
-                        out, data.y, data.face, bs, scaler)
-                loss = inversion_loss + deform_loss
-                total_loss += loss.item()
-                total_deform_loss += deform_loss.item()
-                total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
-                total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+            inversion_loss = 0
+            if use_inversion_loss:
+                inversion_loss = get_inversion_loss(
+                    out, data.x[:, :2], data.face, bs, scaler)
+            if use_inversion_diff_loss:
+                inversion_diff_loss = get_inversion_diff_loss(
+                    out, data.y, data.face, bs, scaler)
+            if use_area_loss:
+                inversion_loss = get_area_loss(
+                    out, data.y, data.face, bs, scaler)
+
+            loss = inversion_loss + deform_loss
+            total_loss += loss.item()
+            total_deform_loss += deform_loss.item()
+            total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
+            total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+            total_area_loss += area_loss.item() if use_area_loss else 0
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
@@ -416,6 +432,8 @@ def evaluate(
         res["inversion_loss"] = total_inversion_loss / len(loader)
     if (use_inversion_diff_loss):
         res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
+    if (use_area_loss):
+        res["area_loss"] = total_area_loss / len(loader)
     return res
 
 
