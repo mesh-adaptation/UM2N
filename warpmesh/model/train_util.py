@@ -34,7 +34,10 @@ def get_face_area(coord, face):
     return area
 
 
-def get_inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
+def get_inversion_loss(out_coord, in_coord, face,
+                       batch_size,
+                       scheme="hard",
+                       scaler=100):
     """
     Calculates the inversion loss for a batch of meshes.
     Args:
@@ -44,18 +47,31 @@ def get_inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
         batch_size (int): The batch size.
         alpha (float): The loss weight.
     """
+    loss = None
     out_area = get_face_area(out_coord, face)
     in_area = get_face_area(in_coord, face)
     # restore the sign of the area, ans scale it
-    out_area = scaler * torch.sign(in_area) * out_area
-    # mask for negative area
-    neg_mask = out_area < 0
-    neg_area = out_area[neg_mask]
-    # print("neg_area.shape: ", neg_area.shape)
-    # loss should be positive, so we are using -1 here.
-    loss = (-1 * (neg_area.sum()) / batch_size)
-    # print("loss: ", loss.item())
-    return loss
+    out_area = torch.sign(in_area) * out_area
+    # hard penalty, use hard condition to penalize the negative area
+    if (scheme == "hard"):
+        # mask for negative area
+        neg_mask = out_area < 0
+        neg_area = out_area[neg_mask]
+        tar_area = in_area[neg_mask]
+        # loss should be positive, so we are using -1 here.
+        loss = (-1 * ((neg_area / torch.abs(tar_area)).sum()) / batch_size)
+    # soft penalty, peanlize the negative area harder than the positive area
+    elif (scheme == "relu"):
+        loss = (torch.nn.ReLU()(
+            -1 * (out_area / torch.abs(in_area))
+            ).sum() / batch_size)
+    elif (scheme == "log"):
+        epsilon = 1e-8
+        loss = (
+            -1 * torch.log(
+                -1 * (out_area / torch.abs(in_area))).sum() + epsilon
+            ) / batch_size
+    return scaler * loss
 
 
 def get_inversion_diff_loss(out_coord, tar_coord, face,
