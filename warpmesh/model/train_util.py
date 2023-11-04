@@ -340,11 +340,8 @@ def train(
         # Inversion loss
         if use_inversion_loss:
             inversion_loss = get_inversion_loss(
-                out, data.x[:, :2], data.face, bs, scaler)
-        # Inversion difference loss
-        if use_inversion_loss:
-            inversion_loss = get_inversion_diff_loss(
-                out, data.y, data.face, bs, scaler)
+                out, data.y, data.face,
+                batch_size=bs, scaler=scaler)
         if use_area_loss:
             area_loss = get_area_loss(
                 out, data.y, data.face, bs, scaler)
@@ -426,10 +423,8 @@ def evaluate(
             inversion_loss = 0
             if use_inversion_loss:
                 inversion_loss = get_inversion_loss(
-                    out, data.x[:, :2], data.face, bs, scaler)
-            if use_inversion_diff_loss:
-                inversion_diff_loss = get_inversion_diff_loss(
-                    out, data.y, data.face, bs, scaler)
+                    out, data.y, data.face,
+                    batch_size=bs, scaler=scaler)
             if use_area_loss:
                 area_loss = get_area_loss(
                     out, data.y, data.face, bs, scaler)
