@@ -36,7 +36,7 @@ def get_face_area(coord, face):
 
 def get_inversion_loss(out_coord, in_coord, face,
                        batch_size,
-                       scheme="hard",
+                       scheme="relu",
                        scaler=100):
     """
     Calculates the inversion loss for a batch of meshes.
