@@ -198,7 +198,7 @@ class MeshDataset(Dataset):
             conv_feat_fix=self.get_conv_feature_fix(data),
             mesh_feat=self.get_mesh_feature(data),
             edge_index=torch.from_numpy(
-                data.item().get('edge_index')).to(torch.int64),
+                data.item().get('edge_index_bi')).to(torch.int64),
             y=torch.from_numpy(data.item().get('y')).float(),
             face=torch.from_numpy(
                 data.item().get('face_idxs')).to(torch.long).T if data.item().get('face_idxs') is not None else None,  # noqa: E501
