@@ -7,7 +7,7 @@ import os
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torch_geometric.data import Data
-from ..model import get_new_edges
+from .cluster_utils import get_new_edges
 # from torch_geometric.loader import DataLoader as geoDataLoader
 
 __all__ = [
