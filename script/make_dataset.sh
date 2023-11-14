@@ -23,8 +23,8 @@ n_samples=100
 # for test set, generating small samples
 rand_seed=42
 
-n_grid_start=15
-n_grid_end=35
+n_grid_start=33
+n_grid_end=34
 
 stride=1
 

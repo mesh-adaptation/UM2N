@@ -3,7 +3,7 @@ from torch_geometric.utils import (
     mask_to_index, index_to_mask
 )
 
-__all__ = ['sampler', 'get_neighbors', 'calc_dist']
+__all__ = ['sampler', 'get_neighbors', 'calc_dist', 'get_new_edges']
 
 
 # vectorize version
@@ -80,6 +80,25 @@ def sampler(data, node_idx, r=0.25, N=100):
     return cluster
 
 
+def get_new_edges(data, r=0.25):
+    """
+    Get the new edges for the graph
+    Args:
+        data: the data object
+        r: the radius of the cluster
+    """
+    new_edges = []
+    num_nodes = data.num_nodes
+    for i in range(num_nodes):
+        mask = sampler(data, i, r=r)
+        cluster_idx = mask_to_index(mask)
+        source_idx = torch.ones(cluster_idx.shape[0], dtype=torch.long) * i
+        new_edge = torch.stack([source_idx, cluster_idx], dim=0)
+        new_edges.append(new_edge)
+    new_edges = torch.cat(new_edges, dim=1)
+    return new_edges
+
+
 def get_neighbors_v0(data, source_mask, edge_idx):
     """
     Get the neighbors of the source nodes
@@ -98,8 +117,8 @@ def get_neighbors_v0(data, source_mask, edge_idx):
         nei_nodes = edge_idx[1][edge_idx[0] == idx]
         nei_mask_i = index_to_mask(nei_nodes, node_num)
         nei_mask = nei_mask | nei_mask_i
-    
+
     # substract the source nodes
     nei_mask = nei_mask & ~source_mask
-    
+
     print(mask_to_index(nei_mask))
