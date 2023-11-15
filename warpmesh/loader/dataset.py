@@ -4,10 +4,13 @@
 import torch
 import glob
 import os
+import sys
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torch_geometric.data import Data
-from .cluster_utils import get_new_edges
+cur_dir = os.path.dirname(__file__)
+sys.path.append(cur_dir)
+from cluster_utils import get_new_edges  # noqa
 # from torch_geometric.loader import DataLoader as geoDataLoader
 
 __all__ = [
@@ -235,7 +238,8 @@ class MeshDataset(Dataset):
         if self.transform:
             train_data = self.transform(train_data)
         if self.use_cluster:
-            train_data.edge_index = get_new_edges(train_data, r=self.r)
+            # train_data.edge_index = get_new_edges(train_data, r=self.r)
+            train_data.edge_index = data.item().get('cluster_edges')
         return train_data
 
 

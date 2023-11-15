@@ -7,6 +7,7 @@ data/dataset/*
 data/helmholtz*
 data/output/*
 data/temp/*
+data/z*
 
 install/movement/*
 install/firedrake/*

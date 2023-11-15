@@ -169,6 +169,7 @@ class MeshProcessor():
             "jacobian_det": self.feature["jacobian_det"],
             "edge_index": self.edge_T,
             "edge_index_bi": self.edge_bi_T,
+            "cluster_edges": None, # this will be added if we use data_transform.py to add cluster edges  # noqa
             "y": self.y,
             "pos": self.coordinates,
             "scale": scale,
@@ -231,25 +232,7 @@ class MeshProcessor():
 
         self.edge_T = self.single_edges.T.numpy()
         self.edge_bi_T = self.edge_bi.T.numpy()
-        # exit(0)
         return self.edge_bi_T
-        # edges = []
-        # cell_node_list = self.cell_node_list.T
-        # cell_node_list = np.concatenate(
-        #     [cell_node_list, cell_node_list[0:1, :]])
-        # for i in range(self.num_nodes):
-        #     edges_temp = np.concatenate(
-        #         [cell_node_list[i:i+1, :], cell_node_list[i+1:i+2, :]],
-        #         axis=0
-        #     ).T
-        #     edges.append(edges_temp)
-        # edges = np.concatenate(edges, axis=0)
-        # edges = np.unique(edges, axis=0)  # make it pytorch-geo friendly
-        # edges_reverse = edges[:, [1, 0]]
-        # edges_bi = np.concatenate([edges, edges_reverse], axis=0)
-        # self.edge_T = edges.T
-        # self.edge_bi_T = edges_bi.T
-        # return self.edge_bi_T
 
     def find_bd(self):
         """

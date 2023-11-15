@@ -46,21 +46,18 @@ def calc_dist(coords, node_idx, neighbors_mask):
     return dist
 
 
-def sampler(data, node_idx, r=0.25, N=100):
+def sampler(num_nodes, coords, edge_idx, node_idx, r=0.25, N=100):
     """
     For a single node, sample N neighbours within radius r.
     return the indices of the neighbours
     """
-    num_nodes = data.num_nodes
-    coords = data.x[:, 0:2]
-    edge_idx = data.edge_index
     cluster = torch.zeros(
         num_nodes, dtype=torch.bool)
     source_nodes_mask = index_to_mask(
         torch.tensor([node_idx]), num_nodes)
     while True:
         neighbors_mask = get_neighbors(
-            index_to_mask(source_nodes_mask, data.num_nodes),
+            index_to_mask(source_nodes_mask, num_nodes),
             edge_idx)
         neighbors_mask = neighbors_mask & ~cluster
         neighbors_idx = mask_to_index(neighbors_mask)
@@ -80,7 +77,7 @@ def sampler(data, node_idx, r=0.25, N=100):
     return cluster
 
 
-def get_new_edges(data, r=0.25):
+def get_new_edges(num_nodes, coords, edge_idx, r=0.25):
     """
     Get the new edges for the graph
     Args:
@@ -88,9 +85,8 @@ def get_new_edges(data, r=0.25):
         r: the radius of the cluster
     """
     new_edges = []
-    num_nodes = data.num_nodes
     for i in range(num_nodes):
-        mask = sampler(data, i, r=r)
+        mask = sampler(num_nodes, coords, edge_idx, i, r=r)
         cluster_idx = mask_to_index(mask)
         source_idx = torch.ones(cluster_idx.shape[0], dtype=torch.long) * i
         new_edge = torch.stack([source_idx, cluster_idx], dim=0)
