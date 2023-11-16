@@ -266,19 +266,18 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
         loader = DataLoader(dataset=dataset, batch_size=1,
                             shuffle=False)
         for data in loader:
-            output_data = None
             with torch.no_grad():
                 output_data = model(data.to(device))
-            out_area = get_face_area(output_data, data.face)
-            in_area = get_face_area(data.x[:, :2], data.face)
-            # restore the sign of the area
-            out_area = torch.sign(in_area) * out_area
-            # mask for negative area
-            neg_mask = out_area < 0
-            neg_area = out_area[neg_mask]
-            # calculate the loss, we want it normalized by the batch size
-            # and loss should be positive, so we are using -1 here.
-            num_tangle += len(neg_area)
+                out_area = get_face_area(output_data, data.face)
+                in_area = get_face_area(data.x[:, :2], data.face)
+                # restore the sign of the area
+                out_area = torch.sign(in_area) * out_area
+                # mask for negative area
+                neg_mask = out_area < 0
+                neg_area = out_area[neg_mask]
+                # calculate the loss, we want it normalized by the batch size
+                # and loss should be positive, so we are using -1 here.
+                num_tangle += len(neg_area)
         return num_tangle / len(dataset)
 
     # deprecated, do not use this option unless you know what you are doing
