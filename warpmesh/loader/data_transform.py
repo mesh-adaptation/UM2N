@@ -9,10 +9,6 @@
 #    1. Iterate through all the files in a directory, 'train', 'test' and 'val'
 #    2. For each file, we need to read the file, and add extra edges
 
-# cluster_edges
-
-# '/Users/cw1722/Documents/warpmesh/data/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full'
-
 import os
 import sys
 import glob
@@ -73,12 +69,15 @@ def add_edges(file_path, r):
 def process_subset(file_path, r):
     file_pattern = os.path.join(file_path, 'data_*.npy')
     files = glob.glob(file_pattern)
+    # print("files: ", files)
+    print(f"processing {len(files)} files in{file_path}")
     for file in files:
         add_edges(file, r)
-    pass
+    return
 
 
 if __name__ == "__main__":
+    print("Processing the dataset...")
     # define all the subdirectories
     all_folders = [
         'data', 'test', 'train', 'val'
@@ -91,6 +90,7 @@ if __name__ == "__main__":
     subsets_path = [
         os.path.join(dataset_root, folder) for folder in all_folders
     ]
+    # print("subsets_path: ", subsets_path)
     # iterate through all the subsets
     for i in range(len(subsets_path)):
         process_subset(subsets_path[i], r)

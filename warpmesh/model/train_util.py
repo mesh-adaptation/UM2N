@@ -266,7 +266,9 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
         loader = DataLoader(dataset=dataset, batch_size=1,
                             shuffle=False)
         for data in loader:
-            output_data = model(data.to(device))
+            output_data = None
+            with torch.no_grad():
+                output_data = model(data.to(device))
             out_area = get_face_area(output_data, data.face)
             in_area = get_face_area(data.x[:, :2], data.face)
             # restore the sign of the area
