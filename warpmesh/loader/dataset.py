@@ -4,9 +4,13 @@
 import torch
 import glob
 import os
+import sys
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torch_geometric.data import Data
+cur_dir = os.path.dirname(__file__)
+sys.path.append(cur_dir)
+from cluster_utils import get_new_edges  # noqa
 # from torch_geometric.loader import DataLoader as geoDataLoader
 
 __all__ = [
@@ -77,6 +81,8 @@ class MeshDataset(Dataset):
             ],
             load_analytical=False,
             load_jacobian=False,
+            use_cluster=False,
+            r=0.25,
             ):
         # x feature contains the coordiate related features
         self.x_feature = x_feature
@@ -96,6 +102,10 @@ class MeshDataset(Dataset):
         self.load_analytical = load_analytical
         # if True, load the jacobian and jacobian det
         self.load_jacobian = load_jacobian
+        # if True, use the cluster to sample the neighbors
+        self.use_cluster = use_cluster
+        # the radius of the cluster
+        self.r = r
 
     def get_x_feature(self, data):
         """
@@ -198,7 +208,7 @@ class MeshDataset(Dataset):
             conv_feat_fix=self.get_conv_feature_fix(data),
             mesh_feat=self.get_mesh_feature(data),
             edge_index=torch.from_numpy(
-                data.item().get('edge_index')).to(torch.int64),
+                data.item().get('edge_index_bi')).to(torch.int64),
             y=torch.from_numpy(data.item().get('y')).float(),
             face=torch.from_numpy(
                 data.item().get('face_idxs')).to(torch.long).T if data.item().get('face_idxs') is not None else None,  # noqa: E501
@@ -227,6 +237,9 @@ class MeshDataset(Dataset):
 
         if self.transform:
             train_data = self.transform(train_data)
+        if self.use_cluster:
+            # train_data.edge_index = get_new_edges(train_data, r=self.r)
+            train_data.edge_index = data.item().get('cluster_edges')
         return train_data
 
 

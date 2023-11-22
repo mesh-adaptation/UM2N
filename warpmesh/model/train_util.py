@@ -9,7 +9,8 @@ __all__ = ['train', 'evaluate', 'load_model', 'TangleCounter',
            'count_dataset_tangle', 'get_jacob_det',
            'get_inversion_diff_loss', 'get_face_area',
            'count_dataset_tangle', 'get_jacob_det', 'get_face_area',
-           'get_inversion_loss']
+           'get_inversion_loss', 'get_inversion_node_loss',
+           'get_area_loss']
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -33,7 +34,10 @@ def get_face_area(coord, face):
     return area
 
 
-def get_inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
+def get_inversion_loss(out_coord, in_coord, face,
+                       batch_size,
+                       scheme="relu",
+                       scaler=100):
     """
     Calculates the inversion loss for a batch of meshes.
     Args:
@@ -43,18 +47,31 @@ def get_inversion_loss(out_coord, in_coord, face, batch_size, scaler=100):
         batch_size (int): The batch size.
         alpha (float): The loss weight.
     """
+    loss = None
     out_area = get_face_area(out_coord, face)
     in_area = get_face_area(in_coord, face)
     # restore the sign of the area, ans scale it
-    out_area = scaler * torch.sign(in_area) * out_area
-    # mask for negative area
-    neg_mask = out_area < 0
-    neg_area = out_area[neg_mask]
-    # print("neg_area.shape: ", neg_area.shape)
-    # loss should be positive, so we are using -1 here.
-    loss = (-1 * (neg_area.sum()) / batch_size)
-    # print("loss: ", loss.item())
-    return loss
+    out_area = torch.sign(in_area) * out_area
+    # hard penalty, use hard condition to penalize the negative area
+    if (scheme == "hard"):
+        # mask for negative area
+        neg_mask = out_area < 0
+        neg_area = out_area[neg_mask]
+        tar_area = in_area[neg_mask]
+        # loss should be positive, so we are using -1 here.
+        loss = (-1 * ((neg_area / torch.abs(tar_area)).sum()) / batch_size)
+    # soft penalty, peanlize the negative area harder than the positive area
+    elif (scheme == "relu"):
+        loss = (torch.nn.ReLU()(
+            -1 * (out_area / torch.abs(in_area))
+            ).sum() / batch_size)
+    elif (scheme == "log"):
+        epsilon = 1e-8
+        loss = (
+            -1 * torch.log(
+                -1 * (out_area / torch.abs(in_area))).sum() + epsilon
+            ) / batch_size
+    return scaler * loss
 
 
 def get_inversion_diff_loss(out_coord, tar_coord, face,
@@ -65,7 +82,7 @@ def get_inversion_diff_loss(out_coord, tar_coord, face,
     in terms of the invereted elements.
     Args:
         out_coord (torch.Tensor): The output coordinates.
-        in_coord (torch.Tensor): The input coordinates.
+        tar_coord (torch.Tensor): The target coordinates.
         face (torch.Tensor): The face tensor.
         batch_size (int): The batch size.
         alpha (float): The loss weight.
@@ -82,6 +99,59 @@ def get_inversion_diff_loss(out_coord, tar_coord, face,
     )
     # loss should be positive, so we are using -1 here.
     loss = (inversion_diff.sum() / batch_size)
+    return loss
+
+
+def get_inversion_node_loss(out_coord, tar_coord, face, batch_size,
+                            scaler=1000):
+    """
+    Calculates the loss between the ouput node and input node, for the inverted
+    elements. This will penalise the node which are involved in the tangled
+    elements.
+    Args:
+        out_coord (torch.Tensor): The output coordinates.
+        tar_coord (torch.Tensor): The target coordinates.
+        face (torch.Tensor): The face tensor.
+        batch_size (int): The batch size.
+        alpha (float): The loss weight.
+    """
+    loss = torch.nn.L1Loss()
+    out_area = get_face_area(out_coord, face)
+    tar_area = get_face_area(tar_coord, face)
+    # restore the sign of the area, ans scale it
+    out_area = torch.sign(tar_area) * out_area
+    tar_area = torch.sign(tar_area) * tar_area
+    # mask for negative area
+    neg_mask = out_area < 0
+    neg_face = face[:, neg_mask]
+    neg_face = neg_face.reshape(-1)
+    inv_nodes = out_coord[neg_face]
+    tar_nodes = tar_coord[neg_face]
+
+    node_diff = scaler * loss(inv_nodes, tar_nodes)
+
+    loss = (node_diff / batch_size)
+    zero = torch.tensor(
+        0.0, device=out_coord.device,
+        dtype=out_coord.dtype,
+        requires_grad=True)
+
+    return loss if len(inv_nodes) > 0 else zero
+
+
+def get_area_loss(out_coord, tar_coord, face, batch_size, scaler=100):
+    out_area = get_face_area(out_coord, face)
+    tar_area = get_face_area(tar_coord, face)
+    # restore the sign of the area, ans scale it
+    out_area = scaler * torch.sign(tar_area) * out_area
+    tar_area = scaler * torch.sign(tar_area) * tar_area
+    # mask for negative area
+    area_diff = torch.abs(
+        tar_area - out_area
+    )
+    # area_diff = tar_area - out_area + 100
+    # loss should be positive, so we are using -1 here.
+    loss = ((area_diff.sum()) / batch_size)
     return loss
 
 
@@ -196,17 +266,18 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
         loader = DataLoader(dataset=dataset, batch_size=1,
                             shuffle=False)
         for data in loader:
-            output_data = model(data.to(device))
-            out_area = get_face_area(output_data, data.face)
-            in_area = get_face_area(data.x[:, :2], data.face)
-            # restore the sign of the area
-            out_area = torch.sign(in_area) * out_area
-            # mask for negative area
-            neg_mask = out_area < 0
-            neg_area = out_area[neg_mask]
-            # calculate the loss, we want it normalized by the batch size
-            # and loss should be positive, so we are using -1 here.
-            num_tangle += len(neg_area)
+            with torch.no_grad():
+                output_data = model(data.to(device))
+                out_area = get_face_area(output_data, data.face)
+                in_area = get_face_area(data.x[:, :2], data.face)
+                # restore the sign of the area
+                out_area = torch.sign(in_area) * out_area
+                # mask for negative area
+                neg_mask = out_area < 0
+                neg_area = out_area[neg_mask]
+                # calculate the loss, we want it normalized by the batch size
+                # and loss should be positive, so we are using -1 here.
+                num_tangle += len(neg_area)
         return num_tangle / len(dataset)
 
     # deprecated, do not use this option unless you know what you are doing
@@ -226,7 +297,11 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
 
 def train(
         loader, model, optimizer, device, loss_func,
-        use_jacob=False, use_inversion_loss=False, scaler=100):
+        use_jacob=False,
+        use_inversion_loss=False,
+        use_inversion_diff_loss=False,
+        use_area_loss=False,
+        scaler=100):
     """
     Trains a PyTorch model using the given data loader, optimizer,
         and loss function.
@@ -247,6 +322,8 @@ def train(
     total_loss = 0
     total_deform_loss = 0
     total_inversion_loss = 0
+    total_inversion_diff_loss = 0
+    total_area_loss = 0
     for batch in loader:
         optimizer.zero_grad()
         data = batch.to(device)
@@ -254,6 +331,8 @@ def train(
         loss = 0
         inversion_loss = 0
         deform_loss = 0
+        inversion_diff_loss = 0
+        area_loss = 0
         # deformation loss
         deform_loss = 1000*(
             loss_func(out, data.y) if not use_jacob else
@@ -262,8 +341,18 @@ def train(
         # Inversion loss
         if use_inversion_loss:
             inversion_loss = get_inversion_loss(
-                out, data.x[:, :2], data.face, bs, scaler)
-        loss = inversion_loss + deform_loss
+                out, data.y, data.face,
+                batch_size=bs, scaler=scaler)
+        if use_area_loss:
+            area_loss = get_area_loss(
+                out, data.y, data.face, bs, scaler)
+
+        loss = (
+            deform_loss +
+            inversion_loss +
+            inversion_diff_loss +
+            area_loss
+        )
         # Jacobian loss
         if use_jacob:
             loss.backward(retain_graph=True)
@@ -274,18 +363,30 @@ def train(
         total_loss += loss.item()
         total_deform_loss += deform_loss.item()
         total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
+        total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
+        total_area_loss += area_loss.item() if use_area_loss else 0
+
+    res = {
+        "total_loss": total_loss / len(loader),
+        "deform_loss": total_deform_loss / len(loader),
+    }
     if (use_inversion_loss):
-        return {
-            "total_loss": total_loss / len(loader),
-            "deform_loss": total_deform_loss / len(loader),
-            "inversion_loss": total_inversion_loss / len(loader)
-        }
-    return (total_loss / len(loader))
+        res["inversion_loss"] = total_inversion_loss / len(loader)
+    if (use_inversion_diff_loss):
+        res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
+    if (use_area_loss):
+        res["area_loss"] = total_area_loss / len(loader)
+
+    return res
 
 
 def evaluate(
-        loader, model, device, loss_func, use_jacob=False,
-        use_inversion_loss=False, scaler=100):
+        loader, model, device, loss_func,
+        use_jacob=False,
+        use_inversion_loss=False,
+        use_inversion_diff_loss=False,
+        use_area_loss=False,
+        scaler=100):
     """
     Evaluates a model using the given data loader and loss function.
 
@@ -304,39 +405,48 @@ def evaluate(
     total_loss = 0
     total_deform_loss = 0
     total_inversion_loss = 0
+    total_inversion_diff_loss = 0
+    total_area_loss = 0
     for batch in loader:
         data = batch.to(device)
         loss = 0
         deform_loss = 0
         inversion_loss = 0
-        if use_jacob:
+        inversion_diff_loss = 0
+        area_loss = 0
+
+        with torch.no_grad():
             out = model(data)
-            loss = 1000*(
+            deform_loss = 1000*(
                 loss_func(out, data.y) if not use_jacob else
                 jacobLoss(model, out, data, loss_func)
             )
-        else:
-            with torch.no_grad():
-                out = model(data)
-                deform_loss = 1000*(
-                    loss_func(out, data.y) if not use_jacob else
-                    jacobLoss(model, out, data, loss_func)
-                )
-                inversion_loss = 0
-                if use_inversion_loss:
-                    inversion_loss = get_inversion_loss(
-                        out, data.x[:, :2], data.face, bs, scaler)
-                loss = inversion_loss + deform_loss
-                total_loss += loss.item()
-                total_deform_loss += deform_loss.item()
-                total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+            inversion_loss = 0
+            if use_inversion_loss:
+                inversion_loss = get_inversion_loss(
+                    out, data.y, data.face,
+                    batch_size=bs, scaler=scaler)
+            if use_area_loss:
+                area_loss = get_area_loss(
+                    out, data.y, data.face, bs, scaler)
+
+            loss = inversion_loss + deform_loss
+            total_loss += loss.item()
+            total_deform_loss += deform_loss.item()
+            total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
+            total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+            total_area_loss += area_loss.item() if use_area_loss else 0
+    res = {
+        "total_loss": total_loss / len(loader),
+        "deform_loss": total_deform_loss / len(loader),
+    }
     if (use_inversion_loss):
-        return {
-            "total_loss": total_loss / len(loader),
-            "deform_loss": total_deform_loss / len(loader),
-            "inversion_loss": total_inversion_loss / len(loader)
-        }
-    return (total_loss / len(loader))
+        res["inversion_loss"] = total_inversion_loss / len(loader)
+    if (use_inversion_diff_loss):
+        res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
+    if (use_area_loss):
+        res["area_loss"] = total_area_loss / len(loader)
+    return res
 
 
 def load_model(model, weight_path):

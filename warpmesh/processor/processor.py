@@ -4,7 +4,6 @@
 import os
 import numpy as np
 import torch
-from torch_geometric.data import Data
 from firedrake.cython.dmcommon import facet_closure_nodes
 
 os.environ['OMP_NUM_THREADS'] = "1"
@@ -157,21 +156,7 @@ class MeshProcessor():
         Convert mesh and associated features to PyTorch Geometric Data format.
         This can be used directly for machine learning training.
         """
-
-        x_tensor = torch.tensor(self.x, dtype=torch.float)
-        y_tensor = torch.tensor(self.y, dtype=torch.float)
-        edge_index_tensor = torch.tensor(self.edges, dtype=torch.long)
-        scale = self.mesh.coordinates.dat.data_ro.max(axis=0) - \
-            self.mesh.coordinates.dat.data_ro.min(axis=0)
-
-        data = Data(x=x_tensor,
-                    edge_index=edge_index_tensor,
-                    y=y_tensor,
-                    pos=self.coordinates
-                    )
-        data.scale = torch.tensor(scale, dtype=torch.float)
-        data.cell_node_list = self.cell_node_list
-        data.conv_feat = torch.from_numpy(self.conv_feat).float()
+        scale = self.mesh.coordinates.dat.data_ro.max
 
         np_data = {
             "x": self.x,
@@ -182,7 +167,9 @@ class MeshProcessor():
             "hessian_norm": self.feature["hessian_norm"],
             "jacobian": self.feature["jacobian"],
             "jacobian_det": self.feature["jacobian_det"],
-            "edge_index": self.edges,
+            "edge_index": self.edge_T,
+            "edge_index_bi": self.edge_bi_T,
+            "cluster_edges": None, # this will be added if we use data_transform.py to add cluster edges  # noqa
             "y": self.y,
             "pos": self.coordinates,
             "scale": scale,
@@ -214,27 +201,38 @@ class MeshProcessor():
         print("x shape: ", self.x.shape)
 
         self.np_data = np_data
-        self.train_data = data
-        return data
+        return
 
     def find_edges(self):
         """
         Find the edges of the mesh and update the 'edges' attribute.
         """
-        edges = []
-        cell_node_list = self.cell_node_list.T
-        cell_node_list = np.concatenate(
-            [cell_node_list, cell_node_list[0:1, :]])
-        for i in range(self.num_nodes):
-            edges_temp = np.concatenate(
-                [cell_node_list[i:i+1, :], cell_node_list[i+1:i+2, :]],
-                axis=0
-            ).T
-            edges.append(edges_temp)
-        edges = np.concatenate(edges, axis=0)
-        edges = np.unique(edges, axis=0).T  # make it pytorch-geo friendly
-        self.edges = edges
-        return edges
+        mesh_node_count = self.coordinates.shape[0]
+        faces = torch.from_numpy(self.cell_node_list)
+        v0, v1, v2 = faces.chunk(3, dim=1)
+        e01 = torch.cat([v0, v1], dim=1)  # (sum(F_n), 2)
+        e12 = torch.cat([v1, v2], dim=1)  # (sum(F_n), 2)
+        e20 = torch.cat([v2, v0], dim=1)  # (sum(F_n), 2)
+        edges = torch.cat([e12, e20, e01], dim=0)  # (sum(F_n)*3, 2)
+        edges, _ = edges.sort(dim=1)
+        edges_hash = mesh_node_count * edges[:, 0] + edges[:, 1]
+        u, inverse_idxs = torch.unique(edges_hash, return_inverse=True)
+
+        edges_packed = torch.stack(
+            [
+                torch.div(u, mesh_node_count, rounding_mode="floor"),
+                u % mesh_node_count
+            ], dim=1)
+
+        self.single_edges = edges_packed
+        edges_packed_reverse = edges_packed.clone()[:, [1, 0]]
+        self.edge_bi = torch.cat(
+            [edges_packed,
+             edges_packed_reverse], dim=0)
+
+        self.edge_T = self.single_edges.T.numpy()
+        self.edge_bi_T = self.edge_bi.T.numpy()
+        return self.edge_bi_T
 
     def find_bd(self):
         """

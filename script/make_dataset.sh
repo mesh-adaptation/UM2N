@@ -23,8 +23,8 @@ n_samples=100
 # for test set, generating small samples
 rand_seed=42
 
-n_grid_start=15
-n_grid_end=35
+n_grid_start=33
+n_grid_end=34
 
 stride=1
 
@@ -33,8 +33,8 @@ for i in {$n_grid_start..$n_grid_end}; do
     echo "n_grid = $i"
     python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="aniso" --boundary_scheme="full"
     python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="iso" --boundary_scheme="pad"
-    python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="iso" --boundary_scheme="full"
-    python ./script/build_dataset.py --n_grid $i  --rand_seed $rand_seed --n_samples $n_samples --field_type "aniso" --boundary_scheme "pad"
+    # python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="iso" --boundary_scheme="full"
+    # python ./script/build_dataset.py --n_grid $i  --rand_seed $rand_seed --n_samples $n_samples --field_type "aniso" --boundary_scheme "pad"
 
 
   fi

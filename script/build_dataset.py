@@ -14,11 +14,11 @@ from argparse import ArgumentParser
 def arg_parse():
     parser = ArgumentParser()
     parser.add_argument('--max_dist', type=int, default=6,
-                        help='max number of distrbutions used to\
+                        help='max number of distributions used to\
                             generate the dataset (only works if\
                                 n_dist is not set)')
     parser.add_argument('--n_dist', type=int, default=None,
-                        help='number of distrbutions used to\
+                        help='number of distributions used to\
                             generate the dataset (this will disable\
                                 max_dist)')
     parser.add_argument('--n_grid', type=int, default=20,
