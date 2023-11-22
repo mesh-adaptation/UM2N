@@ -30,15 +30,26 @@ def arg_parse():
             )
     )
     parser.add_argument(
-        '--r', type=float, default=0.2,
+        '--r', type=float, default=0.35,
         help="radius of a cluster"
+    )
+    parser.add_argument(
+        '--M', type=int, default=None,
+        help="nodes in a cluster"
+    )
+    parser.add_argument(
+        '--dist_weight', type=bool, default=True,
+        help=(
+                "use weighted probability to sample " +
+                "nodes (according to distance to source)"
+        )
     )
     args_ = parser.parse_args()
     print(args_)
     return args_
 
 
-def add_edges(file_path, r):
+def add_edges(file_path, r, M):
     """
     Add extra edges to the file
     1. Read the file
@@ -59,20 +70,20 @@ def add_edges(file_path, r):
     edge_index = torch.from_numpy(
         data_object.get('edge_index_bi')
     ).to(torch.int64)
-    new_edges = get_new_edges(num_nodes, coords, edge_index, r)
+    new_edges = get_new_edges(num_nodes, coords, edge_index, r, M)
     data_object["cluster_edges"] = new_edges
     # save the file
     np.save(file_path, data_object)
     return
 
 
-def process_subset(file_path, r):
+def process_subset(file_path, r, M):
     file_pattern = os.path.join(file_path, 'data_*.npy')
     files = glob.glob(file_pattern)
     # print("files: ", files)
     print(f"processing {len(files)} files in{file_path}")
     for file in files:
-        add_edges(file, r)
+        add_edges(file, r, M)
     return
 
 
@@ -86,11 +97,11 @@ if __name__ == "__main__":
     args_ = arg_parse()
     dataset_root = args_.target
     r = args_.r
+    M = args_.M
     # get all the subdirectories
     subsets_path = [
         os.path.join(dataset_root, folder) for folder in all_folders
     ]
-    # print("subsets_path: ", subsets_path)
     # iterate through all the subsets
     for i in range(len(subsets_path)):
-        process_subset(subsets_path[i], r)
+        process_subset(subsets_path[i], r, M)

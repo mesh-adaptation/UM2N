@@ -3,7 +3,8 @@ from torch_geometric.utils import (
     mask_to_index, index_to_mask
 )
 
-__all__ = ['sampler', 'get_neighbors', 'calc_dist', 'get_new_edges']
+__all__ = ['sampler', 'get_neighbors', 'calc_dist',
+           'get_new_edges',]
 
 
 # vectorize version
@@ -77,21 +78,52 @@ def sampler(num_nodes, coords, edge_idx, node_idx, r=0.25, N=100):
     return cluster
 
 
-def get_new_edges(num_nodes, coords, edge_idx, r=0.25):
+def get_new_edges(
+        num_nodes, coords, edge_idx,
+        r=0.4, M=None, dist_weight=True,
+        ):
     """
-    Get the new edges for the graph
+    Get the new edges for the graph.
+    A useful knowledge for setting r and M:
+    when on 15x15 dataset, r=0.35, M=25.
     Args:
         data: the data object
         r: the radius of the cluster
     """
+    mini = 9999
     new_edges = []
     for i in range(num_nodes):
         mask = sampler(num_nodes, coords, edge_idx, i, r=r)
         cluster_idx = mask_to_index(mask)
+        # print(cluster_idx)
+        # print(len(cluster_idx))
+
+        # randomly sample M neighbors
+        if (M is not None):
+            # check if sampling is valid
+            num_nei = len(cluster_idx)
+            mini = min(mini, num_nei)
+            if num_nei < M:
+                raise ValueError(
+                    f"The number of neighbors {num_nei} is less than M ({M})")
+            if not dist_weight:
+                # so the sampling
+                filter_idx = torch.randperm(num_nei)[:M]
+                cluster_idx = cluster_idx[filter_idx]
+                # print("after sampling, ", len(cluster_idx))
+            else:
+                dist = calc_dist(coords, i, mask)
+                probs = 1 / dist
+                probs = probs / probs.sum()  # normalize
+                filter_idx = torch.multinomial(
+                    probs, num_samples=25, replacement=False)
+                cluster_idx = cluster_idx[filter_idx]
         source_idx = torch.ones(cluster_idx.shape[0], dtype=torch.long) * i
         new_edge = torch.stack([source_idx, cluster_idx], dim=0)
         new_edges.append(new_edge)
+        # break
     new_edges = torch.cat(new_edges, dim=1)
+    # print("mini: ", mini)
     return new_edges
 
 
