@@ -81,6 +81,7 @@ def sampler(num_nodes, coords, edge_idx, node_idx, r=0.25, N=100):
 def get_new_edges(
         num_nodes, coords, edge_idx,
         r=0.4, M=None, dist_weight=True,
+        add_nei=False,
         ):
     """
     Get the new edges for the graph.
@@ -112,6 +113,7 @@ def get_new_edges(
                 cluster_idx = cluster_idx[filter_idx]
                 # print("after sampling, ", len(cluster_idx))
             else:
+                print('use dist_weight')
                 dist = calc_dist(coords, i, mask)
                 probs = 1 / dist
                 probs = probs / probs.sum()  # normalize
@@ -123,8 +125,11 @@ def get_new_edges(
         new_edges.append(new_edge)
         # break
     new_edges = torch.cat(new_edges, dim=1)
-    # print("mini: ", mini)
-    return new_edges
+    if (add_nei):
+        nei_edges = torch.cat([edge_idx, new_edges], dim=1)
+        return nei_edges
+    else:
+        return new_edges
 
 
 def get_neighbors_v0(data, source_mask, edge_idx):

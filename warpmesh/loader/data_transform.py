@@ -38,10 +38,16 @@ def arg_parse():
         help="nodes in a cluster"
     )
     parser.add_argument(
-        '--dist_weight', type=bool, default=True,
+        '--dist_weight', type=bool, default=False,
         help=(
                 "use weighted probability to sample " +
                 "nodes (according to distance to source)"
+        )
+    )
+    parser.add_argument(
+        '--add_nei', type=bool, default=False,
+        help=(
+                "add original neighbors to the cluster"
         )
     )
     args_ = parser.parse_args()
@@ -49,7 +55,7 @@ def arg_parse():
     return args_
 
 
-def add_edges(file_path, r, M):
+def add_edges(file_path, r, M, dist_weight, add_nei):
     """
     Add extra edges to the file
     1. Read the file
@@ -70,20 +76,23 @@ def add_edges(file_path, r, M):
     edge_index = torch.from_numpy(
         data_object.get('edge_index_bi')
     ).to(torch.int64)
-    new_edges = get_new_edges(num_nodes, coords, edge_index, r, M)
+    new_edges = get_new_edges(
+        num_nodes, coords,
+        edge_index, r, M,
+        dist_weight, add_nei)
     data_object["cluster_edges"] = new_edges
     # save the file
     np.save(file_path, data_object)
     return
 
 
-def process_subset(file_path, r, M):
+def process_subset(file_path, r, M, dist_weight, add_nei):
     file_pattern = os.path.join(file_path, 'data_*.npy')
     files = glob.glob(file_pattern)
     # print("files: ", files)
     print(f"processing {len(files)} files in{file_path}")
     for file in files:
-        add_edges(file, r, M)
+        add_edges(file, r, M, dist_weight, add_nei)
     return
 
 
@@ -98,10 +107,14 @@ if __name__ == "__main__":
     dataset_root = args_.target
     r = args_.r
     M = args_.M
+    # dist_weight = True if args_.dist_weight == "True" else False
+    # add_nei = True if args_.add_nei == "True" else False
+    dist_weight = args_.dist_weight
+    add_nei = args_.add_nei
     # get all the subdirectories
     subsets_path = [
         os.path.join(dataset_root, folder) for folder in all_folders
     ]
     # iterate through all the subsets
     for i in range(len(subsets_path)):
-        process_subset(subsets_path[i], r, M)
+        process_subset(subsets_path[i], r, M, dist_weight, add_nei)
