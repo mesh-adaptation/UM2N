@@ -164,6 +164,8 @@ class MeshProcessor():
             "u": self.feature["uh"],
             "grad_u": self.feature["grad_uh"],
             "hessian": self.feature["hessian"],
+            "phi": self.feature["phi"],
+            "grad_phi": self.feature["grad_phi"],
             "hessian_norm": self.feature["hessian_norm"],
             "jacobian": self.feature["jacobian"],
             "jacobian_det": self.feature["jacobian_det"],

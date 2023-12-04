@@ -53,7 +53,24 @@ class MeshGenerator():
             jacobian[0, 1] * jacobian[1, 0])
         self.jacob_det = jacobian_det
         self.jacob = jacobian
+        # extract phi of the movement
+        self.phi = mover.phi
+        # extract phi_grad
+        self.grad_phi = mover.grad_phi
+
         return self.mesh
+
+    def get_grad_phi(self):
+        """
+        Returns the gradient of phi of the mesh movement.
+        """
+        return self.grad_phi
+
+    def get_phi(self):
+        """
+        Returns the phi of the mesh movement.
+        """
+        return self.phi
 
     def get_monitor_val(self):
         """

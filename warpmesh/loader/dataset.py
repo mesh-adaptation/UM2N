@@ -82,7 +82,11 @@ class MeshDataset(Dataset):
             load_analytical=False,
             load_jacobian=False,
             use_cluster=False,
+            use_run_time_cluster=False,
             r=0.25,
+            M=25,
+            dist_weight=False,
+            add_nei=True,
             ):
         # x feature contains the coordiate related features
         self.x_feature = x_feature
@@ -104,9 +108,14 @@ class MeshDataset(Dataset):
         self.load_jacobian = load_jacobian
         # if True, use the cluster to sample the neighbors
         self.use_cluster = use_cluster
-        # the radius of the cluster
+        # if True, use the run time cluster to sample the neighbors
+        self.use_run_time_cluster = use_run_time_cluster
+        # params for run time cluster
         self.r = r
-
+        self.M = M
+        self.dist_weight = dist_weight
+        self.add_nei = add_nei
+        # load phi of the MA solution
     def get_x_feature(self, data):
         """
         Extracts and concatenates the x_features for each node from the data.
@@ -212,6 +221,10 @@ class MeshDataset(Dataset):
             y=torch.from_numpy(data.item().get('y')).float(),
             face=torch.from_numpy(
                 data.item().get('face_idxs')).to(torch.long).T if data.item().get('face_idxs') is not None else None,  # noqa: E501
+            phi=torch.from_numpy(
+                data.item().get('phi')).float() if data.item().get('phi') is not None else None,  # noqa: E501
+            grad_phi=torch.from_numpy(
+                data.item().get('grad_phi')).float() if data.item().get('grad_phi') is not None else None,  # noqa: E501
             node_num=num_nodes,
         )
 
@@ -238,14 +251,18 @@ class MeshDataset(Dataset):
         if self.transform:
             train_data = self.transform(train_data)
         if self.use_cluster:
-            # train_data.edge_index = get_new_edges(train_data, r=self.r)
             train_data.edge_index = data.item().get('cluster_edges')
+        if self.use_run_time_cluster:
+            train_data.edge_index = get_new_edges(
+                num_nodes, train_data.x[:, :2],
+                train_data.edge_index, r=self.r, M=self.M,
+                dist_weight=self.dist_weight, add_nei=self.add_nei)
         return train_data
 
 
 class MeshData(Data):
     """
-    Custom PyTorch Data object designed to handle mesh data features.
+    Custom PyTorch Data object designed to handle mesh data features.P
 
     This class is intended to be used as the base class of data samples
     returned by the MeshDataset.

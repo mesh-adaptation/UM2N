@@ -239,6 +239,16 @@ if __name__ == "__main__":
             jacobian_det = fd.project(
                 jacobian_det, fd.FunctionSpace(new_mesh, "CG", 1))
 
+            # get phi/grad_phi projected to the original mesh
+            phi = mesh_gen.get_phi()
+            # phi = fd.project(
+            #     phi, fd.FunctionSpace(mesh, "CG", 1)
+            # )
+            grad_phi = mesh_gen.get_grad_phi()
+            # grad_phi = fd.project(
+            #     grad_phi, fd.VectorFunctionSpace(mesh, "CG", 1)
+            # )
+
             # solve the equation on the new mesh
             new_res = helmholtz_eq.discretise(new_mesh)
             new_solver = wm.EquationSolver(params={
@@ -266,6 +276,10 @@ if __name__ == "__main__":
                         -1, 4),
                     "jacobian_det": jacobian_det.dat.data_ro.reshape(
                         -1, 1),
+                    "phi": phi.dat.data_ro.reshape(
+                        -1, 1),
+                    "grad_phi": grad_phi.dat.data_ro.reshape(
+                        -1, 2),
                 },
                 raw_feature={
                     "uh": uh,
