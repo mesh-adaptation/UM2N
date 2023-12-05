@@ -15,8 +15,8 @@ from torch.nn import LayerNorm, Dropout
 # from fairseq.modules import LayerNorm
 # from fairseq.modules.fairseq_dropout import FairseqDropout
 # from fairseq.modules.quant_noise import quant_noise
-
-from .multihead_attention import MultiheadAttention
+from torch.nn import MultiheadAttention
+# from .multihead_attention import MultiheadAttention
 
 
 class GraphormerGraphEncoderLayer(nn.Module):
