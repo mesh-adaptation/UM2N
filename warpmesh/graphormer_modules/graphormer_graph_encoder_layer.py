@@ -10,10 +10,11 @@ from typing import Callable, Optional
 
 import torch
 import torch.nn as nn
-from fairseq import utils
-from fairseq.modules import LayerNorm
-from fairseq.modules.fairseq_dropout import FairseqDropout
-from fairseq.modules.quant_noise import quant_noise
+from torch.nn import LayerNorm, Dropout
+# from fairseq import utils
+# from fairseq.modules import LayerNorm
+# from fairseq.modules.fairseq_dropout import FairseqDropout
+# from fairseq.modules.quant_noise import quant_noise
 
 from .multihead_attention import MultiheadAttention
 
@@ -47,15 +48,20 @@ class GraphormerGraphEncoderLayer(nn.Module):
         self.qn_block_size = qn_block_size
         self.pre_layernorm = pre_layernorm
 
-        self.dropout_module = FairseqDropout(
-            dropout, module_name=self.__class__.__name__
-        )
-        self.activation_dropout_module = FairseqDropout(
-            activation_dropout, module_name=self.__class__.__name__
-        )
+        # self.dropout_module = FairseqDropout(
+        #     dropout, module_name=self.__class__.__name__
+        # )
+        
+        # self.activation_dropout_module = FairseqDropout(
+        #     activation_dropout, module_name=self.__class__.__name__
+        # )
+
+        self.dropout_module = Dropout(dropout)
+        self.activation_dropout_module = Dropout(activation_dropout)
 
         # Initialize blocks
-        self.activation_fn = utils.get_activation_fn(activation_fn)
+        # self.activation_fn = utils.get_activation_fn(activation_fn)
+        self.activation_fn = getattr(nn, activation_fn)()
         self.self_attn = self.build_self_attention(
             self.embedding_dim,
             num_attention_heads,
@@ -66,29 +72,46 @@ class GraphormerGraphEncoderLayer(nn.Module):
         )
 
         # layer norm associated with the self attention layer
-        self.self_attn_layer_norm = LayerNorm(self.embedding_dim, export=export)
+        # self.self_attn_layer_norm = LayerNorm(self.embedding_dim, export=export)
+        self.self_attn_layer_norm = LayerNorm(self.embedding_dim)
+
+        # self.fc1 = self.build_fc1(
+        #     self.embedding_dim,
+        #     ffn_embedding_dim,
+        #     q_noise=q_noise,
+        #     qn_block_size=qn_block_size,
+        # )
+        # self.fc2 = self.build_fc2(
+        #     ffn_embedding_dim,
+        #     self.embedding_dim,
+        #     q_noise=q_noise,
+        #     qn_block_size=qn_block_size,
+        # )
 
         self.fc1 = self.build_fc1(
             self.embedding_dim,
-            ffn_embedding_dim,
-            q_noise=q_noise,
-            qn_block_size=qn_block_size,
+            ffn_embedding_dim
         )
         self.fc2 = self.build_fc2(
             ffn_embedding_dim,
-            self.embedding_dim,
-            q_noise=q_noise,
-            qn_block_size=qn_block_size,
+            self.embedding_dim
         )
 
         # layer norm associated with the position wise feed-forward NN
-        self.final_layer_norm = LayerNorm(self.embedding_dim, export=export)
+        # self.final_layer_norm = LayerNorm(self.embedding_dim, export=export)
+        self.final_layer_norm = LayerNorm(self.embedding_dim)
 
-    def build_fc1(self, input_dim, output_dim, q_noise, qn_block_size):
-        return quant_noise(nn.Linear(input_dim, output_dim), q_noise, qn_block_size)
+    # def build_fc1(self, input_dim, output_dim, q_noise, qn_block_size):
+    #     return quant_noise(nn.Linear(input_dim, output_dim), q_noise, qn_block_size)
 
-    def build_fc2(self, input_dim, output_dim, q_noise, qn_block_size):
-        return quant_noise(nn.Linear(input_dim, output_dim), q_noise, qn_block_size)
+    # def build_fc2(self, input_dim, output_dim, q_noise, qn_block_size):
+    #     return quant_noise(nn.Linear(input_dim, output_dim), q_noise, qn_block_size)
+
+    def build_fc1(self, input_dim, output_dim):
+        return nn.Linear(input_dim, output_dim)
+
+    def build_fc2(self, input_dim, output_dim):
+        return nn.Linear(input_dim, output_dim)
 
     def build_self_attention(
         self,
