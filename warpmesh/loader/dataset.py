@@ -116,6 +116,7 @@ class MeshDataset(Dataset):
         self.dist_weight = dist_weight
         self.add_nei = add_nei
         # load phi of the MA solution
+
     def get_x_feature(self, data):
         """
         Extracts and concatenates the x_features for each node from the data.

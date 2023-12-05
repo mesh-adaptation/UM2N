@@ -15,16 +15,16 @@
 # Please use different rand_seed for training and testing purpose.
 # This is because we want to make sure the training and testing dataset are different.
 
-n_samples=400
+n_samples=100
 
 # for training set
-rand_seed=63
+# rand_seed=63
 
 # for test set, generating small samples
-# rand_seed=42
+rand_seed=42
 
 n_grid_start=15
-n_grid_end=20
+n_grid_end=35
 
 stride=5
 
