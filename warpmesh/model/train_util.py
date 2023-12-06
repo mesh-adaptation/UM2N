@@ -12,7 +12,7 @@ __all__ = ['train', 'evaluate', 'load_model', 'TangleCounter',
            'get_inversion_loss', 'get_inversion_node_loss',
            'get_area_loss', 'evaluate_repeat_sampling',
            'count_dataset_tangle_repeat_sampling',
-           'evaluate_repeat',
+           'evaluate_repeat', 'get_sample_tangle'
            ]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -403,6 +403,19 @@ def evaluate(
     if (use_area_loss):
         res["area_loss"] = total_area_loss / len(loader)
     return res
+
+
+def get_sample_tangle(out_coords, in_coords, face):
+    """
+    Return the number of tangled elements in a single sample.
+    """
+    out_area = get_face_area(out_coords, face)
+    in_area = get_face_area(in_coords, face)
+    out_area = torch.sign(in_area) * out_area
+    neg_mask = out_area < 0
+    neg_area = out_area[neg_mask]
+    num_tangle = len(neg_area)
+    return num_tangle
 
 
 def count_dataset_tangle(dataset, model, device, method="inversion"):
