@@ -1,5 +1,4 @@
 import torch
-from numba import njit
 from torch_geometric.utils import (
     mask_to_index, index_to_mask
 )
