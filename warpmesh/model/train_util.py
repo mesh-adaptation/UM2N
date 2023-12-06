@@ -11,7 +11,8 @@ __all__ = ['train', 'evaluate', 'load_model', 'TangleCounter',
            'count_dataset_tangle', 'get_jacob_det', 'get_face_area',
            'get_inversion_loss', 'get_inversion_node_loss',
            'get_area_loss', 'evaluate_repeat_sampling',
-           'count_dataset_tangle_repeat_sampling'
+           'count_dataset_tangle_repeat_sampling',
+           'evaluate_repeat',
            ]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -566,6 +567,79 @@ def count_dataset_tangle_repeat_sampling(
             # and loss should be positive, so we are using -1 here.
             num_tangle += len(neg_area)
     return num_tangle / len(dataset)
+
+
+def evaluate_repeat(
+        dataset, model, device, loss_func,
+        scaler=100,
+        num_repeat=1
+        ):
+    """
+    Evaluates model performance when sampling for different number of times.
+    this function will evaluate:
+        1. the average loss
+        2. the average number of tangles
+
+    Args:
+        dataset (MeshDataset): The target dataset to evaluate.
+        model (torch.nn.Module): The PyTorch model to evaluate.
+        device (torch.device): The device to run the computation on.
+        loss_func (callable): Loss function (e.g., MSE, Cross-Entropy).
+
+    Returns:
+        float: The average evaluation loss across all batches.
+    """
+    model.eval()
+    loaders = [
+        DataLoader(dataset=dataset, batch_size=1, shuffle=False)
+        for i in range(num_repeat)
+    ]
+    data_iters = [iter(loader) for loader in loaders]
+
+    num_tangle = 0
+    total_loss = 0
+    total_deform_loss = 0
+    total_area_loss = 0
+
+    for i in range(len(loaders[0])):
+        data_list = [next(data_iter) for data_iter in data_iters]
+        data_list = [data.to(device) for data in data_list]
+
+        loss = 0
+        deform_loss = 0
+        inversion_loss = 0
+        area_loss = 0
+
+        with torch.no_grad():
+            out = [model(data) for data in data_list]
+            out = torch.stack(out, dim=0)
+            out = torch.mean(out, dim=0)
+            # calculate the loss
+            deform_loss = 1000*(
+                loss_func(out, data_list[0].y)
+            )
+            area_loss = get_area_loss(
+                out, data_list[0].y, data_list[0].face, 1, scaler)
+
+            loss = inversion_loss + deform_loss
+            total_loss += loss.item()
+            total_deform_loss += deform_loss.item()
+            total_area_loss += area_loss.item()
+
+            # calculate the number of tangles
+            in_area = get_face_area(data_list[0].x[:, :2], data_list[0].face)
+            out_area = get_face_area(out, data_list[0].face)
+            out_area = torch.sign(in_area) * out_area
+            neg_mask = out_area < 0
+            neg_area = out_area[neg_mask]
+            num_tangle += len(neg_area)
+
+    return {
+        "total_loss": total_loss / len(dataset),
+        "deform_loss": total_deform_loss / len(dataset),
+        "num_tangle": num_tangle / len(dataset),
+        "area_loss": total_area_loss / len(dataset)
+    }
 
 
 def load_model(model, weight_path):
