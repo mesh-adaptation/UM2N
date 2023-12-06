@@ -113,7 +113,7 @@ class MRNAtten(torch.nn.Module):
         self.num_heads = 3
         self.dense_dim = 32
         assert self.embed_dim % self.num_heads == 0
-        self.atten = nn.MultiheadAttention(embed_dim=self.embed_dim, dropout=0.1, num_heads=self.num_headse, batch_first=True)
+        self.atten = nn.MultiheadAttention(embed_dim=self.embed_dim, dropout=0.1, num_heads=self.num_heads, batch_first=True)
         self.pre_attn_norm = nn.LayerNorm(self.embed_dim)
         self.post_attn_norm = nn.LayerNorm(self.embed_dim)
         self.post_attn_dropout = nn.Dropout(0.1)
