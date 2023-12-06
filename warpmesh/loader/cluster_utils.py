@@ -1,4 +1,5 @@
 import torch
+from numba import njit
 from torch_geometric.utils import (
     mask_to_index, index_to_mask
 )
@@ -47,35 +48,46 @@ def calc_dist(coords, node_idx, neighbors_mask):
     return dist
 
 
+# def sampler(num_nodes, coords, edge_idx, node_idx, r=0.25, N=100):
+#     """
+#     For a single node, sample N neighbours within radius r.
+#     return the indices of the neighbours
+#     """
+#     cluster = torch.zeros(
+#         num_nodes, dtype=torch.bool)
+#     source_nodes_mask = index_to_mask(
+#         torch.tensor([node_idx]), num_nodes)
+#     while True:
+#         neighbors_mask = get_neighbors(
+#             index_to_mask(source_nodes_mask, num_nodes),
+#             edge_idx)
+#         neighbors_mask = neighbors_mask & ~cluster
+#         neighbors_idx = mask_to_index(neighbors_mask)
+#         neighbors_dist = calc_dist(
+#             coords, node_idx, neighbors_mask
+#         )
+
+#         neighbors_in_range = neighbors_idx[
+#             neighbors_dist < r]
+#         if (neighbors_in_range.shape[0] == 0):
+#             break
+#         else:
+#             source_nodes_mask = index_to_mask(
+#                 neighbors_in_range, num_nodes)
+#             cluster = cluster | source_nodes_mask
+#     cluster[node_idx] = False
+#     return cluster
+
+
 def sampler(num_nodes, coords, edge_idx, node_idx, r=0.25, N=100):
     """
     For a single node, sample N neighbours within radius r.
     return the indices of the neighbours
     """
-    cluster = torch.zeros(
-        num_nodes, dtype=torch.bool)
-    source_nodes_mask = index_to_mask(
-        torch.tensor([node_idx]), num_nodes)
-    while True:
-        neighbors_mask = get_neighbors(
-            index_to_mask(source_nodes_mask, num_nodes),
-            edge_idx)
-        neighbors_mask = neighbors_mask & ~cluster
-        neighbors_idx = mask_to_index(neighbors_mask)
-        neighbors_dist = calc_dist(
-            coords, node_idx, neighbors_mask
-        )
-
-        neighbors_in_range = neighbors_idx[
-            neighbors_dist < r]
-        if (neighbors_in_range.shape[0] == 0):
-            break
-        else:
-            source_nodes_mask = index_to_mask(
-                neighbors_in_range, num_nodes)
-            cluster = cluster | source_nodes_mask
-    cluster[node_idx] = False
-    return cluster
+    dist = torch.linalg.vector_norm(
+        coords - coords[node_idx], dim=1
+    )
+    return dist < r
 
 
 def get_new_edges(
@@ -96,10 +108,6 @@ def get_new_edges(
     for i in range(num_nodes):
         mask = sampler(num_nodes, coords, edge_idx, i, r=r)
         cluster_idx = mask_to_index(mask)
-        # print(cluster_idx)
-        # print(len(cluster_idx))
-
-        # randomly sample M neighbors
         if (M is not None):
             # check if sampling is valid
             num_nei = len(cluster_idx)
@@ -136,7 +144,7 @@ def get_neighbors_v0(data, source_mask, edge_idx):
     """
     Get the neighbors of the source nodes
     Args:
-        data: the data object
+        data: the data object, a sampler draws form the MeshDataset
         source_mask: a mask of the source nodes
         edge_idx: the edge index
     return:
