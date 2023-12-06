@@ -13,7 +13,7 @@ sys.path.append(cur_dir)
 from extractor import (  # noqa: E402
     LocalFeatExtractor, GlobalFeatExtractor
 )
-__all__ = ['MRNAtten', 'RecurrentGATConv']
+__all__ = ['MRNAtten']
 
 
 class RecurrentGATConv(MessagePassing):
