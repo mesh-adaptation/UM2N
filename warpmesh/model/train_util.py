@@ -637,7 +637,7 @@ def evaluate_repeat(
     return {
         "total_loss": total_loss / len(dataset),
         "deform_loss": total_deform_loss / len(dataset),
-        "num_tangle": num_tangle / len(dataset),
+        "tangle": num_tangle / len(dataset),
         "area_loss": total_area_loss / len(dataset)
     }
 
