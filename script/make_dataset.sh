@@ -23,10 +23,10 @@ n_samples=100
 # for test set, generating small samples
 rand_seed=42
 
-n_grid_start=15
-n_grid_end=35
+n_grid_start=50
+n_grid_end=100
 
-stride=5
+stride=10
 
 for i in {$n_grid_start..$n_grid_end}; do
   if ((i % $stride == 0)); then
