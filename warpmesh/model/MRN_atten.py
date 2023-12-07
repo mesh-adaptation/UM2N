@@ -166,6 +166,9 @@ class MRNAtten(torch.nn.Module):
             [data.x[:, 2:], local_feat, conv_feat], dim=1)
         hidden = F.selu(self.lin(hidden_in))
 
+        # Reshape back to [batch size, node num, feature dim] for transformer
+        feat_dim = hidden.shape[-1]
+        hidden = hidden.reshape(batch_size, -1, feat_dim)
         #=======================================================
         # A transformer encoder block
         residual = hidden
@@ -187,6 +190,10 @@ class MRNAtten(torch.nn.Module):
         hidden = self.post_attn_dropout(hidden)
         hidden = hidden + residual
         #=======================================================
+
+        # Reshape to [batch size * node num, feature dim] for pyG
+        bs, node_num = hidden.shape[0], hidden.shape[1]
+        hidden = hidden.reshape(bs * node_num, -1)
 
         # Recurrent GAT deform
         for i in range(num_step):
