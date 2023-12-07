@@ -108,20 +108,24 @@ class MRNAtten(torch.nn.Module):
         self.gfe = GlobalFeatExtractor(in_c=gfe_in_c, out_c=self.gfe_out_c)
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
 
+        #=======================================================
         # Define the self attention layer
-        self.embed_dim = 7 * 3
-        self.num_heads = 3
-        self.dense_dim = 32
+        self.embed_dim = 512
+        self.num_heads = 1
+        self.dense_dim = 512
         assert self.embed_dim % self.num_heads == 0
         self.atten = nn.MultiheadAttention(embed_dim=self.embed_dim, dropout=0.1, num_heads=self.num_heads, batch_first=True)
         self.pre_attn_norm = nn.LayerNorm(self.embed_dim)
         self.post_attn_norm = nn.LayerNorm(self.embed_dim)
         self.post_attn_dropout = nn.Dropout(0.1)
+        self.act_dropout = nn.Dropout(0.1)
         self.dense_1 = nn.Linear(self.embed_dim, self.dense_dim)
         self.dense_2 = nn.Linear(self.dense_dim, self.embed_dim)
+        self.pre_dense_norm = nn.LayerNorm(self.embed_dim)
         self.post_dense_norm = nn.LayerNorm(self.dense_dim)
         activation="GELU"
         self.activation = getattr(nn, activation)()
+        #=======================================================
 
         # use a linear layer to transform the input feature to hidden
         # state size
@@ -202,6 +206,7 @@ class MRNAtten(torch.nn.Module):
         """
         coord = data.x[:, :2]  # [num_nodes * batch_size, 2]
         conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
+        batch_size = conv_feat_in.shape[0]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
@@ -212,12 +217,43 @@ class MRNAtten(torch.nn.Module):
 
         local_feat = self.lfe(mesh_feat, edge_idx)
 
+
         hidden_in = torch.cat(
             [data.x[:, 2:], local_feat, conv_feat], dim=1)
         hidden = F.selu(self.lin(hidden_in))
+        # print(hidden.shape, hidden_in.shape, local_feat.shape, conv_feat.shape)
+
+        # Reshape back to [batch size, node num, feature dim] for transformer
+        feat_dim = hidden.shape[-1]
+        hidden = hidden.reshape(batch_size, -1, feat_dim)
+        #=======================================================
+        # A transformer encoder block
+        residual = hidden
+        hidden = self.pre_attn_norm(hidden)
+        # compute self-attention
+        hidden, atten_scores = self.atten(hidden, hidden, hidden)
+        hidden = self.post_attn_norm(hidden) # TODO: This seems to be optional
+        hidden = self.post_attn_dropout(hidden)
+        hidden = hidden + residual
+
+        residual = hidden
+        hidden = self.pre_dense_norm(hidden)
+        hidden = self.activation(self.dense_1(hidden))
+        hidden = self.act_dropout(hidden)
+
+        hidden = self.post_dense_norm(hidden) # TODO: This seems to be optional
+
+        hidden = self.dense_2(hidden)
+        hidden = self.post_attn_dropout(hidden)
+        hidden = hidden + residual
+        #=======================================================
+
+        # Reshape to [batch size * node num, feature dim] for pyG
+        bs, node_num = hidden.shape[0], hidden.shape[1]
+        hidden = hidden.reshape(bs * node_num, -1)
 
         # Recurrent GAT deform
         for i in range(self.num_loop):
             coord, hidden = self.deformer(coord, hidden, edge_idx)
-
+        
         return coord
