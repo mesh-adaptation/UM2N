@@ -5,4 +5,5 @@ from .M2N_dynamic_drop import *  # noqa
 from .M2N import * # noqa
 from .M2N_dynamic_no_drop import * # noqa
 from .MRN_fix import *  # noqa
+from .MRN_phi import *  # noqa
 from .extractor import *  # noqa

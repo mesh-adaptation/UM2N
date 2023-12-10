@@ -13,6 +13,7 @@ sys.path.append(cur_dir)
 from extractor import (  # noqa: E402
     LocalFeatExtractor, GlobalFeatExtractor
 )
+
 __all__ = ['MRN_phi', 'RecurrentGATConv']
 
 
