@@ -116,7 +116,7 @@ class MRN_phi(torch.nn.Module):
         """
         # Initialize phi output to be zero
         # phi = torch.zeros_like(data.phi)  # [num_nodes * batch_size, 1]
-        phi = data.mesh_feat[:, -1] # [num_nodes * batch_size, 1]
+        phi = data.mesh_feat[:, -1]  # [num_nodes * batch_size, 1]
         conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
