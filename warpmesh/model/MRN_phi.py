@@ -45,10 +45,10 @@ class RecurrentGATConv(MessagePassing):
         # activation function
         self.activation = nn.SELU()
 
-    def forward(self, coord, hidden_state, edge_index):
+    def forward(self, phi, hidden_state, edge_index):
         # find boundary
         # Recurrent GAT
-        in_feat = torch.cat((coord, hidden_state), dim=1)
+        in_feat = torch.cat((phi, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
         hidden = self.activation(hidden)
         output_phi = self.to_phi(hidden)
@@ -116,6 +116,8 @@ class MRN_phi(torch.nn.Module):
         """
         # Initialize phi output to be zero
         # phi = torch.zeros_like(data.phi)  # [num_nodes * batch_size, 1]
+        print("data.mesh_feat.shape", data.mesh_feat.shape)
+        print("data.mesh_feat[:, -1].shape", data.mesh_feat[:, -1].shape)
         phi = data.mesh_feat[:, -1]  # [num_nodes * batch_size, 1]
         conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
