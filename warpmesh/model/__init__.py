@@ -10,6 +10,7 @@ from .MRN_fix import *  # noqa
 from .MRN_phi import *  # noqa
 from .MRN_GTE import * # noqa
 from .MRN_LTE import * # noqa
+from .MRT_phi import *  # noqa
 from .MRTransformer import * # noqa
 from .M2Transformer import * # noqa
 from .extractor import *  # noqa
