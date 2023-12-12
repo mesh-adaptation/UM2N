@@ -33,7 +33,7 @@ class RecurrentGATConv(MessagePassing):
                  ):
         super(RecurrentGATConv, self).__init__()
         # GAT layer
-        self.to_out = GATv2Conv(
+        self.to_hidden = GATv2Conv(
             in_channels=in_size+hidden_size,
             out_channels=hidden_size,
             heads=heads,
