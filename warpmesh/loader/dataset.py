@@ -252,7 +252,7 @@ class MeshDataset(Dataset):
         if self.transform:
             train_data = self.transform(train_data)
         if self.use_cluster:
-            train_data.edge_index = data.item().get('cluster_edges')
+            train_data.edge_index = data.item().get('cluster_edges').to(torch.int64)  # noqa
         if self.use_run_time_cluster:
             train_data.edge_index = get_new_edges(
                 num_nodes, train_data.x[:, :2],
