@@ -17,9 +17,9 @@ from extractor import (  # noqa: E402
     LocalFeatExtractor, GlobalFeatExtractor
 )
 from gatdeformer import DeformGAT  # noqa: E402
+from transformer_model import TransformerModel
 
-
-__all__ = ['M2N']
+__all__ = ['M2Transformer']
 
 
 class NetGATDeform(torch.nn.Module):
@@ -59,32 +59,42 @@ class NetGATDeform(torch.nn.Module):
         return out_coord_4
 
 
-class M2N(torch.nn.Module):
+class M2Transformer(torch.nn.Module):
     def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7, use_drop=False):
         super().__init__()
         self.gfe_out_c = 16
         self.lfe_out_c = 16
         self.deformer_in_feat = 7 + self.gfe_out_c + self.lfe_out_c
 
-        self.gfe = GlobalFeatExtractor(
-            in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop)
-        self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
+        # self.gfe = GlobalFeatExtractor(
+        #     in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop)
+        # self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
         self.deformer = NetGATDeform(in_dim=self.deformer_in_feat)
+
+        self.transformer_in_dim = 3
+        self.transformer_out_dim = 32
+        self.transformer_encoder = TransformerModel(input_dim=self.transformer_in_dim, embed_dim=64, output_dim=self.transformer_out_dim, num_heads=4, num_layers=1)
 
     def forward(self, data):
         x = data.x  # [num_nodes * batch_size, 2]
         conv_feat_in = data.conv_feat_fix  # [batch_size, feat, 20, 20], using fixed conv-sample. # noqa
+        batch_size = conv_feat_in.shape[0]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
 
-        conv_feat = self.gfe(conv_feat_in)
-        conv_feat = conv_feat.repeat_interleave(
-            node_num.reshape(-1), dim=0)
+        # conv_feat = self.gfe(conv_feat_in)
+        # conv_feat = conv_feat.repeat_interleave(
+        #     node_num.reshape(-1), dim=0)
 
-        local_feat = self.lfe(mesh_feat, edge_idx)
+        # local_feat = self.lfe(mesh_feat, edge_idx)
+        feat_dim = mesh_feat.shape[-1]
+        # mesh_feat [coord_x, coord_y, u, hessian_norm]
+        features = self.transformer_encoder(mesh_feat.reshape(batch_size, -1, feat_dim))
+        features = features.reshape(-1, self.transformer_out_dim)
 
-        x = torch.cat([x, local_feat, conv_feat], dim=1)
+        x = torch.cat([x, features], dim=1)
+        # x = torch.cat([x, local_feat, conv_feat], dim=1)
         x = self.deformer(x, edge_idx)
 
         return x
