@@ -10,10 +10,11 @@ import torch.nn.functional as F
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
-from extractor import (  # noqa: E402
+from extractor import (  # noqa
     LocalFeatExtractor, GlobalFeatExtractor
 )
-from transformer_model import TransformerModel
+from transformer_model import TransformerModel # noqa
+
 __all__ = ['MRT_phi']
 
 
@@ -95,7 +96,7 @@ class MLPDeformer(MessagePassing):
         return output_coord, hidden
 
 
-class MRTransformer(torch.nn.Module):
+class MRT_phi(torch.nn.Module):
     """
     Mesh Refinement Network (MRN) implementing global and local feature
         extraction and recurrent graph-based deformations. 
@@ -133,7 +134,9 @@ class MRTransformer(torch.nn.Module):
 
         self.transformer_in_dim = 4
         self.transformer_out_dim = 16
-        self.transformer_encoder = TransformerModel(input_dim=self.transformer_in_dim, embed_dim=64, output_dim=self.transformer_out_dim, num_heads=4, num_layers=1)
+        self.transformer_encoder = TransformerModel(
+            input_dim=self.transformer_in_dim, embed_dim=64,
+            output_dim=self.transformer_out_dim, num_heads=4, num_layers=1)
         self.all_feat_c = (
             (deform_in_c-2) + self.transformer_out_dim)
         # use a linear layer to transform the input feature to hidden
