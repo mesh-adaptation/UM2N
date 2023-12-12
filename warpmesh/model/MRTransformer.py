@@ -70,7 +70,7 @@ class RecurrentGATConv(MessagePassing):
         in_data[self.right_node_idx, 1] = 1
 
 
-# class MLPDeformer(MessagePassing):
+class MLPDeformer(MessagePassing):
     """
     Implements a Recurrent Graph Attention Network (GAT) Convolution layer.
 

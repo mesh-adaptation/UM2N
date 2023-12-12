@@ -27,45 +27,6 @@ class RecurrentGATConv(MessagePassing):
         to_coord (nn.Sequential): Output layer for coordinates.
         activation (nn.SELU): Activation function.
     """
-    def __init__(self, phi_size=1,
-                 hidden_size=512,
-                 heads=6, concat=False
-                 ):
-        super(RecurrentGATConv, self).__init__()
-        # GAT layer
-        self.to_hidden = GATv2Conv(
-            in_channels=phi_size+hidden_size,
-            out_channels=hidden_size,
-            heads=heads,
-            concat=concat
-        )
-        # output coord layer
-        self.to_phi = nn.Sequential(
-            nn.Linear(hidden_size, 1),
-        )
-        # activation function
-        self.activation = nn.SELU()
-
-    def forward(self, phi, hidden_state, edge_index):
-        # find boundary
-        # Recurrent GAT
-        in_feat = torch.cat((phi, hidden_state), dim=1)
-        hidden = self.to_hidden(in_feat, edge_index)
-        hidden = self.activation(hidden)
-        output_phi = self.to_phi(hidden)
-
-        return output_phi, hidden
-
-
-class MLPDeformer(MessagePassing):
-    """
-    Implements a Recurrent Graph Attention Network (GAT) Convolution layer.
-
-    Attributes:
-        to_hidden (GATv2Conv): Graph Attention layer.
-        to_coord (nn.Sequential): Output layer for coordinates.
-        activation (nn.SELU): Activation function.
-    """
     def __init__(self, in_size=1,
                  hidden_size=512,
                  heads=6, concat=False
@@ -79,27 +40,66 @@ class MLPDeformer(MessagePassing):
             concat=concat
         )
         # output coord layer
-        self.to_coord = nn.Sequential(
-            nn.Linear(hidden_size, 2),
+        self.to_out = nn.Sequential(
+            nn.Linear(hidden_size, 1),
         )
         # activation function
         self.activation = nn.SELU()
 
-    def forward(self, phi, hidden_state, edge_index):
+    def forward(self, in_feat, hidden_state, edge_index):
         # find boundary
         # Recurrent GAT
-        in_feat = torch.cat((phi, hidden_state), dim=1)
+        in_feat = torch.cat((in_feat, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
         hidden = self.activation(hidden)
-        output_coord = self.to_out(hidden)
-        # fix boundary
-        return output_coord, hidden
+        output = self.to_out(hidden)
+
+        return output, hidden
+
+
+# class MLPDeformer(MessagePassing):
+#     """
+#     Implements a Recurrent Graph Attention Network (GAT) Convolution layer.
+
+#     Attributes:
+#         to_hidden (GATv2Conv): Graph Attention layer.
+#         to_coord (nn.Sequential): Output layer for coordinates.
+#         activation (nn.SELU): Activation function.
+#     """
+#     def __init__(self, in_size=1,
+#                  hidden_size=512,
+#                  heads=6, concat=False
+#                  ):
+#         super(RecurrentGATConv, self).__init__()
+#         # GAT layer
+#         self.to_out = GATv2Conv(
+#             in_channels=in_size+hidden_size,
+#             out_channels=hidden_size,
+#             heads=heads,
+#             concat=concat
+#         )
+#         # output coord layer
+#         self.to_coord = nn.Sequential(
+#             nn.Linear(hidden_size, 2),
+#         )
+#         # activation function
+#         self.activation = nn.SELU()
+
+#     def forward(self, phi, hidden_state, edge_index):
+#         # find boundary
+#         # Recurrent GAT
+#         in_feat = torch.cat((phi, hidden_state), dim=1)
+#         hidden = self.to_hidden(in_feat, edge_index)
+#         hidden = self.activation(hidden)
+#         output_coord = self.to_out(hidden)
+#         # fix boundary
+#         return output_coord, hidden
 
 
 class MRT_phi(torch.nn.Module):
     """
     Mesh Refinement Network (MRN) implementing global and local feature
-        extraction and recurrent graph-based deformations. 
+        extraction and recurrent graph-based deformations.
         The global feature extraction is performed by a transformer.
 
     Attributes:
