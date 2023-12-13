@@ -459,7 +459,7 @@ for epoch in range(config.num_epochs + 1):
   if (epoch + 1) % config.save_interval == 0:
     torch.save(model.state_dict(), "{}/model_{}.pth".format(output_folder, epoch))
     # artifact.add_file(local_path="model_{}.pth".format(epoch))
-    wandb.save("model_{}.pth".format(epoch))
+    wandb.save("{}/model_{}.pth".format(output_folder, epoch))
 # run.log_artifact(artifact)
 run.finish()
 
