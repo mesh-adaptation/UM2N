@@ -91,7 +91,7 @@ def sampler(num_nodes, coords, edge_idx, node_idx, r=0.25, N=100):
 
 def get_new_edges(
         num_nodes, coords, edge_idx,
-        r=0.35, M=None, dist_weight=True,
+        r=0.35, M=None, dist_weight=False,
         add_nei=False,
         ):
     """

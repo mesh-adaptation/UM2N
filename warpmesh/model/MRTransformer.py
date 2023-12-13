@@ -196,27 +196,6 @@ class MRTransformer(torch.nn.Module):
         features = F.selu(self.lin(features))
         return features
 
-    def move(self, data, num_step=1):
-        """
-        Move the mesh according to the deformation learned, with given number
-            steps.
-
-        Args:
-            data (Data): Input data object containing mesh and feature info.
-            num_step (int): Number of deformation steps.
-
-        Returns:
-            coord (Tensor): Deformed coordinates.
-        """
-        coord = data.x[:, :2]
-        edge_idx = data.edge_index
-        hidden = self._forward(data)
-
-        # Recurrent GAT deform
-        for i in range(num_step):
-            coord, hidden = self.deformer(coord, hidden, edge_idx)
-
-        return coord
 
     def forward(self, data):
         """
@@ -235,6 +214,28 @@ class MRTransformer(torch.nn.Module):
 
         # Recurrent GAT deform
         for i in range(self.num_loop):
+            coord, hidden = self.deformer(coord, hidden, edge_idx)
+
+        return coord
+
+    def move(self, data, num_step=1):
+        """
+        Move the mesh according to the deformation learned, with given number
+            steps.
+
+        Args:
+            data (Data): Input data object containing mesh and feature info.
+            num_step (int): Number of deformation steps.
+
+        Returns:
+            coord (Tensor): Deformed coordinates.
+        """
+        coord = data.x[:, :2]
+        edge_idx = data.edge_index
+        hidden = self._forward(data)
+
+        # Recurrent GAT deform
+        for i in range(num_step):
             coord, hidden = self.deformer(coord, hidden, edge_idx)
 
         return coord
