@@ -33,6 +33,11 @@ num_deformer_loop: 5
 num_epochs: 1000
 num_gfe_in: 2
 num_lfe_in: 4
+num_transformer_in: 4
+num_transformer_out: 16
+num_transformer_embed_dim: 64
+num_transformer_heads: 4
+num_transformer_layers: 1
 out_path: ./out
 print_interval: 1
 project: warpmesh

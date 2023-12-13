@@ -177,9 +177,12 @@ elif (config.model_used == "MRNLocalTransformerEncoder"):
 )
 elif (config.model_used == "MRTransformer"):
   model = MRTransformer(
+    num_transformer_in=config.num_transformer_in, 
+    num_transformer_out=config.num_transformer_out, 
+    num_transformer_embed_dim=config.num_transformer_embed_dim, 
+    num_transformer_heads=config.num_transformer_heads, 
+    num_transformer_layers=config.num_transformer_layers,
     deform_in_c=config.num_deform_in,
-    gfe_in_c=config.num_gfe_in,
-    lfe_in_c=config.num_lfe_in,
     num_loop=config.num_deformer_loop,
 )
 elif (config.model_used == "M2Transformer"):
