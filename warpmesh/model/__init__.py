@@ -9,6 +9,7 @@ from .M2N_atten import * # noqa
 from .MRN_fix import *  # noqa
 from .MRN_GTE import * # noqa
 from .MRN_LTE import * # noqa
-from .MRTransformer import * # noqa
+from .MRT import * # noqa
 from .M2Transformer import * # noqa
 from .extractor import *  # noqa
+from .deformer import * # noqa
