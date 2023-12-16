@@ -12,8 +12,8 @@ from io import BytesIO
 
 import warnings
 warnings.filterwarnings('ignore')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device('cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
 
 # run_id = 'welbby7t'
 # run_id = 'vwopbol5'
@@ -28,14 +28,14 @@ run_id = 'xqa8fnoj' # M2N
 # run_id = 'j9rjsxl1' # MRT + sampling
 # run_id = 'hegubzg0' # MRN + sampling
 
-run_id_collections = {"MRT":['mfn1hnrg'], "MRT-Sampling":['j9rjsxl1'], "MRN-GTE":['ywtfui2q'], "MRN-LTE":['uu515eu1'], "MRN":['0iwpdpnr'], "M2T":['gboubixk'], "M2N":['xqa8fnoj']}
-test_ms = 25
+run_id_collections = {"MRT":['mfn1hnrg'], "MRT-Sampling":['j9rjsxl1'], "MRN-Sampling":['hegubzg0'], "MRN-GTE":['ywtfui2q'], "MRN-LTE":['uu515eu1'], "MRN":['0iwpdpnr'], "M2T":['gboubixk'], "M2N":['xqa8fnoj']}
+test_ms = 35
 
-models_to_compare = ["MRT", "MRT-Sampling", "MRN", "M2T", "M2N"]
+models_to_compare = ["MRT", "MRN-LTE", "MRT-Sampling", "MRN-Sampling", "MRN", "M2T", "M2N"]
 # test dataset, for benchmarking loss effects on model performance
 # test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-random_seed = 42
+random_seed = 66
 
 out_mesh_collections = {}
 out_loss_collections = {}
@@ -143,7 +143,12 @@ for model_name in models_to_compare:
     for file in run.files():
         print(file.name)
 
+    
     epoch = 999
+    # TODO: the MRN-Sampling ('hegubzg0') only trained 800 epochs
+    if run_id == 'hegubzg0':
+       epoch = 799
+
     target_file_name = "model_{}.pth".format(epoch)
 
     model_file = None
