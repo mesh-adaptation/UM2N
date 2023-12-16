@@ -177,9 +177,12 @@ elif (config.model_used == "MRNLocalTransformerEncoder"):
 )
 elif (config.model_used == "MRTransformer"):
   model = MRTransformer(
+    num_transformer_in=config.num_transformer_in, 
+    num_transformer_out=config.num_transformer_out, 
+    num_transformer_embed_dim=config.num_transformer_embed_dim, 
+    num_transformer_heads=config.num_transformer_heads, 
+    num_transformer_layers=config.num_transformer_layers,
     deform_in_c=config.num_deform_in,
-    gfe_in_c=config.num_gfe_in,
-    lfe_in_c=config.num_lfe_in,
     num_loop=config.num_deformer_loop,
 )
 elif (config.model_used == "M2Transformer"):
@@ -459,7 +462,7 @@ for epoch in range(config.num_epochs + 1):
   if (epoch + 1) % config.save_interval == 0:
     torch.save(model.state_dict(), "{}/model_{}.pth".format(output_folder, epoch))
     # artifact.add_file(local_path="model_{}.pth".format(epoch))
-    wandb.save("model_{}.pth".format(epoch))
+    wandb.save("{}/model_{}.pth".format(output_folder, epoch))
 # run.log_artifact(artifact)
 run.finish()
 

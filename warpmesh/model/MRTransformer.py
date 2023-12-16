@@ -139,7 +139,7 @@ class MRTransformer(torch.nn.Module):
         lin (nn.Linear): Linear layer for feature transformation.
         deformer (RecurrentGATConv): GAT-based deformer block.
     """
-    def __init__(self, gfe_in_c=2, lfe_in_c=4,
+    def __init__(self, num_transformer_in=4, num_transformer_out=16, num_transformer_embed_dim=64, num_transformer_heads=4, num_transformer_layers=1,
                  deform_in_c=7, num_loop=3):
         """
         Initialize MRN.
@@ -152,18 +152,16 @@ class MRTransformer(torch.nn.Module):
         """
         super().__init__()
         self.num_loop = num_loop
-        # self.gfe_out_c = 16
-        # self.lfe_out_c = 16
         self.hidden_size = 512  # set here
-        # minus 2 because we are not using x,y coord (first 2 channels)
-        # self.all_feat_c = (
-        #     (deform_in_c-2) + self.gfe_out_c + self.lfe_out_c)
 
-        self.transformer_in_dim = 4
-        self.transformer_out_dim = 16
-        self.transformer_encoder = TransformerModel(input_dim=self.transformer_in_dim, embed_dim=64, output_dim=self.transformer_out_dim, num_heads=4, num_layers=1)
+        self.num_transformer_in = num_transformer_in
+        self.num_transformer_out = num_transformer_out
+        self.num_transformer_embed_dim = num_transformer_embed_dim
+        self.num_heads = num_transformer_heads
+        self.num_layers = num_transformer_layers
+        self.transformer_encoder = TransformerModel(input_dim=self.num_transformer_in, embed_dim=self.num_transformer_embed_dim, output_dim=self.num_transformer_out, num_heads=self.num_heads, num_layers=self.num_layers)
         self.all_feat_c = (
-            (deform_in_c-2) + self.transformer_out_dim)
+            (deform_in_c-2) + self.num_transformer_out)
         # use a linear layer to transform the input feature to hidden
         # state size
         self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
@@ -191,32 +189,32 @@ class MRTransformer(torch.nn.Module):
         feat_dim = mesh_feat.shape[-1]
         # mesh_feat [coord_x, coord_y, u, hessian_norm]
         features = self.transformer_encoder(mesh_feat.reshape(batch_size, -1, feat_dim))
-        features = features.reshape(-1, self.transformer_out_dim)
+        features = features.reshape(-1, self.num_transformer_out)
         features = torch.cat([data.x[:, 2:], features], dim=1)
         features = F.selu(self.lin(features))
         return features
 
-    def move(self, data, num_step=1):
-        """
-        Move the mesh according to the deformation learned, with given number
-            steps.
+    # def move(self, data, num_step=1):
+    #     """
+    #     Move the mesh according to the deformation learned, with given number
+    #         steps.
 
-        Args:
-            data (Data): Input data object containing mesh and feature info.
-            num_step (int): Number of deformation steps.
+    #     Args:
+    #         data (Data): Input data object containing mesh and feature info.
+    #         num_step (int): Number of deformation steps.
 
-        Returns:
-            coord (Tensor): Deformed coordinates.
-        """
-        coord = data.x[:, :2]
-        edge_idx = data.edge_index
-        hidden = self._forward(data)
+    #     Returns:
+    #         coord (Tensor): Deformed coordinates.
+    #     """
+    #     coord = data.x[:, :2]
+    #     edge_idx = data.edge_index
+    #     hidden = self._forward(data)
 
-        # Recurrent GAT deform
-        for i in range(num_step):
-            coord, hidden = self.deformer(coord, hidden, edge_idx)
+    #     # Recurrent GAT deform
+    #     for i in range(num_step):
+    #         coord, hidden = self.deformer(coord, hidden, edge_idx)
 
-        return coord
+    #     return coord
 
     def forward(self, data):
         """

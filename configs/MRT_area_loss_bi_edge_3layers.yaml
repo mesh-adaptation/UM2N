@@ -15,7 +15,7 @@ mesh_feat:
 - coord
 - u
 - hessian_norm
-model_used: MRN
+model_used: MRTransformer
 multi_scale_check_interval: 50
 n_grids:
 - 15
@@ -51,7 +51,7 @@ num_transformer_in: 4
 num_transformer_out: 16
 num_transformer_embed_dim: 64
 num_transformer_heads: 4
-num_transformer_layers: 1
+num_transformer_layers: 3
 out_path: ./out
 print_interval: 1
 project: warpmesh
