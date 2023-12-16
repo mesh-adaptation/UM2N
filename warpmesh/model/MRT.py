@@ -1,3 +1,7 @@
+# Author: Chunyang Wang
+# GitHub Username: acse-cw1722
+# Modified by Mingrui Zhang
+
 import sys
 import os
 import torch
@@ -16,9 +20,8 @@ __all__ = ['MRTransformer']
 
 class MRTransformer(torch.nn.Module):
     """
-    Mesh Refinement Network (MRN) implementing global and local feature
-        extraction and recurrent graph-based deformations. 
-        The global feature extraction is performed by a transformer.
+    Mesh Refinement Network (MRN) implementing transformer as feature
+        extrator and recurrent graph-based deformations. 
 
     Attributes:
         num_loop (int): Number of loops for the recurrent layer.
