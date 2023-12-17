@@ -173,7 +173,7 @@ class MRTransformer(torch.nn.Module):
             heads=6,
             concat=False
         )
-    
+
     def _forward(self, data):
         """
         Forward pass for MRN.
@@ -195,7 +195,6 @@ class MRTransformer(torch.nn.Module):
         features = torch.cat([data.x[:, 2:], features], dim=1)
         features = F.selu(self.lin(features))
         return features
-
 
     def forward(self, data):
         """

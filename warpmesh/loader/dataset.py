@@ -83,7 +83,7 @@ class MeshDataset(Dataset):
             load_jacobian=False,
             use_cluster=False,
             use_run_time_cluster=False,
-            r=0.25,
+            r=0.35,
             M=25,
             dist_weight=False,
             add_nei=True,

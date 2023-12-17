@@ -27,8 +27,8 @@ class MeshGenerator():
         "mesh": None,
     }):
         self.eq = params["helmholtz_eq"]
-        self.num_grid_x = params["num_grid_x"]
-        self.num_grid_y = params["num_grid_y"]
+        # self.num_grid_x = params["num_grid_x"]
+        # self.num_grid_y = params["num_grid_y"]
         self.mesh = params["mesh"]
 
     def move_mesh(self):
