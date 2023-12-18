@@ -8,6 +8,7 @@ import firedrake as fd
 import shutil
 import matplotlib.pyplot as plt
 import random
+import numpy as np
 from argparse import ArgumentParser
 
 
@@ -24,12 +25,12 @@ def arg_parse():
     parser.add_argument('--lc', type=float, default=7e-2,
                         help='the length characteristic of the elements in the\
                             mesh')
-    parser.add_argument('--field_type', type=str, default="iso",
+    parser.add_argument('--field_type', type=str, default="aniso",
                         help='anisotropic or isotropic data type(aniso/iso)')
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument('--boundary_scheme', type=str, default="pad",
+    parser.add_argument('--boundary_scheme', type=str, default="full",
                         help='scheme used to generate the dataset (pad/full))')
-    parser.add_argument('--n_samples', type=int, default=400,
+    parser.add_argument('--n_samples', type=int, default=100,
                         help='number of samples generated')
     parser.add_argument('--rand_seed', type=int, default=63,
                         help='number of samples generated')
@@ -45,6 +46,7 @@ use_iso = True if data_type == "iso" else False
 
 rand_seed = args.rand_seed
 random.seed(rand_seed)
+np.random.seed(rand_seed)
 
 # ====  Parameters ======================
 problem = "holmholtz_poly"
@@ -123,13 +125,13 @@ problem_data_dir = os.path.join(problem_specific_dir, "data")
 problem_plot_dir = os.path.join(problem_specific_dir, "plot")
 problem_log_dir = os.path.join(problem_specific_dir, "log")
 
-problem_temp_dir = os.path.join(problem_specific_dir, "temp")
+problem_mesh_dir = os.path.join(problem_specific_dir, "mesh")
 problem_train_dir = os.path.join(problem_specific_dir, "train")
 problem_test_dir = os.path.join(problem_specific_dir, "test")
 problem_val_dir = os.path.join(problem_specific_dir, "val")
 
-if not os.path.exists(problem_temp_dir):
-    os.makedirs(problem_temp_dir)
+if not os.path.exists(problem_mesh_dir):
+    os.makedirs(problem_mesh_dir)
 
 if not os.path.exists(problem_data_dir):
     os.makedirs(problem_data_dir)
@@ -168,7 +170,7 @@ if __name__ == "__main__":
             rand_poly_mesh_gen = wm.RandPolyMesh(
                 res=lc,
                 file_path=os.path.join(
-                    problem_temp_dir, "temp.msh"
+                    problem_mesh_dir, f"mesh{i}.msh"
                 )
             )
             mesh = rand_poly_mesh_gen.get_mesh()
@@ -239,13 +241,7 @@ if __name__ == "__main__":
 
             # get phi/grad_phi projected to the original mesh
             phi = mesh_gen.get_phi()
-            # phi = fd.project(
-            #     phi, fd.FunctionSpace(mesh, "CG", 1)
-            # )
             grad_phi = mesh_gen.get_grad_phi()
-            # grad_phi = fd.project(
-            #     grad_phi, fd.VectorFunctionSpace(mesh, "CG", 1)
-            # )
 
             # solve the equation on the new mesh
             new_res = helmholtz_eq.discretise(new_mesh)

@@ -40,7 +40,8 @@ class MeshGenerator():
         - The moved mesh
         """
         mover = mv.MongeAmpereMover(
-            self.mesh, self.monitor_func, method="relaxation", rtol=1e-3)
+            self.mesh, self.monitor_func, method="relaxation", rtol=1e-3,
+            maxiter=500)
         mover.move()
         # extract Hessian of the movement
         sigma = mover.sigma

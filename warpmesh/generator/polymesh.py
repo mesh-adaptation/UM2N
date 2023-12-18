@@ -28,7 +28,6 @@ class RandPolyMesh():
         self.three_quater = (self.mid + self.end) / 2
         self.mid_interval = (self.end - self.start) / 3
         self.quater_interval = (self.mid - self.start) / 4
-        file_path = file_path
         self.file_path = file_path
         # temp vars
         self.points = []
@@ -42,7 +41,7 @@ class RandPolyMesh():
         self.get_boundaries()
         gmsh.model.addPhysicalGroup(2, [1], name="My surface")
         gmsh.model.mesh.generate(2)
-        gmsh.write(file_path)
+        gmsh.write(self.file_path)
         gmsh.finalize()
         self.num_boundary = len(self.lines)
         return
@@ -55,66 +54,57 @@ class RandPolyMesh():
         split_p = np.random.uniform(0, 1, 4)
         # edge 1
         if (split_p[0] < self.split_threshold):
-            p1 = gmsh.model.geo.addPoint(
-                self.get_rand(self.quater, self.quater_interval), 0,
-                0, self.lc)
-            p2 = gmsh.model.geo.addPoint(
-                self.get_rand(self.three_quater, self.quater_interval), 0,
-                0, self.lc)
-            points.append(p1)
-            points.append(p2)
+            points.append(
+                [self.get_rand(self.quater, self.quater_interval), 0])
+            points.append(
+                [self.get_rand(self.three_quater, self.quater_interval), 0]
+            )
         else:
-            p1 = gmsh.model.geo.addPoint(
-                self.get_rand(self.mid, self.mid_interval), 0,
-                0, self.lc)
-            points.append(p1)
+            points.append([self.get_rand(self.mid, self.mid_interval), 0])
         # edge 2
         if (split_p[1] < self.split_threshold):
-            p1 = gmsh.model.geo.addPoint(
-                self.scale, self.get_rand(self.quater, self.quater_interval),
-                0, self.lc)
-            p2 = gmsh.model.geo.addPoint(
-                self.scale, self.get_rand(
-                    self.three_quater, self.quater_interval),
-                0, self.lc)
-            points.append(p1)
-            points.append(p2)
+            points.append(
+                [self.scale, self.get_rand(self.quater, self.quater_interval)]
+            )
+            points.append(
+                [self.scale, self.get_rand(
+                    self.three_quater, self.quater_interval)])
         else:
-            p1 = gmsh.model.geo.addPoint(
-                self.scale, self.get_rand(self.mid, self.mid_interval),
-                0, self.lc)
-            points.append(p1)
+            points.append(
+                [self.scale, self.get_rand(self.mid, self.mid_interval)]
+            )
         # edge 3
         if (split_p[2] < self.split_threshold):
-            p1 = gmsh.model.geo.addPoint(
-                self.get_rand(self.three_quater, self.quater_interval),
-                self.scale, 0, self.lc)
-            p2 = gmsh.model.geo.addPoint(
-                self.get_rand(self.quater, self.quater_interval),
-                self.scale, 0, self.lc)
-            points.append(p1)
-            points.append(p2)
+            points.append(
+                [self.get_rand(self.three_quater, self.quater_interval),
+                 self.scale]
+            )
+            points.append(
+                [self.get_rand(self.quater, self.quater_interval),
+                 self.scale]
+            )
         else:
-            p1 = gmsh.model.geo.addPoint(
-                self.get_rand(self.mid, self.mid_interval),
-                self.scale, 0, self.lc)
-            points.append(p1)
+            points.append(
+                [self.get_rand(self.mid, self.mid_interval),
+                 self.scale]
+            )
         # edge 4
         if (split_p[3] < self.split_threshold):
-            p1 = gmsh.model.geo.addPoint(
-                0, self.get_rand(self.three_quater, self.quater_interval),
-                0, self.lc)
-            p2 = gmsh.model.geo.addPoint(
-                0, self.get_rand(self.quater, self.quater_interval),
-                0, self.lc)
-            points.append(p1)
-            points.append(p2)
+            points.append([
+                0, self.get_rand(self.three_quater, self.quater_interval)])
+            points.append([
+                0, self.get_rand(self.quater, self.quater_interval)])
         else:
-            p1 = gmsh.model.geo.addPoint(
-                0, self.get_rand(self.mid, self.mid_interval),
-                0, self.lc)
-            points.append(p1)
-        self.points = points
+            points.append(
+                [0, self.get_rand(self.mid, self.mid_interval)]
+            )
+            # points.append(p1)
+        temp = []
+        for i in range(len(points)):
+            temp.append(gmsh.model.geo.addPoint(
+                points[i][0], points[i][1], 0, self.lc))
+        self.points = temp
+        self.raw_points = points
         return
 
     def get_line(self):
@@ -152,5 +142,7 @@ class RandPolyMesh():
 
 
 if __name__ == "__main__":
-    mesh = RandPolyMesh()
+    mesh = RandPolyMesh(res=5e-2)
     mesh.show()
+    import matplotlib.pyplot as plt
+    plt.show()
