@@ -4,7 +4,11 @@ import os
 import firedrake as fd
 
 os.environ['OMP_NUM_THREADS'] = "1"
-__all__ = ["RandHelmholtzEqGenerator", "RandPossionEqGenerator"]
+__all__ = [
+    "RandHelmholtzEqGenerator",
+    "RandPossionEqGenerator",
+    "HelmholtzEqGenerator",
+]
 
 
 # Generate a random Helmholtz equation based on a Gaussian distribution.
@@ -34,6 +38,40 @@ class RandHelmholtzEqGenerator():
             fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
         self.bc = fd.DirichletBC(
             self.function_space, self.u_exact, "on_boundary")
+        # Discretised Eq Definition End
+        return {
+            "mesh": mesh,
+            "function_space": self.function_space,
+            "u_exact": self.u_exact,
+            "LHS": self.LHS,
+            "RHS": self.RHS,
+            "bc": self.bc,
+            "f": self.f,
+        }
+
+
+class HelmholtzEqGenerator():
+    def __init__(self, params={
+        "f_func": None,
+        "u_exact_func": None,
+    }):
+        self.f_func = params["f_func"]
+        self.u_exact = params["u_exact_func"]
+
+    def discretise(self, mesh):
+        x, y = fd.SpatialCoordinate(mesh)
+        V = fd.FunctionSpace(mesh, "CG", 1)
+        u = fd.TrialFunction(V)
+        v = fd.TestFunction(V)
+        self.function_space = V
+
+        # Discretised Eq Definition Start
+        self.f = self.f_func(x, y)
+        self.RHS = self.f * v * fd.dx(domain=mesh)
+        self.LHS = (fd.dot(
+            fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+        self.bc = fd.DirichletBC(
+            self.function_space, self.u_exact(x, y), "on_boundary")
         # Discretised Eq Definition End
         return {
             "mesh": mesh,

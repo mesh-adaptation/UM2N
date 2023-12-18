@@ -78,11 +78,11 @@ class RandSourceGenerator():
         for i in range(self.n_dist):
             σ_mean = random.gauss((
                 self.dist_params["x_end"] -
-                self.dist_params["x_start"])/24)
+                self.dist_params["x_start"])/24, 1)
             σ_sigma = random.gauss((
                 self.dist_params["y_end"] -
-                self.dist_params["y_start"])/48)
-    
+                self.dist_params["y_start"])/48, 1)
+
             self.μ_dict["x"].append(round(random.uniform(
                 self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
             self.μ_dict["y"].append(round(random.uniform(

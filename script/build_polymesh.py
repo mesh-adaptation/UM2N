@@ -8,6 +8,7 @@ import firedrake as fd
 import shutil
 import matplotlib.pyplot as plt
 import random
+import numpy as np
 from argparse import ArgumentParser
 
 
@@ -21,15 +22,15 @@ def arg_parse():
                         help='number of distributions used to\
                             generate the dataset (this will disable\
                                 max_dist)')
-    parser.add_argument('--n_grid', type=int, default=20,
-                        help='number of grids of a\
-                            discretized mesh')
-    parser.add_argument('--field_type', type=str, default="iso",
+    parser.add_argument('--lc', type=float, default=7e-2,
+                        help='the length characteristic of the elements in the\
+                            mesh')
+    parser.add_argument('--field_type', type=str, default="aniso",
                         help='anisotropic or isotropic data type(aniso/iso)')
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument('--boundary_scheme', type=str, default="pad",
+    parser.add_argument('--boundary_scheme', type=str, default="full",
                         help='scheme used to generate the dataset (pad/full))')
-    parser.add_argument('--n_samples', type=int, default=400,
+    parser.add_argument('--n_samples', type=int, default=100,
                         help='number of samples generated')
     parser.add_argument('--rand_seed', type=int, default=63,
                         help='number of samples generated')
@@ -45,9 +46,10 @@ use_iso = True if data_type == "iso" else False
 
 rand_seed = args.rand_seed
 random.seed(rand_seed)
+np.random.seed(rand_seed)
 
 # ====  Parameters ======================
-problem = "holmholtz"
+problem = "holmholtz_poly"
 
 n_samples = args.n_samples
 
@@ -58,9 +60,7 @@ scale_y = 1
 # parameters for random source
 max_dist = args.max_dist
 n_dist = args.n_dist
-num_grid = args.n_grid
-num_grid_x = num_grid
-num_grid_y = num_grid
+lc = args.lc
 
 # parameters for anisotropic data - distribution height scaler
 z_min = 0
@@ -91,7 +91,7 @@ df = pd.DataFrame({
     'data_type': [data_type],
     'scheme': [scheme],
     'n_samples': [n_samples],
-    'n_grid': [num_grid],
+    'lc': [lc],
 })
 
 
@@ -112,12 +112,12 @@ def move_data(target, source, start, num_file):
 
 
 project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-dataset_dir = os.path.join(project_dir, "data", "dataset", "helmholtz")
+dataset_dir = os.path.join(project_dir, "data", "dataset", "helmholtz_poly")
 problem_specific_dir = os.path.join(
         dataset_dir,
-        "z=<{},{}>_ndist={}_max_dist={}_<{}x{}>_n={}_{}_{}".format(
+        "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}".format(
             z_min, z_max, n_dist, max_dist,
-            num_grid_x, num_grid_y, n_samples,
+            lc, n_samples,
             data_type, scheme))
 
 
@@ -125,10 +125,13 @@ problem_data_dir = os.path.join(problem_specific_dir, "data")
 problem_plot_dir = os.path.join(problem_specific_dir, "plot")
 problem_log_dir = os.path.join(problem_specific_dir, "log")
 
+problem_mesh_dir = os.path.join(problem_specific_dir, "mesh")
 problem_train_dir = os.path.join(problem_specific_dir, "train")
 problem_test_dir = os.path.join(problem_specific_dir, "test")
 problem_val_dir = os.path.join(problem_specific_dir, "val")
 
+if not os.path.exists(problem_mesh_dir):
+    os.makedirs(problem_mesh_dir)
 
 if not os.path.exists(problem_data_dir):
     os.makedirs(problem_data_dir)
@@ -164,8 +167,14 @@ if __name__ == "__main__":
     while (i < n_samples):
         try:
             print("Generating Sample: " + str(i))
-            mesh = fd.RectangleMesh(
-                num_grid_x, num_grid_y, scale_x, scale_y)
+            rand_poly_mesh_gen = wm.RandPolyMesh(
+                res=lc,
+                file_path=os.path.join(
+                    problem_mesh_dir, f"mesh{i}.msh"
+                )
+            )
+            mesh = rand_poly_mesh_gen.get_mesh()
+            num_boundary = rand_poly_mesh_gen.num_boundary
             # Generate Random solution field
             rand_u_generator = wm.RandSourceGenerator(
                 use_iso=use_iso, dist_params={
@@ -196,20 +205,14 @@ if __name__ == "__main__":
             uh = solver.solve_eq()
             # Generate Mesh
             hessian = wm.MeshGenerator(params={
-                    "num_grid_x": num_grid_x,
-                    "num_grid_y": num_grid_y,
                     "helmholtz_eq": helmholtz_eq,
-                    "mesh": fd.RectangleMesh(
-                        num_grid_x, num_grid_y, scale_x, scale_y)
+                    "mesh": rand_poly_mesh_gen.get_mesh()
                     }
             ).get_hessian(mesh)
 
             hessian_norm = wm.MeshGenerator(params={
-                    "num_grid_x": num_grid_x,
-                    "num_grid_y": num_grid_y,
                     "helmholtz_eq": helmholtz_eq,
-                    "mesh": fd.RectangleMesh(
-                        num_grid_x, num_grid_y, scale_x, scale_y)
+                    "mesh": rand_poly_mesh_gen.get_mesh()
                     }
             ).monitor_func(mesh)
 
@@ -221,11 +224,8 @@ if __name__ == "__main__":
                 fd.grad(uh), func_vec_space)
 
             mesh_gen = wm.MeshGenerator(params={
-                "num_grid_x": num_grid_x,
-                "num_grid_y": num_grid_y,
                 "helmholtz_eq": helmholtz_eq,
-                "mesh": fd.RectangleMesh(
-                    num_grid_x, num_grid_y, scale_x, scale_y)
+                "mesh": rand_poly_mesh_gen.get_mesh()
             })
 
             new_mesh = mesh_gen.move_mesh()
@@ -241,13 +241,7 @@ if __name__ == "__main__":
 
             # get phi/grad_phi projected to the original mesh
             phi = mesh_gen.get_phi()
-            # phi = fd.project(
-            #     phi, fd.FunctionSpace(mesh, "CG", 1)
-            # )
             grad_phi = mesh_gen.get_grad_phi()
-            # grad_phi = fd.project(
-            #     grad_phi, fd.VectorFunctionSpace(mesh, "CG", 1)
-            # )
 
             # solve the equation on the new mesh
             new_res = helmholtz_eq.discretise(new_mesh)
@@ -263,7 +257,8 @@ if __name__ == "__main__":
             mesh_processor = wm.MeshProcessor(
                 original_mesh=mesh, optimal_mesh=new_mesh,
                 function_space=new_res["function_space"],
-                use_4_edge=True,
+                use_4_edge=False, poly_mesh=True,
+                num_boundary=num_boundary,
                 feature={
                     "uh": uh.dat.data_ro.reshape(-1, 1),
                     "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(
