@@ -33,8 +33,8 @@ class MRTransformer(torch.nn.Module):
         lin (nn.Linear): Linear layer for feature transformation.
         deformer (RecurrentGATConv): GAT-based deformer block.
     """
-    def __init__(self, num_transformer_in=4, num_transformer_out=16, num_transformer_embed_dim=64, num_transformer_heads=4, num_transformer_layers=1,
-                 deform_in_c=7, num_loop=3):
+    def __init__(self, num_transformer_in=4, num_transformer_out=16, num_transformer_embed_dim=64, num_transformer_heads=4, num_transformer_layers=1, transformer_training_mask=False, transformer_training_mask_portion=0.5,
+                 deform_in_c=7, num_loop=3, device='cuda'):
         """
         Initialize MRN.
 
@@ -45,8 +45,11 @@ class MRTransformer(torch.nn.Module):
             num_loop (int): Number of loops for the recurrent layer.
         """
         super().__init__()
+        self.device =device
         self.num_loop = num_loop
         self.hidden_size = 512  # set here
+        self.mask_in_trainig = transformer_training_mask
+        self.mask_portion = transformer_training_mask_portion
 
         self.num_transformer_in = num_transformer_in
         self.num_transformer_out = num_transformer_out
@@ -66,7 +69,7 @@ class MRTransformer(torch.nn.Module):
             concat=False
         )
     
-    def _forward(self, data):
+    def _forward(self, batch_size, mesh_feat, x_feat, get_attens=False):
         """
         Forward pass for MRN.
 
@@ -76,19 +79,33 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
-        # coord = data.x[:, :2]  # [num_nodes * batch_size, 2]
-        conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
-        batch_size = conv_feat_in.shape[0]
-        mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 4]
+        # mesh_feat: [num_nodes * batch_size, 4]
         feat_dim = mesh_feat.shape[-1]
         # mesh_feat [coord_x, coord_y, u, hessian_norm]
-        features = self.transformer_encoder(mesh_feat.reshape(batch_size, -1, feat_dim))
-        features = features.reshape(-1, self.num_transformer_out)
-        features = torch.cat([data.x[:, 2:], features], dim=1)
-        features = F.selu(self.lin(features))
-        return features
+        transformer_input = mesh_feat.reshape(batch_size, -1, feat_dim)
+        node_num = transformer_input.shape[1]
 
-    # def move(self, data, num_step=1):
+        key_padding_mask = None
+        if self.train and self.mask_in_trainig:
+            masked_num = int(node_num * self.mask_portion)
+            mask = torch.randperm(node_num)[:masked_num]
+            key_padding_mask = torch.zeros([batch_size, node_num], dtype=torch.bool).to(self.device)
+            key_padding_mask[:, mask] = True
+            # print(key_padding_mask.shape, key_padding_mask)
+            # print("Now is training")
+        
+        features = self.transformer_encoder(transformer_input, key_padding_mask=key_padding_mask)
+        features = features.reshape(-1, self.num_transformer_out)
+        features = torch.cat([x_feat[:, 2:], features], dim=1)
+        features = F.selu(self.lin(features))
+
+        if not get_attens:
+            return features
+        else:
+            atten_scores = self.transformer_encoder.get_attention_scores(x=transformer_input, key_padding_mask=key_padding_mask)
+            return features, atten_scores
+    
+    def move(self, data, num_step=1):
     #     """
     #     Move the mesh according to the deformation learned, with given number
     #         steps.
@@ -100,15 +117,19 @@ class MRTransformer(torch.nn.Module):
     #     Returns:
     #         coord (Tensor): Deformed coordinates.
     #     """
-    #     coord = data.x[:, :2]
-    #     edge_idx = data.edge_index
-    #     hidden = self._forward(data)
+        conv_feat_in = data.conv_feat
+        batch_size = batch_size = conv_feat_in.shape[0]
+        feat_dim = data.x.shape[-1]
+        x_feat = data.x.reshape(-1, feat_dim)
+        coord = x_feat[:, :2]
+        edge_idx = data.edge_index
+        hidden = self._forward(batch_size, data.mesh_feat, x_feat)
 
-    #     # Recurrent GAT deform
-    #     for i in range(num_step):
-    #         coord, hidden = self.deformer(coord, hidden, edge_idx)
+        # Recurrent GAT deform
+        for i in range(num_step):
+            coord, hidden = self.deformer(coord, hidden, edge_idx)
 
-    #     return coord
+        return coord
 
     def forward(self, data):
         """
@@ -120,13 +141,28 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
-
-        coord = data.x[:, :2]
+        conv_feat_in = data.conv_feat
+        batch_size = batch_size = conv_feat_in.shape[0]
+        feat_dim = data.x.shape[-1]
+        x_feat = data.x.reshape(-1, feat_dim)
+        coord = x_feat[:, :2]
         edge_idx = data.edge_index
-        hidden = self._forward(data)
+        hidden = self._forward(batch_size, data.mesh_feat, x_feat)
 
         # Recurrent GAT deform
         for i in range(self.num_loop):
             coord, hidden = self.deformer(coord, hidden, edge_idx)
 
         return coord
+
+    def get_attention_scores(self, data):
+        conv_feat_in = data.conv_feat
+        batch_size = batch_size = conv_feat_in.shape[0]
+        feat_dim = data.x.shape[-1]
+        x_feat = data.x.reshape(-1, feat_dim)
+        # coord = x_feat[:, :2]
+        # edge_idx = data.edge_index
+        _, attentions = self._forward(batch_size, data.mesh_feat, x_feat, get_attens=True)
+        return attentions
+
+
