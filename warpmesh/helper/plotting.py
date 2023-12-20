@@ -8,7 +8,7 @@ from matplotlib.collections import PolyCollection
 
 __all__ = [
     'plot_loss', 'plot_tangle',
-    'plot_mesh', 'plot_mesh_compare', 'plot_multiple_mesh_compare',
+    'plot_mesh', 'plot_mesh_compare', 'plot_multiple_mesh_compare', 'plot_attentions_map'
 ]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -52,6 +52,13 @@ def plot_mesh(coord, face, ax=None):
     ax.set_aspect('equal')
     return ax, fig
 
+def plot_attention(attentions, ax=None):
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots()
+    ax.imshow(attentions[-1])
+    ax.set_aspect('equal')
+    return ax, fig
 
 def plot_mesh_compare(coord_out, coord_target, face):
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
@@ -77,4 +84,23 @@ def plot_multiple_mesh_compare(out_mesh_collections, out_loss_collections, targe
     for n_sample in range(num_samples):
         ax[n_sample, num_models], _ = plot_mesh(target_mesh[n_sample], target_face[n_sample], ax=ax[n_sample, num_models])
         ax[n_sample, num_models].set_title("Target", fontsize=16)
+    return fig
+
+
+def plot_attentions_map(out_atten_collections, out_loss_collections):
+    model_names = list(out_atten_collections.keys())
+    num_models = len(model_names)
+    num_samples = len(out_atten_collections[model_names[0]])
+    fig, ax = plt.subplots(num_samples, num_models, figsize=(4*num_models, 4*num_samples))
+    
+    for n_model, model_name in enumerate(model_names):
+        all_atten = out_atten_collections[model_name]
+        all_loss = out_loss_collections[model_name]
+        for n_sample in range(num_samples):
+            ax[n_sample, n_model], _ = plot_attention(all_atten[n_sample], ax=ax[n_sample, n_model])
+            ax[n_sample, n_model].set_title(f"{model_name} (loss: {all_loss[n_sample]:.2f})", fontsize=16)
+    # # Plot the ground truth
+    # for n_sample in range(num_samples):
+    #     ax[n_sample, num_models], _ = plot_mesh(target_mesh[n_sample], target_face[n_sample], ax=ax[n_sample, num_models])
+    #     ax[n_sample, num_models].set_title("Target", fontsize=16)
     return fig

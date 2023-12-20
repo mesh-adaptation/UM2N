@@ -4,8 +4,6 @@ import torch.nn.functional as F
 from torch import einsum
 from einops import rearrange, repeat
 
-# from src.utils.general_utils import dump_pickle, create_folder
-
 
 class MLP_model(torch.nn.Module):
     def __init__(self, input_channels, output_channels, list_hiddens=[128, 128], hidden_act="LeakyReLU", output_act="LeakyReLU", 
@@ -92,9 +90,10 @@ class TransformerBlock(nn.Module):
         
         
     def forward(self, x, x_cls=None, key_padding_mask=None, attn_mask=None, return_attn=False):
+        # In pytorch nn.MultiheadAttention, key_padding_mask True indicates ignore the corresponding key value
         # NOTE: check default True or False of key_padding_mask with nn.MultiheadAttention
-        if key_padding_mask is not None:
-            key_padding_mask = ~key_padding_mask
+        # if key_padding_mask is not None:
+        #     key_padding_mask = ~key_padding_mask
         
         if x_cls is not None:
             # to be implemented later
@@ -102,8 +101,9 @@ class TransformerBlock(nn.Module):
         else:
             residual = x
             x = self.pre_attn_norm(x)
-            # NOTE: not batch first, option to use batch first in nn.MultiheadAttention
-            # [num_points, batch_size, embed_dim]
+            # NOTE: Here we use batch first in nn.MultiheadAttention
+            # [batch_size, num_points, embed_dim]
+            
             x, attn_scores = self.attn_layer(x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
             
         if self.c_attn is not None:
@@ -171,6 +171,9 @@ class TransformerModel(nn.Module):
                 mask_mat =  rearrange(key_padding_mask, 'b i -> b i 1') * rearrange(key_padding_mask, 'b j -> b 1 j')
                 num_points = key_padding_mask.sum().numpy()
                 attn_mat = attn_scores.detach().numpy().squeeze()[mask_mat.numpy().squeeze()].reshape(num_points, num_points)
+            else:
+                # The dim for torch squeeze can not be tuple with a version lower than 2.0
+                attn_mat = torch.squeeze(attn_scores, dim=0).detach().cpu().numpy()
             list_attn_scores.append(attn_mat)
             
         return list_attn_scores
