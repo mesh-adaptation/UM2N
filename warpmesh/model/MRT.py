@@ -33,7 +33,14 @@ class MRTransformer(torch.nn.Module):
         lin (nn.Linear): Linear layer for feature transformation.
         deformer (RecurrentGATConv): GAT-based deformer block.
     """
-    def __init__(self, num_transformer_in=4, num_transformer_out=16, num_transformer_embed_dim=64, num_transformer_heads=4, num_transformer_layers=1, transformer_training_mask=False, transformer_training_mask_portion=0.5,
+    def __init__(self, num_transformer_in=4, 
+                 num_transformer_out=16, 
+                 num_transformer_embed_dim=64, 
+                 num_transformer_heads=4, 
+                 num_transformer_layers=1, 
+                 transformer_training_mask=False, 
+                 transformer_training_mask_ratio_lower_bound=0.5,
+                 transformer_training_mask_ratio_upper_bound=0.9,
                  deform_in_c=7, num_loop=3, device='cuda'):
         """
         Initialize MRN.
@@ -49,7 +56,9 @@ class MRTransformer(torch.nn.Module):
         self.num_loop = num_loop
         self.hidden_size = 512  # set here
         self.mask_in_trainig = transformer_training_mask
-        self.mask_portion = transformer_training_mask_portion
+        self.mask_ratio_ub = transformer_training_mask_ratio_upper_bound
+        self.mask_ratio_lb = transformer_training_mask_ratio_lower_bound
+        assert self.mask_ratio_ub >= self.mask_ratio_lb, 'Training mask ratio upper bound smaller than lower bound.'
 
         self.num_transformer_in = num_transformer_in
         self.num_transformer_out = num_transformer_out
@@ -87,7 +96,8 @@ class MRTransformer(torch.nn.Module):
 
         key_padding_mask = None
         if self.train and self.mask_in_trainig:
-            masked_num = int(node_num * self.mask_portion)
+            mask_ratio = (self.mask_ratio_ub - self.mask_ratio_lb) * torch.rand(1) + self.mask_ratio_lb
+            masked_num = int(node_num * mask_ratio)
             mask = torch.randperm(node_num)[:masked_num]
             key_padding_mask = torch.zeros([batch_size, node_num], dtype=torch.bool).to(self.device)
             key_padding_mask[:, mask] = True
@@ -106,17 +116,17 @@ class MRTransformer(torch.nn.Module):
             return features, atten_scores
     
     def move(self, data, num_step=1):
-    #     """
-    #     Move the mesh according to the deformation learned, with given number
-    #         steps.
+        """
+        Move the mesh according to the deformation learned, with given number
+            steps.
 
-    #     Args:
-    #         data (Data): Input data object containing mesh and feature info.
-    #         num_step (int): Number of deformation steps.
+        Args:
+            data (Data): Input data object containing mesh and feature info.
+            num_step (int): Number of deformation steps.
 
-    #     Returns:
-    #         coord (Tensor): Deformed coordinates.
-    #     """
+        Returns:
+            coord (Tensor): Deformed coordinates.
+        """
         conv_feat_in = data.conv_feat
         batch_size = batch_size = conv_feat_in.shape[0]
         feat_dim = data.x.shape[-1]
