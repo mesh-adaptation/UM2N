@@ -1,10 +1,10 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-n_samples_test=2
-n_samples_train=2
+n_samples_test=100
+n_samples_train=400
 
-lcs=(0.05 0.04 0.03 0.02)
+lcs=(0.06 0.055 0.05 0.045)
 
 # training set
 rand_seed=63
