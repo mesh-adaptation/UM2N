@@ -95,16 +95,23 @@ class MRTransformer(torch.nn.Module):
         node_num = transformer_input.shape[1]
 
         key_padding_mask = None
+        attention_mask = None
         if self.train and self.mask_in_trainig:
             mask_ratio = (self.mask_ratio_ub - self.mask_ratio_lb) * torch.rand(1) + self.mask_ratio_lb
             masked_num = int(node_num * mask_ratio)
             mask = torch.randperm(node_num)[:masked_num]
-            key_padding_mask = torch.zeros([batch_size, node_num], dtype=torch.bool).to(self.device)
-            key_padding_mask[:, mask] = True
+
+            # Key padding mask
+            # key_padding_mask = torch.zeros([batch_size, node_num], dtype=torch.bool).to(self.device)
+            # key_padding_mask[:, mask] = True
             # print(key_padding_mask.shape, key_padding_mask)
             # print("Now is training")
+
+            # Attention mask
+            attention_mask = torch.zeros([batch_size*self.num_heads, node_num, node_num], dtype=torch.bool).to(self.device)
+            attention_mask[:, mask, mask] = True
         
-        features = self.transformer_encoder(transformer_input, key_padding_mask=key_padding_mask)
+        features = self.transformer_encoder(transformer_input, key_padding_mask=key_padding_mask, attention_mask=attention_mask)
         features = features.reshape(-1, self.num_transformer_out)
         features = torch.cat([x_feat[:, 2:], features], dim=1)
         features = F.selu(self.lin(features))

@@ -183,7 +183,8 @@ elif (config.model_used == "MRTransformer"):
     num_transformer_heads=config.num_transformer_heads, 
     num_transformer_layers=config.num_transformer_layers,
     transformer_training_mask=config.transformer_training_mask,
-    transformer_training_mask_portion=config.transformer_training_mask_portion,
+    transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,
+    transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,
     deform_in_c=config.num_deform_in,
     num_loop=config.num_deformer_loop,
 )

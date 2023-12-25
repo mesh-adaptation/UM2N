@@ -138,7 +138,7 @@ class TransformerBlock(nn.Module):
         else:
             return x, attn_scores
     
-    
+
 class TransformerModel(nn.Module):
     def __init__(self, *, input_dim, embed_dim, output_dim, num_heads=4, num_layers=3) -> None:
         super(TransformerModel, self).__init__()
@@ -154,10 +154,10 @@ class TransformerModel(nn.Module):
         self.mlp_in = MLP_model(input_dim, embed_dim, [embed_dim], hidden_act="GELU", output_act="GELU")
         self.mlp_out = MLP_model(embed_dim, output_dim, [embed_dim], hidden_act="GELU", output_act="GELU")
         
-    def forward(self, x, key_padding_mask=None):
+    def forward(self, x, key_padding_mask=None, attention_mask=None):
         x = self.mlp_in(x)
         for _, layer in enumerate(self.attn_layers):
-            x = layer(x, key_padding_mask=key_padding_mask)
+            x = layer(x, key_padding_mask=key_padding_mask, attn_mask=attention_mask)
 
         x = self.mlp_out(x)
         return x

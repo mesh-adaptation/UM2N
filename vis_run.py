@@ -27,26 +27,43 @@ run_id = 'xqa8fnoj' # M2N
 # run_id = 'l9cfh1wj' # MRT
 # run_id = 'j9rjsxl1' # MRT + sampling
 # run_id = 'hegubzg0' # MRN + sampling
-
+run_id = '2b0ouh5p' # MRT + no up bottom left right
 
 run_id = 'kg4y9zak' # MRT + mask 0.95
 run_id = 'lmcata0v' # MRT + mask 0.75
 run_id = '8becmygf' # MRT + mask 0.50
 run_id = 'n2qcocej' # MRT + mask 0.25
 
+run_id = 'esn5ynfq' # MRT + 1 layer recurrent attention mask 0.50
+run_id = '7yaerq40' # MRT + 1 layer recurrent attention mask 0.50~0.90
+
 run_id = 'lvcal7vq' # MRT + 1 layer recurrent + mask 0.5
 run_id = 't233y3ik' # MRT + 1 layer recurrent + mask 0.75
 run_id = 'yl8fmiip' # MRT + 1 layer recurrent + mask 0.95
+run_id = 'nevv2a0d' # MRT + 1 layer recurrent + mask 0.5 ~ 0.9
 
-
+run_id = 'kx25grpm' # MRT + 3 layers recurrent
+run_id = '790xybc1' # MRT + 2 layers recurrent
 run_id = 'zdj9ocmw' # MRT + 1 layer recurrent
 
+
+
+
 run_id_collections = {"MRT":['mfn1hnrg'],
-                      "MRT-Recurrent-1":['zdj9ocmw'],
+
+                      "MRT-no-udlr":['2b0ouh5p'],
+
+                      "MRT-1R":['zdj9ocmw'],
+                      "MRT-2R":['790xybc1'],
+                      "MRT-3R":['kx25grpm'],
+
+                      "MRT-1R-atten-mask0.50":['esn5ynfq'],
+                      "MRT-1R-atten-mask0.50~0.90":['7yaerq40'],
                       
                       "MRT-1R-mask0.95":['yl8fmiip'],
                       "MRT-1R-mask0.75":['t233y3ik'],
                       "MRT-1R-mask0.50":['lvcal7vq'],
+                      "MRT-1R-mask0.50~0.9":['nevv2a0d'],
 
                       "MRT-mask0.95":['kg4y9zak'],
                       "MRT-mask0.75":['lmcata0v'],
@@ -60,17 +77,21 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRN":['0iwpdpnr'], 
                       "M2T":['gboubixk'], 
                       "M2N":['xqa8fnoj']}
-test_ms = 50
+test_ms = 60
 
 # models_to_compare = ["MRT", "MRN-LTE", "MRT-Sampling", "MRN-Sampling", "MRN", "M2T", "M2N"]
 # models_to_compare = ["MRT", "MRT-mask0.75", "MRT-mask0.50", "MRT-mask0.25", "MRN-LTE", "MRN", "M2T", "M2N"]
 # models_to_compare = ["MRT", "MRT-mask0.75", "MRT-mask0.50", "MRT-mask0.25"]
-models_to_compare = ["MRT", "MRT-Recurrent-1", "MRT-1R-mask0.50","MRT-1R-mask0.75","MRT-1R-mask0.95"]
+# models_to_compare = ["MRT", "MRT-1R", "MRT-1R-atten-mask0.50", "MRT-1R-atten-mask0.50~0.90", "MRT-1R-mask0.50", "MRT-1R-mask0.50~0.9"]
+
+models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
+# models_to_compare = ["MRT", "MRT-1R", "MRT-2R","MRT-3R"]
 # test dataset, for benchmarking loss effects on model performance
 # test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-random_seed = 11
+# test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
+random_seed = 555
 
 out_mesh_collections = {}
 out_loss_collections = {}
@@ -176,8 +197,8 @@ for model_name in models_to_compare:
     loader = DataLoader(test_set, batch_size=1, shuffle=True)
 
 
-    for file in run.files():
-        print(file.name)
+    # for file in run.files():
+    #     print(file.name)
 
     
     epoch = 999
@@ -232,10 +253,17 @@ for model_name in models_to_compare:
       torch.manual_seed(random_seed)
       for batch in loader:
           sample = batch.to(device)
-          if model_name != 'MRT':
-            out = model(sample)
+          if model_name == 'MRT':
+            out = model.move(sample, num_step=5)
           else:
-            out = model.move(sample, num_step=num_step_recurrent)
+            if 'MRT-1R' in model_name:
+              out = model.move(sample, num_step=1)
+            elif 'MRT-2R' in model_name:
+              out = model.move(sample, num_step=2)
+            elif 'MRT-3R' in model_name:
+              out = model.move(sample, num_step=3)
+            else:
+              out = model.move(sample, num_step=5)
           if 'MRT' in model_name:
              attentions = model.get_attention_scores(sample)
           deform_loss = loss_func(out, sample.y)*1000
