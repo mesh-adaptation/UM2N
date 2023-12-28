@@ -82,6 +82,7 @@ class MeshProcessor():
             self, original_mesh, optimal_mesh,
             function_space, use_4_edge=True,
             poly_mesh=False, num_boundary=4,
+            nu=None,
             feature={
                 "uh": None,
                 "grad_uh": None,
@@ -99,7 +100,8 @@ class MeshProcessor():
                 "z": None,
                 "w": None,
                 "use_iso": None,
-            }
+            },
+            gauss_list=None,   # used in burgers equation bumps generation
     ):
         self.use_4_edge = use_4_edge
         self.num_boundary = num_boundary
@@ -121,6 +123,9 @@ class MeshProcessor():
         self.find_bd()
         self.attach_feature()
         self.conv_feat = self.get_conv_feat()
+        # PDE params
+        self.nu = nu
+        self.gauss_list = gauss_list
         self.to_train_data()
 
     def get_conv_feat_poly(self):
@@ -288,6 +293,8 @@ class MeshProcessor():
             "use_iso": self.dist_params["use_iso"],
             "face_idxs": self.cell_node_list,
             "n_dist": self.dist_params["n_dist"],
+            "nu": self.nu,
+            "gauss_list": self.gauss_list,
         }
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)
@@ -346,14 +353,18 @@ class MeshProcessor():
 
         # boundary nodes solved using location of nodes
         if (use_4_edge):
-            self.left_bd = (self.coordinates[:, 0] == x_start).astype(int).reshape(-1, 1),
-            self.right_bd = (self.coordinates[:, 0] == x_end).astype(int).reshape(-1, 1),
-            self.down_bd = (self.coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),
-            self.up_bd = (self.coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),
+            self.left_bd = (self.coordinates[:, 0] == x_start).astype(int).reshape(-1, 1),  # noqa
+            self.right_bd = (self.coordinates[:, 0] == x_end).astype(int).reshape(-1, 1),  # noqa
+            self.down_bd = (self.coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),  # noqa
+            self.up_bd = (self.coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),  # noqa
             self.bd_all = np.any(
                 [self.left_bd, self.right_bd, self.down_bd, self.up_bd],
                 axis=0
             )
+            self.left_bd = self.left_bd[0]
+            self.right_bd = self.right_bd[0]
+            self.down_bd = self.down_bd[0]
+            self.up_bd = self.up_bd[0]
         # using poly mesh, set 4 edges to None
         if (self.poly_mesh):
             self.left_bd = None

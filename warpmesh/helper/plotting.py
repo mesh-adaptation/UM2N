@@ -9,6 +9,7 @@ from matplotlib.collections import PolyCollection
 __all__ = [
     'plot_loss', 'plot_tangle',
     'plot_mesh', 'plot_mesh_compare', 'plot_multiple_mesh_compare',
+    'plot_mesh_compare_benchmark'
 ]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -57,6 +58,15 @@ def plot_mesh_compare(coord_out, coord_target, face):
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
     ax[0], _ = plot_mesh(coord_out, face, ax=ax[0])
     ax[0].set_title("Output")
+    ax[1], _ = plot_mesh(coord_target, face, ax=ax[1])
+    ax[1].set_title("Target")
+    return fig
+
+
+def plot_mesh_compare_benchmark(coord_out, coord_target, face, loss, tangle):
+    fig, ax = plt.subplots(1, 2, figsize=(16, 8))
+    ax[0], _ = plot_mesh(coord_out, face, ax=ax[0])
+    ax[0].set_title(f"Output | Loss: {loss:.2f} | Tangle: {tangle:.2f}")
     ax[1], _ = plot_mesh(coord_target, face, ax=ax[1])
     ax[1].set_title("Target")
     return fig
