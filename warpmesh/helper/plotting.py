@@ -4,8 +4,6 @@
 import torch
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
-from .plotting import plot_mesh_compare_benchmark
-
 
 __all__ = [
     'plot_loss', 'plot_tangle',
