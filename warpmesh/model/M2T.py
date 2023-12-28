@@ -13,9 +13,6 @@ import torch
 import torch.nn.functional as F
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
-from extractor import (  # noqa: E402
-    LocalFeatExtractor, GlobalFeatExtractor
-)
 from gatdeformer import DeformGAT  # noqa: E402
 from transformer_model import TransformerModel
 
@@ -66,9 +63,6 @@ class M2Transformer(torch.nn.Module):
         self.lfe_out_c = 16
         self.deformer_in_feat = 7 + self.gfe_out_c + self.lfe_out_c
 
-        # self.gfe = GlobalFeatExtractor(
-        #     in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop)
-        # self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
         self.deformer = NetGATDeform(in_dim=self.deformer_in_feat)
 
         self.transformer_in_dim = 3
