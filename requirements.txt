@@ -17,3 +17,5 @@ flake8
 ipython
 pep8
 sphinx
+einops
+gmsh

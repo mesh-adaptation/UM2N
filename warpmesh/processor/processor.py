@@ -4,10 +4,50 @@
 import os
 import numpy as np
 import torch
+import firedrake as fd
 from firedrake.cython.dmcommon import facet_closure_nodes
 
 os.environ['OMP_NUM_THREADS'] = "1"
 __all__ = ["MeshProcessor"]
+
+
+def judge_in_hull(hull_points: np.array, point_to_judge: np.array, scale=1.0):
+    # print("in judge_in_hull")
+    # print("hull_points: ", hull_points)
+    mean = hull_points.mean(axis=0)
+    # print("mean: ", mean)
+    hull_points = hull_points - (1 - scale) * (hull_points - mean)
+    for i in range(len(hull_points)):
+        if i == len(hull_points) - 1:
+            # edge_vector = (hull_points[0, :] - hull_points[i, :])
+            edge_vector = (hull_points[i, :] - hull_points[0, :])
+        else:
+            # edge_vector = (hull_points[i + 1, :] - hull_points[i, :])
+            edge_vector = (hull_points[i, :] - hull_points[i + 1, :])
+        if np.cross(edge_vector, point_to_judge - hull_points[i, :]) > 0:
+            return False
+    return True
+
+
+def get_sample_points_in_convex_hull(points: np.array, size=32, scale=0.95):
+    print("in get_sample_points_in_convex_hull")
+    x_left, x_right = points[:, 0].min(), points[:, 0].max()
+    y_low, y_up = points[:, 1].min(), points[:, 1].max()
+    print("x_left, x_right, y_low, y_up: ", x_left, x_right, y_low, y_up)
+    points_x = np.linspace(x_left, x_right, size)
+    points_y = np.linspace(y_low, y_up, size)[::-1]
+    coord_ = np.random.random(size=(size ** 2, 2))
+    fetch_flag = np.zeros(size ** 2, dtype=bool)
+    for i in range(size):
+        for j in range(size):
+            idx = i*size + j
+            coord_[idx, 0] = points_x[j]
+            coord_[idx, 1] = points_y[i]
+            # print(judge_in_hull(points, coord_[idx, :], scale=scale))
+            if judge_in_hull(points, coord_[idx, :], scale=scale):
+                fetch_flag[idx] = 1
+    fetch_coord = coord_[fetch_flag, :]
+    return fetch_flag, fetch_coord
 
 
 class MeshProcessor():
@@ -41,6 +81,7 @@ class MeshProcessor():
     def __init__(
             self, original_mesh, optimal_mesh,
             function_space, use_4_edge=True,
+            poly_mesh=False, num_boundary=4,
             feature={
                 "uh": None,
                 "grad_uh": None,
@@ -60,6 +101,9 @@ class MeshProcessor():
                 "use_iso": None,
             }
     ):
+        self.use_4_edge = use_4_edge
+        self.num_boundary = num_boundary
+        self.poly_mesh = poly_mesh
         self.dist_params = dist_params
         self.mesh = original_mesh
         self.optimal_mesh = optimal_mesh
@@ -79,11 +123,58 @@ class MeshProcessor():
         self.conv_feat = self.get_conv_feat()
         self.to_train_data()
 
+    def get_conv_feat_poly(self):
+        # print("poly poly my little poly")
+        num_edges = self.num_boundary
+        corner_idx_list = []
+        boundary_idx_list = []
+        fun_space = fd.FunctionSpace(self.mesh, "CG", 1)
+        for i in range(num_edges):
+            boundary_idx_list.append(
+                facet_closure_nodes(fun_space, [i+1]))
+        for i in range(num_edges):
+            if i == num_edges-1:
+                corner_idx_list.append(
+                    np.intersect1d(
+                        boundary_idx_list[i],
+                        boundary_idx_list[0]))
+                break
+            corner_idx_list.append(
+                np.intersect1d(
+                    boundary_idx_list[i],
+                    boundary_idx_list[i+1]))
+        corner_idx = np.hstack(corner_idx_list)
+        corner_coordinates = self.coordinates[:][corner_idx, :]
+        sample_flag, sample_coord = get_sample_points_in_convex_hull(
+            corner_coordinates)
+        # sampling for uh
+        uh_in_polygon = self.raw_feature["uh"].at(
+            sample_coord, tolerance=1e-4)
+        uh_sample_buffer = np.zeros((32**2, 1))
+        uh_sample_buffer[sample_flag, :] = np.vstack(uh_in_polygon)
+        uh_sample_buffer = uh_sample_buffer.reshape(32, 32)
+        # sampling for hessian norm
+        hessian_in_polygon = self.raw_feature["hessian_norm"].at(
+            sample_coord, tolerance=1e-4)
+        hessian_sample_buffer = np.zeros((32**2, 1))
+        hessian_sample_buffer[sample_flag, :] = np.vstack(hessian_in_polygon)
+        hessian_sample_buffer = hessian_sample_buffer.reshape(32, 32)
+        # On poly mesh, we define conv_fix and conv as the same
+        self.conv_uh = uh_sample_buffer[np.newaxis, :, :]
+        self.conv_uh_fix = uh_sample_buffer[np.newaxis, :, :]
+        self.conv_hessian_norm = hessian_sample_buffer[np.newaxis, :, :]
+        self.conv_hessian_norm_fix = hessian_sample_buffer[np.newaxis, :, :]
+        self.conv_xy = None
+        self.conv_xy_fix = None
+        return
+
     def get_conv_feat(self, fix_reso_x=20, fix_reso_y=20):
         """
         Generate features for convolution. This involves grid spacing and other
         related features.
         """
+        if self.poly_mesh:
+            return self.get_conv_feat_poly()
         coords = self.mesh.coordinates.dat.data_ro
         x_start, y_start = np.min(coords, axis=0)
         x_end, y_end = np.max(coords, axis=0)
@@ -164,6 +255,8 @@ class MeshProcessor():
             "u": self.feature["uh"],
             "grad_u": self.feature["grad_uh"],
             "hessian": self.feature["hessian"],
+            "phi": self.feature["phi"],
+            "grad_phi": self.feature["grad_phi"],
             "hessian_norm": self.feature["hessian_norm"],
             "jacobian": self.feature["jacobian"],
             "jacobian_det": self.feature["jacobian_det"],
@@ -176,10 +269,10 @@ class MeshProcessor():
             "cell_node_list": self.cell_node_list,
             "conv_feat": self.conv_feat,
             "bd_mask": self.bd_mask.astype(int).reshape(-1, 1),
-            "bd_left_mask": self.left_bd.astype(int).reshape(-1, 1),
-            "bd_right_mask": self.right_bd.astype(int).reshape(-1, 1),
-            "bd_down_mask": self.down_bd.astype(int).reshape(-1, 1),
-            "bd_up_mask": self.up_bd.astype(int).reshape(-1, 1),
+            "bd_left_mask": self.left_bd,
+            "bd_right_mask": self.right_bd,
+            "bd_down_mask": self.down_bd,
+            "bd_up_mask": self.up_bd,
             "conv_xy": self.conv_xy,
             "conv_uh": self.conv_uh,
             "conv_hessian_norm": self.conv_hessian_norm,
@@ -197,7 +290,7 @@ class MeshProcessor():
             "n_dist": self.dist_params["n_dist"],
         }
         print("data saved, details:")
-        print("conv_feat shape: ", self.conv_feat.shape)
+        # print("conv_feat shape: ", self.conv_feat.shape)
         print("x shape: ", self.x.shape)
 
         self.np_data = np_data
@@ -239,7 +332,7 @@ class MeshProcessor():
         Identify the boundary nodes of the mesh and update various boundary
             masks.
         """
-        use_4_edge = True
+        use_4_edge = self.use_4_edge
         x_start = y_start = 0
         x_end = y_end = 1
         num_all_nodes = len(self.mesh.coordinates.dat.data_ro)
@@ -253,14 +346,20 @@ class MeshProcessor():
 
         # boundary nodes solved using location of nodes
         if (use_4_edge):
-            self.left_bd = (self.coordinates[:, 0] == x_start)
-            self.right_bd = (self.coordinates[:, 0] == x_end)
-            self.down_bd = (self.coordinates[:, 1] == y_start)
-            self.up_bd = (self.coordinates[:, 1] == y_end)
+            self.left_bd = (self.coordinates[:, 0] == x_start).astype(int).reshape(-1, 1),
+            self.right_bd = (self.coordinates[:, 0] == x_end).astype(int).reshape(-1, 1),
+            self.down_bd = (self.coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),
+            self.up_bd = (self.coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),
             self.bd_all = np.any(
                 [self.left_bd, self.right_bd, self.down_bd, self.up_bd],
                 axis=0
             )
+        # using poly mesh, set 4 edges to None
+        if (self.poly_mesh):
+            self.left_bd = None
+            self.right_bd = None
+            self.down_bd = None
+            self.up_bd = None
         return
 
     def save_taining_data(self, path):
