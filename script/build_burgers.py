@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 import random
 from argparse import ArgumentParser
 
-os.environ['OMP_NUM_THREADS'] = '1'
-
 
 def arg_parse():
     parser = ArgumentParser()
@@ -280,6 +278,8 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
                      function_space,
                      function_space_fine,
                      uh_fine,
+                     error_adapt_list,
+                     error_og_list,
                      nu, gauss_list):
     global i
     print("before processing")
@@ -330,7 +330,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     fd.trisurf(uh, axes=ax2)
 
     ax3 = fig.add_subplot(2, 3, 3, projection='3d')
-    ax3.set_title('Solution field (Adapt Mesh)')
+    ax3.set_title('Solution field (Adapted Mesh)')
     fd.trisurf(uh_new, axes=ax3)
 
     # Plot the mesh
@@ -339,7 +339,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     fd.triplot(mesh, axes=ax4)
 
     ax5 = fig.add_subplot(2, 3, 5)
-    ax5.set_title('Optimal Mesh')
+    ax5.set_title('Adapted Mesh')
     fd.triplot(mesh_new, axes=ax5)
 
     # plot mesh with function evaluated on it
@@ -355,16 +355,23 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     )
     i += 1
 
+    # fig, ax = plt.subplots()
+    # ax.set_title("adapt error list")
+    # ax.plot(error_adapt_list, linestyle='--', color='blue', label='adapt')
+    # # ax.plot(error_og_list, linestyle='--', color='red', label='og')
+    # ax.legend()
+    # plt.show()
+
     # ==========================================
     uh = fd.project(uh, function_space_fine)
     uh_new = fd.project(uh_new, function_space_fine)
-    uh_fine = fd.project(uh_fine, function_space_fine)
+    # uh_fine = fd.project(uh_fine, function_space_fine)
 
     error_original_mesh = fd.errornorm(
-        uh, uh_fine
+        uh, uh_fine, norm_type="L2"
     )
     error_optimal_mesh = fd.errornorm(
-        uh_new, uh_fine
+        uh_new, uh_fine, norm_type="L2"
     )
 
     with open(
@@ -398,6 +405,7 @@ if __name__ == "__main__":
             solver.solve_problem(sample_from_loop)
             print()
         except fd.exceptions.ConvergenceError:
+            print("ConvergenceError")
             pass
     print("Done!")
 

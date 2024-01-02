@@ -15,6 +15,6 @@ from .M2T import * # noqa
 from .extractor import *  # noqa
 from .deformer import * # noqa
 from .MRT_phi import *  # noqa
-from .MRTransformer import * # noqa
+# from .MRTransformer import * # noqa
 # from .M2Transformer import * # noqa
 from .extractor import *  # noqa

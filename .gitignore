@@ -8,6 +8,8 @@ data/helmholtz*
 data/output/*
 data/temp/*
 data/z*
+data/burgers*
+data/dataset/burgers*
 
 install/movement/*
 install/firedrake/*

@@ -35,8 +35,12 @@ class BurgersSolver():
         self.mesh_fine = fd.UnitSquareMesh(100, 100)
 
         self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
-        self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
         self.init_coord_fine = self.mesh_fine.coordinates.vector().array().reshape(-1, 2) # noqa
+        self.best_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
+        self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.error_adapt_list = []
+        self.error_og_list = []
+        self.best_error_iter = 0
         # X and Y coordinates
         self.x, self.y = fd.SpatialCoordinate(mesh)
         self.x_fine, self.y_fine = fd.SpatialCoordinate(self.mesh_fine)
@@ -73,19 +77,6 @@ class BurgersSolver():
         self.T = self.sim_len
         self.dtc = fd.Constant(self.dt)
 
-        # # distribution params
-        # self.u_init = rand_generator.get_u_exact(
-        #     params={
-        #         "x": self.x,
-        #         "y": self.y,
-        #     })
-        # self.u_init_fine = rand_generator.get_u_exact(
-        #     params={
-        #         "x": self.x_fine,
-        #         "y": self.y_fine,
-        #     })
-        # self.dist_params = rand_generator.get_dist_params()
-
         self.u_init = 0
         self.u_init_fine = 0
         num_of_gauss = len(self.gauss_list)
@@ -110,8 +101,8 @@ class BurgersSolver():
                 )
             ) * fd.dx(domain=self.mesh)
 
-        self.u_fine = fd.Function(self.P2_vec_fine)        # u_{0}
-        self.u_fine_ = fd.Function(self.P2_vec_fine)           # u_{n+1}
+        self.u_fine = fd.Function(self.P2_vec_fine)             # u_{0}
+        self.u_fine_ = fd.Function(self.P2_vec_fine)            # u_{n+1}
         self.F_fine = (
             fd.inner(
                 (self.u_fine - self.u_fine_) / self.dtc, self.phi_p2_vec_fine
@@ -135,6 +126,7 @@ class BurgersSolver():
         ic_fine = fd.project(self.initial_velocity_fine, self.P2_vec_fine)
         self.u_fine.assign(ic_fine)
         self.u_fine_.assign(ic_fine)
+        self.u_fine_buffer.assign(ic_fine)
 
         # solver params
         self.sp = {
@@ -164,30 +156,17 @@ class BurgersSolver():
         self.hessian_prob = fd.LinearVariationalSolver(
             self.prob, solver_parameters=self.sp
         )
-        # Hessian norm - second dimension
-        self.f_norm_2 = fd.Function(self.P1)  # comment:第二个分量的F范数啊
-        self.l2_projection_2 = fd.Function(self.P1_ten)  # comment:第二个分量的F范数啊
-        self.L2 = -fd.inner(
-            fd.div(self.τ), fd.grad(self.u[1])
-        ) * fd.dx(domain=self.mesh)
-        self.L2 += fd.dot(
-            fd.grad(self.u[1]),
-            fd.dot(self.τ, self.normal)
-        ) * fd.ds(self.mesh)
-        self.prob2 = fd.LinearVariationalProblem(
-            self.a, self.L2, self.l2_projection_2)
-        self.hessian_prob2 = fd.LinearVariationalSolver(
-            self.prob2, solver_parameters=self.sp)
+
+    def project_u_(self):
+        self.u_.project(self.u_fine_buffer)
 
     def monitor_function(self, mesh):
-        if self.step == 1:
-            self.u_.project(self.initial_velocity)
-        else:
-            self.u_.project(self.u_fine_buffer)
+        self.project_u_()
         fd.solve(self.F == 0, self.u)
+        # print("in monitor u sum: ", np.sum(self.u.dat.data[:]))
+        self.coarse_adapt.project(self.u)
 
         self.hessian_prob.solve()
-        # self.hessian_prob2.solve()
 
         self.f_norm.project(
             self.l2_projection[0, 0] ** 2 +
@@ -195,36 +174,17 @@ class BurgersSolver():
             self.l2_projection[1, 0] ** 2 +
             self.l2_projection[1, 1] ** 2)
 
-        # self.f_norm_2.project(
-        #     self.l2_projection_2[0, 0] ** 2 +
-        #     self.l2_projection_2[0, 1] ** 2 +
-        #     self.l2_projection_2[1, 0] ** 2 +
-        #     self.l2_projection_2[1, 1] ** 2)
-
-        # # fig = plt.figure(figsize=(10, 5))
-        # # ax1 = fig.add_subplot(2, 1, 1, projection='3d')
-        # # ax1.set_title('F_norm 1')
-        # # fd.trisurf(self.f_norm, axes=ax1)
-        # # ax2 = fig.add_subplot(2, 1, 2, projection='3d')
-        # # ax2.set_title('F_norm 2')
-        # # fd.trisurf(self.f_norm_2, axes=ax2)
-        # # plt.show()
-
-        # max_1 = self.f_norm.vector().max()
-        # max_2 = self.f_norm_2.vector().max()
-        # if max_1 >= max_2:
-        #     self.f_norm /= max_1
-        #     self.f_norm_2 /= max_1
-        #     self.f_norm.assign(self.f_norm + self.f_norm_2)
-        # else:
-        #     self.f_norm /= max_2
-        #     self.f_norm_2 /= max_2
-        #     self.f_norm.assign(self.f_norm + self.f_norm_2)
         self.f_norm /= self.f_norm.vector().max()
         monitor = self.f_norm
 
-        self.coarse_adapt.project(self.u)
-        self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        # print("in monitor u_ sum: ", np.sum(self.u_.dat.data[:]))
+        # error_og, error_adapt = self.get_error()
+
+        # self.error_adapt_list.append(error_adapt)
+        # self.error_og_list.append(error_og)
+        # print("error_og: {}, error_adapt: {}".format(error_og, error_adapt))
+
         return 1 + (5 * monitor)
 
     def solve_problem(self, callback=None):
@@ -233,13 +193,16 @@ class BurgersSolver():
         """
         t = 0.0
         self.step = 0
+        self.best_error_iter = 0
         # for i in range(1):
         while t < self.T - 0.5*self.dt:
+            self.error_adapt_list = []
+            self.error_og_list = []
             mesh_new = fd.UnitSquareMesh(self.mesh_size, self.mesh_size)
             self.step += 1
             print("step: {}, t: {}".format(self.step, t))
+            # solve on fine mesh
             fd.solve(self.F_fine == 0, self.u_fine)
-            self.u_fine_.assign(self.u_fine)
 
             adapter = mv.MongeAmpereMover(
                 self.mesh,
@@ -247,37 +210,43 @@ class BurgersSolver():
                 rtol=1e-3,
             )
             adapter.move()
-            # mesh_new.coordinates.dat.data[:] = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+
             mesh_new.coordinates.dat.data[:] = self.adapt_coord
 
-            self.u_fine_buffer.project(self.u)
-            self.coarse_2_fine.assign(self.u_fine_buffer)
-
+            # calculate solution on original mesh
             self.mesh.coordinates.dat.data[:] = self.init_coord
-            self.u_.assign(self.u_og)
+            self.project_u_()
             fd.solve(self.F == 0, self.u)
-            self.u_og.assign(self.u)
-            self.coarse_2_fine_original.project(self.u_og)
-
-            t += self.dt
-
-            # error_og, error_adapt = self.get_error()
-            # print(
-            #     "error_og: {}, error_adapt: {}".format(error_og, error_adapt))
-
             function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-            function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
-            func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+            uh_0 = fd.Function(function_space)
+            uh_0.project(self.u[0])
 
-            u_0 = fd.Function(function_space)
-            uh_new_0 = fd.Function(function_space)
+            # calculate solution on adapted mesh
+            self.mesh.coordinates.dat.data[:] = self.adapt_coord
+            self.project_u_()
+            fd.solve(self.F == 0, self.u)
+            function_space_new = fd.FunctionSpace(mesh_new, "CG", 1)
+            function_space_vec_new = fd.VectorFunctionSpace(
+                mesh_new, "CG", 1)
+            uh_new = fd.Function(function_space_vec_new)
+            uh_new.project(self.u)
+            uh_new_0 = fd.Function(function_space_new)
+            uh_new_0.project(uh_new[0])
+
+            error_og, error_adapt = self.get_error()
+            print(
+                "error_og: {}, error_adapt: {}".format(error_og, error_adapt))
+
+            # put coords back to original position (for u sampling)
+            self.mesh.coordinates.dat.data[:] = self.init_coord
+
+            function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
             uh_fine_0 = fd.Function(function_space_fine)
-            u_0 = u_0.project(self.u[0])
-            uh_new = uh_new_0.project(self.coarse_adapt[0])
-            uh_f = uh_fine_0.project(self.u_fine[0])
-            uh = u_0
+            uh_fine_0.project(self.u_fine[0])
+
+            func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
             uh_grad = fd.interpolate(
-                fd.grad(uh), func_vec_space)
+                fd.grad(uh_0), func_vec_space)
             hessian_norm = self.f_norm
             hessian = self.l2_projection
             phi = adapter.phi
@@ -297,81 +266,67 @@ class BurgersSolver():
             )
 
             callback(
-                uh=uh, uh_grad=uh_grad, hessian_norm=hessian_norm,
+                uh=uh_0, uh_grad=uh_grad, hessian_norm=hessian_norm,
                 hessian=hessian,
                 phi=phi, grad_phi=phi_grad,
                 jacobian=self.jacob, jacobian_det=self.jacob_det,
                 nu=self.nu, gauss_list=self.gauss_list,
                 mesh_new=mesh_new,
                 mesh_og=self.mesh,
-                uh_new=uh_new,
-                uh_fine=uh_f,
+                uh_new=uh_new_0,
+                uh_fine=uh_fine_0,
                 function_space=function_space,
-                function_space_fine=function_space_fine
+                function_space_fine=function_space_fine,
+                error_adapt_list=self.error_adapt_list,
+                error_og_list=self.error_og_list,
             )
+
+            # step forward in time
+            self.u_fine_.assign(self.u_fine)
+            # self.u_fine_buffer.project(self.u)
+            self.u_fine_buffer.assign(self.u_fine)
+            # self.u_.assign(self.u)
+            t += self.dt
 
         return
 
     def get_error(self):
+        # print("get_error: u_ sum is: ", np.sum(self.u_.dat.data[:]))
+        function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
         # solve on fine mesh
         fd.solve(self.F_fine == 0, self.u_fine)
+        u_fine_0 = fd.Function(function_space_fine)
+        u_f = u_fine_0.project(self.u_fine[0])
+        # print('u_f sum: ', np.sum(u_f.dat.data[:]))
+
         # solve on coarse mesh
         self.mesh.coordinates.dat.data[:] = self.init_coord
+        function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+        self.project_u_()
+        # print("og u_ sum: ", np.sum(self.u_.dat.data[:]))
         fd.solve(self.F == 0, self.u)
-        self.coarse_2_fine_original.project(self.u)
+        u_0_fine = fd.Function(function_space_fine)
+        u_0_coarse = fd.Function(function_space)
+        u_0_coarse.project(self.u[0])
+        u_0_fine.project(u_0_coarse)
+        # print('u_0_fine sum 1: ', np.sum(u_0_fine.dat.data[:]))
         error_og = fd.errornorm(
-            self.coarse_2_fine_original, self.u_fine, norm_type="L2")
+            u_0_fine, u_f, norm_type="L2")
+
         # solve on coarse adapt mesh
         self.mesh.coordinates.dat.data[:] = self.adapt_coord
+        function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+        self.project_u_()
+        # print("adapt u_ sum: ", np.sum(self.u_.dat.data[:]))
         fd.solve(self.F == 0, self.u)
-        self.coarse_2_fine.project(self.u)
+        u_adapt_fine_0 = fd.Function(function_space_fine)
+        u_adapt_coarse_0 = fd.Function(function_space)
+        u_adapt_coarse_0.project(self.u[0])
+        u_adapt_fine_0.project(u_adapt_coarse_0)
+        # print('u sum 2: ', np.sum(u_adapt_fine_0.dat.data[:]))
         error_adapt = fd.errornorm(
-            self.coarse_2_fine, self.u_fine, norm_type="L2")
+            u_adapt_fine_0, u_f, norm_type="L2")
+
+        self.mesh.coordinates.dat.data[:] = self.init_coord
 
         return error_og, error_adapt
-
-# if __name__ == "__main__":
-#     # parameters for anisotropic data - distribution height scaler
-#     z_min = 0
-#     z_max = 1
-
-#     # parameters for isotropic data
-#     w_min = 0.05
-#     w_max = 0.2
-
-#     c_min = 0.2
-#     c_max = 0.8
-
-#     gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(1)
-
-#     mesh = fd.UnitSquareMesh(32, 32)
-
-#     solver = BurgersSolver(mesh, gauss_list=gaussian_list, nu=nu, mesh_size=32)  # noqa
-#     solver.solve_problem()
-
-
-
-            # fig = plt.figure(figsize=(8, 8))
-            # ax1 = fig.add_subplot(2, 2, 1, projection='3d')
-            # ax1.set_title('u[0]')
-            # u_0_space = fd.FunctionSpace(self.mesh, "CG", 1)
-            # u_0 = fd.Function(u_0_space)
-            # u_0 = u_0.project(self.u[0])
-            # fd.trisurf(u_0, axes=ax1)
-
-            # ax2 = fig.add_subplot(2, 2, 2, projection='3d')
-            # ax2.set_title('u[1]')
-            # u_1_space = fd.FunctionSpace(self.mesh, "CG", 1)
-            # u_1 = fd.Function(u_1_space)
-            # u_1 = u_0.project(self.u[1])
-            # fd.trisurf(u_1, axes=ax2)
-
-            # ax3 = fig.add_subplot(2, 2, 3, projection='3d')
-            # ax3.set_title('u')
-            # fd.trisurf(self.u, axes=ax3)
-            # ax4 = fig.add_subplot(2, 2, 4)
-            # ax4.set_title('Mesh')
-            # ax4.set_aspect('equal')
-            # fd.tripcolor(self.u, axes=ax4, cmap='coolwarm')
-            # # fd.tricontour(self.u, axes=ax4, cmap='coolwarm')
-            # fd.triplot(self.mesh, axes=ax4)

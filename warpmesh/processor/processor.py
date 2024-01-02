@@ -196,11 +196,15 @@ class MeshProcessor():
                 conv_xy_fix[:, i, j] = np.array([conv_x_fix[i], conv_y_fix[j]])
                 conv_uh_fix[:, i, j] = self.raw_feature["uh"].at(
                     [conv_x_fix[i],
-                     conv_y_fix[j]])
+                     conv_y_fix[j]],
+                    tolerance=1e-3
+                )
                 conv_hessian_norm_fix[:, i, j] = self.raw_feature[
                     "hessian_norm"].at(
                     [conv_x_fix[i],
-                     conv_y_fix[j]])
+                     conv_y_fix[j]],
+                    tolerance=1e-3
+                )
         self.conv_xy_fix = conv_xy_fix
         self.conv_uh_fix = conv_uh_fix
         self.conv_hessian_norm_fix = conv_hessian_norm_fix
