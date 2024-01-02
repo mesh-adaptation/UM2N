@@ -1,12 +1,11 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import os 
+import os
 import sys
 from torch_geometric.nn import GATv2Conv, MessagePassing
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 cur_dir = os.path.dirname(__file__)
