@@ -277,10 +277,11 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
                      uh_new, mesh_og, mesh_new,
                      function_space,
                      function_space_fine,
-                     uh_fine,
-                     error_adapt_list,
-                     error_og_list,
-                     nu, gauss_list):
+                     uh_fine, dur,
+                     nu, gauss_list,
+                     error_og_list=[],
+                     error_adapt_list=[],
+                     ):
     global i
     print("before processing")
     mesh_processor = wm.MeshProcessor(
@@ -311,7 +312,8 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
             "jacobian_det": jacobian_det,
         },
         nu=nu,
-        gauss_list=gauss_list
+        gauss_list=gauss_list,
+        dur=dur
     )
 
     mesh_processor.save_taining_data(
@@ -365,7 +367,6 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     # ==========================================
     uh = fd.project(uh, function_space_fine)
     uh_new = fd.project(uh_new, function_space_fine)
-    # uh_fine = fd.project(uh_fine, function_space_fine)
 
     error_original_mesh = fd.errornorm(
         uh, uh_fine, norm_type="L2"
@@ -373,14 +374,14 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     error_optimal_mesh = fd.errornorm(
         uh_new, uh_fine, norm_type="L2"
     )
-
-    with open(
-            os.path.join(
-                problem_log_dir, "log{}.txt".format(i)), "a"
-            ) as f:
-        f.write(
-            "error on original mesh: {}\nerror on optimal mesh: {}"
-            .format(error_original_mesh, error_optimal_mesh)
+    df = pd.DataFrame({
+        "error_og": error_original_mesh,
+        "error_adapt": error_optimal_mesh,
+        "time": dur,
+    }, index=[0])
+    df.to_csv(
+        os.path.join(
+                problem_log_dir, "log{}.csv".format(i))
         )
     print("error og/optimal:",
           error_original_mesh, error_optimal_mesh)

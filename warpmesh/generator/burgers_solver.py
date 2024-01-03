@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt             # noqa
 import movement as mv
 import warpmesh as wm                       # noqa
 import random                               # noqa
+import time
 
 __all__ = ["BurgersSolver"]
 
@@ -178,12 +179,6 @@ class BurgersSolver():
         monitor = self.f_norm
 
         self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
-        # print("in monitor u_ sum: ", np.sum(self.u_.dat.data[:]))
-        # error_og, error_adapt = self.get_error()
-
-        # self.error_adapt_list.append(error_adapt)
-        # self.error_og_list.append(error_og)
-        # print("error_og: {}, error_adapt: {}".format(error_og, error_adapt))
 
         return 1 + (5 * monitor)
 
@@ -203,13 +198,15 @@ class BurgersSolver():
             print("step: {}, t: {}".format(self.step, t))
             # solve on fine mesh
             fd.solve(self.F_fine == 0, self.u_fine)
-
+            start = time.perf_counter()
             adapter = mv.MongeAmpereMover(
                 self.mesh,
                 monitor_function=self.monitor_function,
                 rtol=1e-3,
             )
             adapter.move()
+            end = time.perf_counter()
+            dur_ms = (end - start) * 1000
 
             mesh_new.coordinates.dat.data[:] = self.adapt_coord
 
@@ -279,6 +276,7 @@ class BurgersSolver():
                 function_space_fine=function_space_fine,
                 error_adapt_list=self.error_adapt_list,
                 error_og_list=self.error_og_list,
+                dur=dur_ms
             )
 
             # step forward in time

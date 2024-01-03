@@ -1,7 +1,6 @@
 import firedrake as fd
 import numpy as np
 import gmsh
-import sys
 import random
 
 
@@ -13,16 +12,31 @@ class RandPolyMesh():
     Create a random polygonal mesh by spliting the edge of a
     square randomly.
     """
-    def __init__(self, scale=1.0, res=1e-1, file_path="./temp.msh"):
-        # initialize gmsh
+    def __init__(self, scale=1.0):
+        # params setup
+        self.scale = scale
+        self.start = 0
+        self.end = self.scale
+        self.split_threshold = 0.3
+        self.mid = (self.start + self.end) / 2
+        self.quater = (self.start + self.mid) / 2
+        self.three_quater = (self.mid + self.end) / 2
+        self.mid_interval = (self.end - self.start) / 3
+        self.quater_interval = (self.mid - self.start) / 4
+        # temp vars
+        self.points = []
+        self.lines = []
+        # generate mesh
+        self.get_rand_points()
+        return
+
+    def get_mesh(self, res=1e-1, file_path="./temp.msh"):
         gmsh.initialize()
         gmsh.model.add("t1")
         # params setup
         self.lc = res
-        self.scale = scale
         self.start = 0
         self.end = self.scale
-        self.split_threshold = 0.5
         self.mid = (self.start + self.end) / 2
         self.quater = (self.start + self.mid) / 2
         self.three_quater = (self.mid + self.end) / 2
@@ -44,12 +58,12 @@ class RandPolyMesh():
         gmsh.write(self.file_path)
         gmsh.finalize()
         self.num_boundary = len(self.lines)
-        return
+        return fd.Mesh(self.file_path)
 
     def get_rand(self, mean, interval):
         return random.uniform(mean - interval, mean + interval)
 
-    def get_points(self):
+    def get_rand_points(self):
         points = []
         split_p = np.random.uniform(0, 1, 4)
         # edge 1
@@ -99,13 +113,15 @@ class RandPolyMesh():
                 [0, self.get_rand(self.mid, self.mid_interval)]
             )
             # points.append(p1)
-        temp = []
-        for i in range(len(points)):
-            temp.append(gmsh.model.geo.addPoint(
-                points[i][0], points[i][1], 0, self.lc))
-        self.points = temp
         self.raw_points = points
         return
+
+    def get_points(self):
+        temp = []
+        for i in range(len(self.raw_points)):
+            temp.append(gmsh.model.geo.addPoint(
+                self.raw_points[i][0], self.raw_points[i][1], 0, self.lc))
+        self.points = temp
 
     def get_line(self):
         for i in range(len(self.points)):
@@ -131,18 +147,17 @@ class RandPolyMesh():
     def get_plane(self):
         gmsh.model.geo.addPlaneSurface([1], 1)
 
-    def get_mesh(self):
-        mesh = fd.Mesh(self.file_path)
-        return mesh
-
-    def show(self):
-        mesh = fd.Mesh(self.file_path)
+    def show(self, file_path):
+        mesh = fd.Mesh(file_path)
         fig = fd.triplot(mesh)
         return fig
 
 
-if __name__ == "__main__":
-    mesh = RandPolyMesh(res=5e-2)
-    mesh.show()
-    import matplotlib.pyplot as plt
-    plt.show()
+# if __name__ == "__main__":
+#     import matplotlib.pyplot as plt
+#     mesh_gen = RandPolyMesh()
+#     mesh_coarse = mesh_gen.get_mesh(res=5e-2, file_path="./temp1.msh")
+#     mesh_fine = mesh_gen.get_mesh(res=4e-2, file_path="./temp2.msh")
+#     mesh_gen.show('./temp1.msh')
+#     mesh_gen.show('./temp2.msh')
+#     plt.show()

@@ -102,6 +102,7 @@ class MeshProcessor():
                 "use_iso": None,
             },
             gauss_list=None,   # used in burgers equation bumps generation
+            dur=None,
     ):
         self.use_4_edge = use_4_edge
         self.num_boundary = num_boundary
@@ -126,6 +127,7 @@ class MeshProcessor():
         # PDE params
         self.nu = nu
         self.gauss_list = gauss_list
+        self.dur = dur  # time consumed for MA solving
         self.to_train_data()
 
     def get_conv_feat_poly(self):
@@ -299,6 +301,7 @@ class MeshProcessor():
             "n_dist": self.dist_params["n_dist"],
             "nu": self.nu,
             "gauss_list": self.gauss_list,
+            "duration": self.dur,
         }
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)

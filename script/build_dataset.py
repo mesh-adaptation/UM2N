@@ -9,6 +9,7 @@ import shutil
 import matplotlib.pyplot as plt
 import random
 from argparse import ArgumentParser
+import time
 
 
 def arg_parse():
@@ -228,7 +229,10 @@ if __name__ == "__main__":
                     num_grid_x, num_grid_y, scale_x, scale_y)
             })
 
+            start = time.perf_counter()
             new_mesh = mesh_gen.move_mesh()
+            end = time.perf_counter()
+            dur = (end - start) * 1000
 
             # this is the jacobian of x with respect to xi
             jacobian = mesh_gen.get_jacobian()
@@ -351,13 +355,14 @@ if __name__ == "__main__":
                 u_exact, uh_new
             )
 
-            with open(
-                    os.path.join(
-                        problem_log_dir, "log{}.txt".format(i)), "a"
-                    ) as f:
-                f.write(
-                    "error on original mesh: {}\nerror on optimal mesh: {}"
-                    .format(error_original_mesh, error_optimal_mesh)
+            df = pd.DataFrame({
+                "error_og": error_original_mesh,
+                "error_adapt": error_optimal_mesh,
+                "time": dur,
+            }, index=[0])
+            df.to_csv(
+                os.path.join(
+                        problem_log_dir, "log{}.csv".format(i))
                 )
             print("error og/optimal:",
                   error_original_mesh, error_optimal_mesh)

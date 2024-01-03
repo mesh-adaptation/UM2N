@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import random
 import numpy as np
 from argparse import ArgumentParser
+import time
 
 
 def arg_parse():
@@ -22,13 +23,13 @@ def arg_parse():
                         help='number of distributions used to\
                             generate the dataset (this will disable\
                                 max_dist)')
-    parser.add_argument('--lc', type=float, default=7e-2,
+    parser.add_argument('--lc', type=float, default=6e-2,
                         help='the length characteristic of the elements in the\
                             mesh')
-    parser.add_argument('--field_type', type=str, default="aniso",
+    parser.add_argument('--field_type', type=str, default="iso",
                         help='anisotropic or isotropic data type(aniso/iso)')
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument('--boundary_scheme', type=str, default="full",
+    parser.add_argument('--boundary_scheme', type=str, default="pad",
                         help='scheme used to generate the dataset (pad/full))')
     parser.add_argument('--n_samples', type=int, default=100,
                         help='number of samples generated')
@@ -71,8 +72,8 @@ w_min = 0.05
 w_max = 0.2
 
 scheme = args.boundary_scheme
-c_min = 0.2 if scheme == "pad" else 0
-c_max = 0.8 if scheme == "pad" else 1
+c_min = 0.3 if scheme == "pad" else 0
+c_max = 0.7 if scheme == "pad" else 1
 
 # parameters for data split
 p_train = 0.75
@@ -126,12 +127,26 @@ problem_plot_dir = os.path.join(problem_specific_dir, "plot")
 problem_log_dir = os.path.join(problem_specific_dir, "log")
 
 problem_mesh_dir = os.path.join(problem_specific_dir, "mesh")
+problem_mesh_fine_dir = os.path.join(problem_specific_dir, "mesh_fine")
 problem_train_dir = os.path.join(problem_specific_dir, "train")
 problem_test_dir = os.path.join(problem_specific_dir, "test")
 problem_val_dir = os.path.join(problem_specific_dir, "val")
 
 if not os.path.exists(problem_mesh_dir):
     os.makedirs(problem_mesh_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_mesh_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_mesh_dir, f))
+
+if not os.path.exists(problem_mesh_fine_dir):
+    os.makedirs(problem_mesh_fine_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_mesh_fine_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_mesh_fine_dir, f))
 
 if not os.path.exists(problem_data_dir):
     os.makedirs(problem_data_dir)
@@ -167,13 +182,12 @@ if __name__ == "__main__":
     while (i < n_samples):
         try:
             print("Generating Sample: " + str(i))
-            rand_poly_mesh_gen = wm.RandPolyMesh(
-                res=lc,
-                file_path=os.path.join(
+            rand_poly_mesh_gen = wm.RandPolyMesh(scale=scale_x)
+            mesh = rand_poly_mesh_gen.get_mesh(
+                res=lc, file_path=os.path.join(
                     problem_mesh_dir, f"mesh{i}.msh"
                 )
             )
-            mesh = rand_poly_mesh_gen.get_mesh()
             num_boundary = rand_poly_mesh_gen.num_boundary
             # Generate Random solution field
             rand_u_generator = wm.RandSourceGenerator(
@@ -206,13 +220,21 @@ if __name__ == "__main__":
             # Generate Mesh
             hessian = wm.MeshGenerator(params={
                     "helmholtz_eq": helmholtz_eq,
-                    "mesh": rand_poly_mesh_gen.get_mesh()
+                    "mesh": rand_poly_mesh_gen.get_mesh(
+                            res=lc, file_path=os.path.join(
+                                problem_mesh_dir, f"mesh{i}.msh"
+                            )
+                        )
                     }
             ).get_hessian(mesh)
 
             hessian_norm = wm.MeshGenerator(params={
                     "helmholtz_eq": helmholtz_eq,
-                    "mesh": rand_poly_mesh_gen.get_mesh()
+                    "mesh": rand_poly_mesh_gen.get_mesh(
+                            res=lc, file_path=os.path.join(
+                                problem_mesh_dir, f"mesh{i}.msh"
+                            )
+                        )
                     }
             ).monitor_func(mesh)
 
@@ -225,10 +247,17 @@ if __name__ == "__main__":
 
             mesh_gen = wm.MeshGenerator(params={
                 "helmholtz_eq": helmholtz_eq,
-                "mesh": rand_poly_mesh_gen.get_mesh()
-            })
+                "mesh": rand_poly_mesh_gen.get_mesh(
+                        res=lc, file_path=os.path.join(
+                            problem_mesh_dir, f"mesh{i}.msh"
+                        )
+                    )
+                })
 
+            start = time.perf_counter()
             new_mesh = mesh_gen.move_mesh()
+            end = time.perf_counter()
+            dur = (end - start) * 1000
 
             # this is the jacobian of x with respect to xi
             jacobian = mesh_gen.get_jacobian()
@@ -329,7 +358,12 @@ if __name__ == "__main__":
             # ==========================================
 
             # generate log file
-            high_res_mesh = fd.UnitSquareMesh(80, 80)
+            high_res_mesh = rand_poly_mesh_gen.get_mesh(
+                res=2e-2, file_path=os.path.join(
+                    problem_mesh_fine_dir, f"mesh{i}.msh"
+                )
+            )
+
             high_res_function_space = fd.FunctionSpace(
                 high_res_mesh, "CG", 1)
 
@@ -346,14 +380,15 @@ if __name__ == "__main__":
                 u_exact, uh_new
             )
 
-            with open(
-                    os.path.join(
-                        problem_log_dir, "log{}.txt".format(i)), "a"
-                    ) as f:
-                f.write(
-                    "error on original mesh: {}\nerror on optimal mesh: {}"
-                    .format(error_original_mesh, error_optimal_mesh)
-                )
+            df = pd.DataFrame({
+                "error_og": error_original_mesh,
+                "error_adapt": error_optimal_mesh,
+                "time": dur,
+            }, index=[0])
+            df.to_csv(
+                os.path.join(
+                        problem_log_dir, "log{}.csv".format(i))
+            )
             print("error og/optimal:",
                   error_original_mesh, error_optimal_mesh)
             i += 1
