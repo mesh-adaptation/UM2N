@@ -100,6 +100,8 @@ class MeshDataset(Dataset):
         self.file_dir = file_dir
         file_path = os.path.join(self.file_dir, 'data_*.npy')
         self.file_names = glob.glob(file_path)
+        self.file_names = sorted(
+            self.file_names, key=lambda x: int(x.split('_')[-1].split('.')[0]))
         self.transform = transform
         self.target_transform = target_transform
         # if True, load the params used to generate the data
