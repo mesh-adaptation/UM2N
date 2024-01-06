@@ -23,10 +23,10 @@ class MeshGenerator():
     def __init__(self, params={
         "num_grid_x": None,
         "num_grid_y": None,
-        "helmholtz_eq": None,
+        "eq": None,
         "mesh": None,
     }):
-        self.eq = params["helmholtz_eq"]
+        self.eq = params["eq"]
         # self.num_grid_x = params["num_grid_x"]
         # self.num_grid_y = params["num_grid_y"]
         self.mesh = params["mesh"]

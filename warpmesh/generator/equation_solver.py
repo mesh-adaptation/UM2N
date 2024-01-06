@@ -25,7 +25,7 @@ class EquationSolver():
 
     def solve_eq(self):
         """
-        Solves the Helmholtz equation
+        Solves the equation
         """
         uh = fd.Function(self.function_space)
         fd.solve(self.LHS == self.RHS, uh, solver_parameters={

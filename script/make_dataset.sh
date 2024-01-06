@@ -1,39 +1,62 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
+# number of samples for time-indepedent cases
+n_samples_train=100
 
-# This script is used to generate the dataset for training and testing.
-# Each generated dataset contains train, test, validation sets, and a folder "data" containing all of them.
+# training set build
+rand_seed=63
+# square uniform mesh grid num
+n_grid_start=25
+n_grid_end=35
+stride=5
+# length character for polygon mesh
+lcs=(0.055 0.05 0.045 0.04)
+# lcs=(0.045)
 
-# For training purpose, we generated a full datasets contaiing 400 samples.
 
-# For testing purpose, we generated a small datasets contaiing 60 samples, and use "data" folder to do the test.
-#     (This is because for a comprehensive test, we want to test it on different n_grid, and maybe different boundary scheme
-#      in this setup, we do not use the training dataset at all, so we just generate a small dataset for testing purpose, and use
-#      the "data" folder to do the test.)
+# # burgers square
+# python ./script/build_burgers_square.py --n_grid=20 --n_case=5
+# python ./script/build_burgers_square.py --n_grid=25  --n_case=5
 
-# Please use different rand_seed for training and testing purpose.
-# This is because we want to make sure the training and testing dataset are different.
-
-n_samples=100
-
-# for training set
-# rand_seed=63
-
-# for test set, generating small samples
-rand_seed=42
-
-n_grid_start=15
-n_grid_end=15
-
-stride=1
-
+# # helmholtz square case
 for i in {$n_grid_start..$n_grid_end}; do
   if ((i % $stride == 0)); then
     echo "n_grid = $i"
-    python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="aniso" --boundary_scheme="full"
-    python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="iso" --boundary_scheme="pad"
-    # python ./script/build_dataset.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples --field_type="iso" --boundary_scheme="full"
-    # python ./script/build_dataset.py --n_grid $i  --rand_seed $rand_seed --n_samples $n_samples --field_type "aniso" --boundary_scheme "pad"
+    python ./script/build_helmholtz_square.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="aniso" --boundary_scheme="full"
+    # python ./script/build_helmholtz_square.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="pad"
+    # python ./script/build_helmholtz_square.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="full"
+    # python ./script/build_helmholtz_square.py --n_grid=$i  --rand_seed $rand_seed --n_samples $n_samples_train --field_type "aniso" --boundary_scheme "pad"
   fi
+done
+
+
+# helmholtz polygon case
+for i in "${lcs[@]}"; do
+    echo "lc = $i"
+    python ./script/build_helmholtz_poly.py --lc=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="aniso" --boundary_scheme="full"
+    # python ./script/build_helmholtz_poly.py --lc=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="pad"
+    # python ./script/build_helmholtz_poly.py --lc=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="full"
+    # python ./script/build_helmholtz_poly.py --lc $i  --rand_seed $rand_seed --n_samples $n_samples_train --field_type "aniso" --boundary_scheme "pad"
+done
+
+# poisson square case
+for i in {$n_grid_start..$n_grid_end}; do
+  if ((i % $stride == 0)); then
+    echo "n_grid = $i"
+    python ./script/build_poisson_square.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="aniso" --boundary_scheme="full"
+    # python ./script/build_poisson_square.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="pad"
+    # python ./script/build_poisson_square.py --n_grid=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="full"
+    # python ./script/build_poisson_square.py --n_grid=$i  --rand_seed $rand_seed --n_samples $n_samples_train --field_type "aniso" --boundary_scheme "pad"
+  fi
+done
+
+
+# possion polygon case
+for i in "${lcs[@]}"; do
+    echo "lc = $i"
+    python ./script/build_poisson_poly.py --lc=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="aniso" --boundary_scheme="full"
+    # python ./script/build_poisson_poly.py --lc=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="pad"
+    # python ./script/build_poisson_poly.py --lc=$i  --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="full"
+    # python ./script/build_poisson_poly.py --lc=$i  --rand_seed $rand_seed --n_samples $n_samples_train --field_type "aniso" --boundary_scheme "pad"
 done

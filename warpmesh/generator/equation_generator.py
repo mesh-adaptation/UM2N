@@ -6,7 +6,7 @@ import firedrake as fd
 os.environ['OMP_NUM_THREADS'] = "1"
 __all__ = [
     "RandHelmholtzEqGenerator",
-    "RandPossionEqGenerator",
+    "RandPoissonEqGenerator",
     "HelmholtzEqGenerator",
 ]
 
@@ -84,7 +84,7 @@ class HelmholtzEqGenerator():
         }
 
 
-class RandPossionEqGenerator():
+class RandPoissonEqGenerator():
     def __init__(self, rand_u_generator):
         self.rand_u_generator = rand_u_generator
         self.problem_name = "rand_helmholtz"
@@ -104,8 +104,8 @@ class RandPossionEqGenerator():
         # Discretised Eq Definition Start
         self.f = -1 * fd.div(fd.grad(self.u_exact))
         self.RHS = self.f * v * fd.dx(domain=mesh)
-        self.LHS = (fd.dot(
-            fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+        self.LHS = fd.dot(
+            fd.grad(v), fd.grad(u)) * fd.dx(domain=mesh)
         self.bc = fd.DirichletBC(
             self.function_space, self.u_exact, "on_boundary")
         # Discretised Eq Definition End

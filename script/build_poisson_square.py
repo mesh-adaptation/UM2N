@@ -48,7 +48,7 @@ rand_seed = args.rand_seed
 random.seed(rand_seed)
 
 # ====  Parameters ======================
-problem = "holmholtz"
+problem = "poisson"
 
 n_samples = args.n_samples
 
@@ -113,7 +113,7 @@ def move_data(target, source, start, num_file):
 
 
 project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-dataset_dir = os.path.join(project_dir, "data", "dataset", "helmholtz")
+dataset_dir = os.path.join(project_dir, "data", "dataset", problem)
 problem_specific_dir = os.path.join(
         dataset_dir,
         "z=<{},{}>_ndist={}_max_dist={}_<{}x{}>_n={}_{}_{}".format(
@@ -183,9 +183,9 @@ if __name__ == "__main__":
                     "c_min": c_min,
                     "c_max": c_max,
                 })
-            helmholtz_eq = wm.RandHelmholtzEqGenerator(
+            poisson_eq = wm.RandPoissonEqGenerator(
                 rand_u_generator)
-            res = helmholtz_eq.discretise(mesh)  # discretise the equation
+            res = poisson_eq.discretise(mesh)  # discretise the equation
             dist_params = rand_u_generator.get_dist_params()
             # Solve the equation
             solver = wm.EquationSolver(params={
@@ -199,7 +199,7 @@ if __name__ == "__main__":
             hessian = wm.MeshGenerator(params={
                     "num_grid_x": num_grid_x,
                     "num_grid_y": num_grid_y,
-                    "helmholtz_eq": helmholtz_eq,
+                    "eq": poisson_eq,
                     "mesh": fd.RectangleMesh(
                         num_grid_x, num_grid_y, scale_x, scale_y)
                     }
@@ -208,7 +208,7 @@ if __name__ == "__main__":
             hessian_norm = wm.MeshGenerator(params={
                     "num_grid_x": num_grid_x,
                     "num_grid_y": num_grid_y,
-                    "helmholtz_eq": helmholtz_eq,
+                    "eq": poisson_eq,
                     "mesh": fd.RectangleMesh(
                         num_grid_x, num_grid_y, scale_x, scale_y)
                     }
@@ -224,7 +224,7 @@ if __name__ == "__main__":
             mesh_gen = wm.MeshGenerator(params={
                 "num_grid_x": num_grid_x,
                 "num_grid_y": num_grid_y,
-                "helmholtz_eq": helmholtz_eq,
+                "eq": poisson_eq,
                 "mesh": fd.RectangleMesh(
                     num_grid_x, num_grid_y, scale_x, scale_y)
             })
@@ -254,7 +254,7 @@ if __name__ == "__main__":
             # )
 
             # solve the equation on the new mesh
-            new_res = helmholtz_eq.discretise(new_mesh)
+            new_res = poisson_eq.discretise(new_mesh)
             new_solver = wm.EquationSolver(params={
                 "function_space": new_res["function_space"],
                 "LHS": new_res["LHS"],
@@ -334,7 +334,6 @@ if __name__ == "__main__":
                 os.path.join(
                     problem_plot_dir, "plot_{}.png".format(i))
             )
-
             # ==========================================
 
             # generate log file
@@ -342,7 +341,7 @@ if __name__ == "__main__":
             high_res_function_space = fd.FunctionSpace(
                 high_res_mesh, "CG", 1)
 
-            res_high_res = helmholtz_eq.discretise(high_res_mesh)
+            res_high_res = poisson_eq.discretise(high_res_mesh)
             u_exact = res_high_res["u_exact"]
 
             uh = fd.project(uh, high_res_function_space)
