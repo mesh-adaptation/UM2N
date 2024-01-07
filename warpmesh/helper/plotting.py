@@ -2,13 +2,15 @@
 # GitHub Username: acse-cw1722
 
 import torch
+import networkx as nx
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
 
 
 __all__ = [
     'plot_loss', 'plot_tangle',
-    'plot_mesh', 'plot_mesh_compare', 'plot_multiple_mesh_compare', 'plot_attentions_map'
+    'plot_mesh', 'plot_mesh_compare', 'plot_multiple_mesh_compare', 'plot_attentions_map', 'plot_attentions_map_compare'
 ]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -51,6 +53,21 @@ def plot_mesh(coord, face, ax=None):
     ax.add_collection(poly_collection)
     ax.set_aspect('equal')
     return ax, fig
+
+
+def plot_hessian(coord, face, hessian, ax=None):
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots()
+    vertices = [coord[face[:, i]] for i in range(face.shape[1])]
+    hessian_val = [hessian[face[:, i]] for i in range(face.shape[1])]
+    print(coord.shape, face.shape, max(hessian_val), min(hessian_val))
+    poly_collection = PolyCollection(
+        vertices, edgecolors='black', facecolors=hessian_val)
+    ax.add_collection(poly_collection)
+    ax.set_aspect('equal')
+    return ax, fig
+
 
 def plot_attention(attentions, ax=None):
     fig = None
@@ -103,4 +120,80 @@ def plot_attentions_map(out_atten_collections, out_loss_collections):
     # for n_sample in range(num_samples):
     #     ax[n_sample, num_models], _ = plot_mesh(target_mesh[n_sample], target_face[n_sample], ax=ax[n_sample, num_models])
     #     ax[n_sample, num_models].set_title("Target", fontsize=16)
+    return fig
+
+
+def plot_attention_on_mesh(coord, face, atten_weights, selected_node=200, ax=None):
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(4, 4))
+    # vertices = [coord[face[:, i]] for i in range(face.shape[1])]
+    vertices = coord
+    # print(vertices)
+    vertices_index = [ x for x in range(len(vertices))]
+    vertices_pos = {}
+    for node in vertices_index:
+        vertices_pos[node] = vertices[node]
+
+    G = nx.DiGraph()
+    # Add nodes
+    for node in vertices_index:
+        G.add_node(node)
+    
+    # Add edges with attention weights
+    # for i in range(1):
+    node_color_list = [ 0.0 for _ in range(len(vertices_index))]
+    i = selected_node
+    for j in range(len(vertices_index)):
+        if i != j:  # Assuming no self-loops
+            if len(atten_weights.shape) == 2:
+                G.add_edge(vertices_index[i], vertices_index[j], weight=atten_weights[i][j])
+                node_color_list[j] = atten_weights[i][j]
+            else:
+                G.add_edge(vertices_index[i], vertices_index[j], weight=atten_weights[j])
+                node_color_list[j] = atten_weights[j]
+    
+    print(f"num nodes: {len(vertices_index)}, node color list: {len(node_color_list)}")
+    # Draw the graph
+    # pos = nx.spring_layout(G)  # You can try different layouts
+    edges = G.edges()
+    weights = [G[u][v]['weight'] for u,v in edges]
+
+    # nx.draw(G, vertices_pos, ax=ax, with_labels=False, edge_color=weights, node_size=0.1, width=0.05, arrowsize=0.02, edge_cmap=mpl.colormaps['plasma'])
+
+    # Draw the node of intetest
+    nx.draw(G, vertices_pos, nodelist=[list(G)[selected_node]], ax=ax, arrows=None, with_labels=False, node_color='black', node_size=5.0, width=0.0, arrowsize=0.0)
+    # Draw the attention on other nodes
+    nx.draw(G, vertices_pos, ax=ax, arrows=None, with_labels=False, node_color=node_color_list, node_size=1.0, width=0.0, arrowsize=0.0, cmap=mpl.colormaps['plasma'])
+
+    # Create colorbar for the edges
+    sm = plt.cm.ScalarMappable(cmap=mpl.colormaps['plasma'], norm=plt.Normalize(vmin=min(weights), vmax=max(weights)))
+    sm.set_array([])
+
+    # cax = plt.axes([0.95, 0.05, 0.05,0.9 ])
+    plt.colorbar(sm, ax=ax, orientation='vertical', shrink=0.4, label='Attention weights')
+    plt.tight_layout()
+
+    ax.set_aspect('equal')
+    return ax, fig
+
+
+def plot_attentions_map_compare(out_mesh_collections, out_loss_collections, out_atten_collections, target_hessian, target_mesh, target_face, selected_node=200):
+    model_names = list(out_mesh_collections.keys())
+    num_models = len(model_names)
+    num_samples = len(out_mesh_collections[model_names[0]])
+    fig, ax = plt.subplots(num_samples, num_models+1, figsize=(4*num_models + 1, 4*num_samples))
+    for n_model, model_name in enumerate(model_names):
+        all_atten = out_atten_collections[model_name]
+        all_mesh = out_mesh_collections[model_name]
+        all_loss = out_loss_collections[model_name]
+        for n_sample in range(num_samples):
+
+            ax[n_sample, n_model], _ = plot_attention_on_mesh(all_mesh[n_sample], target_face[n_sample], atten_weights=all_atten[n_sample][-1], selected_node=selected_node, ax=ax[n_sample, n_model])
+            ax[n_sample, n_model].set_title(f"{model_name} (loss: {all_loss[n_sample]:.2f})", fontsize=16)
+    # Plot the ground truth
+    for n_sample in range(num_samples):
+        # ax[n_sample, num_models], _ = plot_mesh(target_mesh[n_sample], target_face[n_sample], ax=ax[n_sample, num_models])
+        ax[n_sample, num_models], _ = plot_attention_on_mesh(target_mesh[n_sample], target_face[n_sample], target_hessian[n_sample], selected_node=selected_node, ax=ax[n_sample, num_models])
+        ax[n_sample, num_models].set_title("Target", fontsize=16)
     return fig

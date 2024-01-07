@@ -5,7 +5,7 @@ import torch
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing
 
-__all__ = ['train', 'evaluate', 'load_model', 'TangleCounter',
+__all__ = ['train', 'train_unsupervised', 'evaluate', 'load_model', 'TangleCounter',
            'count_dataset_tangle', 'get_jacob_det',
            'get_inversion_diff_loss', 'get_face_area',
            'count_dataset_tangle', 'get_jacob_det', 'get_face_area',
@@ -328,6 +328,111 @@ def train(
         optimizer.zero_grad()
         data = batch.to(device)
         out = model(data)
+        loss = 0
+        inversion_loss = 0
+        deform_loss = 0
+        inversion_diff_loss = 0
+        area_loss = 0
+        # deformation loss
+        deform_loss = 1000*(
+            loss_func(out, data.y) if not use_jacob else
+            jacobLoss(model, out, data, loss_func)
+        )
+        # Inversion loss
+        if use_inversion_loss:
+            inversion_loss = get_inversion_loss(
+                out, data.y, data.face,
+                batch_size=bs, scaler=scaler)
+        if use_area_loss:
+            area_loss = get_area_loss(
+                out, data.y, data.face, bs, scaler)
+
+        loss = (
+            deform_loss +
+            inversion_loss +
+            inversion_diff_loss +
+            area_loss
+        )
+        # Jacobian loss
+        if use_jacob:
+            loss.backward(retain_graph=True)
+        else:
+            loss.backward()
+
+        optimizer.step()
+        total_loss += loss.item()
+        total_deform_loss += deform_loss.item()
+        total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
+        total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
+        total_area_loss += area_loss.item() if use_area_loss else 0
+
+    res = {
+        "total_loss": total_loss / len(loader),
+        "deform_loss": total_deform_loss / len(loader),
+    }
+    if (use_inversion_loss):
+        res["inversion_loss"] = total_inversion_loss / len(loader)
+    if (use_inversion_diff_loss):
+        res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
+    if (use_area_loss):
+        res["area_loss"] = total_area_loss / len(loader)
+
+    return res
+
+
+def train_unsupervised(
+        loader, model, optimizer, device, loss_func,
+        use_jacob=False,
+        use_inversion_loss=False,
+        use_inversion_diff_loss=False,
+        use_area_loss=False,
+        scaler=100):
+    """
+    Trains a PyTorch model using the given data loader, optimizer,
+        and loss function.
+
+    Args:
+        loader (DataLoader): DataLoader object for the training data.
+        model (torch.nn.Module): The PyTorch model to train.
+        optimizer (Optimizer): The optimizer (e.g., Adam, SGD).
+        device (torch.device): The device to run the computation on.
+        loss_func (callable): Loss function (e.g., MSE, Cross-Entropy).
+        use_jacob (bool): Whether or not to use Jacobian loss.
+
+    Returns:
+        float: The average training loss across all batches.
+    """
+    bs = loader.batch_size
+    model.train()
+    total_loss = 0
+    total_deform_loss = 0
+    total_inversion_loss = 0
+    total_inversion_diff_loss = 0
+    total_area_loss = 0
+    for batch in loader:
+        optimizer.zero_grad()
+        data = batch.to(device)
+        data.x.requires_grad = True
+        out = model(data)
+
+        # Compute the residual to the equation
+        grad_seed = torch.ones(out.shape).to(device)
+        phi = torch.autograd.grad(out, data.x, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phix = phi[:, 0]
+        phiy = phi[:, 1]
+        # print(f"phix: {phix.shape}, phiy: {phiy.shape}")
+        hessian_seed = torch.ones(phix.shape).to(device)
+        phix_grad = torch.autograd.grad(phix, data.x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phiy_grad = torch.autograd.grad(phiy, data.x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+
+        # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
+        phixx = phix_grad[:, 0]
+        phixy = phix_grad[:, 1]
+        phiyx = phiy_grad[:, 0]
+        phiyy = phiy_grad[:, 1]
+        # print(f"phixx grad: {phixx.shape}, phixy grad: {phixy.shape}, phiyx grad: {phiyx.shape}, phiyy grad: {phiyy.shape}")
+        det_hessian = (phixx + 1) * (phiyy + 1) - phixy * phiyx
+
         loss = 0
         inversion_loss = 0
         deform_loss = 0

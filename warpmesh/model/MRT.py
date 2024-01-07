@@ -38,7 +38,9 @@ class MRTransformer(torch.nn.Module):
                  num_transformer_embed_dim=64, 
                  num_transformer_heads=4, 
                  num_transformer_layers=1, 
-                 transformer_training_mask=False, 
+                 transformer_training_mask=False,
+                 transformer_key_padding_training_mask=False,
+                 transformer_attention_training_mask=False,
                  transformer_training_mask_ratio_lower_bound=0.5,
                  transformer_training_mask_ratio_upper_bound=0.9,
                  deform_in_c=7, num_loop=3, device='cuda'):
@@ -56,6 +58,8 @@ class MRTransformer(torch.nn.Module):
         self.num_loop = num_loop
         self.hidden_size = 512  # set here
         self.mask_in_trainig = transformer_training_mask
+        self.key_padding_mask_in_training = transformer_key_padding_training_mask
+        self.attention_mask_in_training = transformer_attention_training_mask
         self.mask_ratio_ub = transformer_training_mask_ratio_upper_bound
         self.mask_ratio_lb = transformer_training_mask_ratio_lower_bound
         assert self.mask_ratio_ub >= self.mask_ratio_lb, 'Training mask ratio upper bound smaller than lower bound.'
@@ -78,7 +82,7 @@ class MRTransformer(torch.nn.Module):
             concat=False
         )
     
-    def _forward(self, batch_size, mesh_feat, x_feat, get_attens=False):
+    def _transformer_forward(self, batch_size, mesh_feat, x_feat, get_attens=False):
         """
         Forward pass for MRN.
 
@@ -100,16 +104,17 @@ class MRTransformer(torch.nn.Module):
             mask_ratio = (self.mask_ratio_ub - self.mask_ratio_lb) * torch.rand(1) + self.mask_ratio_lb
             masked_num = int(node_num * mask_ratio)
             mask = torch.randperm(node_num)[:masked_num]
-
-            # Key padding mask
-            # key_padding_mask = torch.zeros([batch_size, node_num], dtype=torch.bool).to(self.device)
-            # key_padding_mask[:, mask] = True
+        
+            if self.key_padding_mask_in_training:
+                # Key padding mask
+                key_padding_mask = torch.zeros([batch_size, node_num], dtype=torch.bool).to(self.device)
+                key_padding_mask[:, mask] = True
             # print(key_padding_mask.shape, key_padding_mask)
             # print("Now is training")
-
-            # Attention mask
-            attention_mask = torch.zeros([batch_size*self.num_heads, node_num, node_num], dtype=torch.bool).to(self.device)
-            attention_mask[:, mask, mask] = True
+            elif self.attention_mask_in_training:
+                # Attention mask
+                attention_mask = torch.zeros([batch_size*self.num_heads, node_num, node_num], dtype=torch.bool).to(self.device)
+                attention_mask[:, mask, mask] = True
         
         features = self.transformer_encoder(transformer_input, key_padding_mask=key_padding_mask, attention_mask=attention_mask)
         features = features.reshape(-1, self.num_transformer_out)
@@ -121,6 +126,29 @@ class MRTransformer(torch.nn.Module):
         else:
             atten_scores = self.transformer_encoder.get_attention_scores(x=transformer_input, key_padding_mask=key_padding_mask)
             return features, atten_scores
+    
+    def transformer_monitor(self, data):
+        conv_feat_in = data.conv_feat
+        batch_size = batch_size = conv_feat_in.shape[0]
+        feat_dim = data.x.shape[-1]
+        x_feat = data.x.reshape(-1, feat_dim)
+        coord = x_feat[:, :2]
+        edge_idx = data.edge_index
+
+        hidden = self._transformer_forward(batch_size, data.mesh_feat, x_feat)
+
+        # TODO: more sampling points inspired by neural operator 
+        # edge_idx = data.edge_index_with_cluster.reshape(2, -1)
+        # print("input data after reshape ", edge_idx.shape)
+
+        # ===== Ablation for hessian norm as direct input to the deformer =====
+        # hidden = data.mesh_feat[:, -1].unsqueeze(-1)
+        # hidden = torch.cat([x_feat[:, 2:], hidden], dim=1)
+        # hidden = F.selu(self.lin(hidden))
+        # =====================================================================
+        
+        return coord, hidden, edge_idx
+
     
     def move(self, data, num_step=1):
         """
@@ -134,13 +162,7 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
-        conv_feat_in = data.conv_feat
-        batch_size = batch_size = conv_feat_in.shape[0]
-        feat_dim = data.x.shape[-1]
-        x_feat = data.x.reshape(-1, feat_dim)
-        coord = x_feat[:, :2]
-        edge_idx = data.edge_index
-        hidden = self._forward(batch_size, data.mesh_feat, x_feat)
+        coord, hidden, edge_idx = self.transformer_monitor(data)
 
         # Recurrent GAT deform
         for i in range(num_step):
@@ -158,13 +180,7 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
-        conv_feat_in = data.conv_feat
-        batch_size = batch_size = conv_feat_in.shape[0]
-        feat_dim = data.x.shape[-1]
-        x_feat = data.x.reshape(-1, feat_dim)
-        coord = x_feat[:, :2]
-        edge_idx = data.edge_index
-        hidden = self._forward(batch_size, data.mesh_feat, x_feat)
+        coord, hidden, edge_idx = self.transformer_monitor(data)
 
         # Recurrent GAT deform
         for i in range(self.num_loop):
@@ -179,7 +195,7 @@ class MRTransformer(torch.nn.Module):
         x_feat = data.x.reshape(-1, feat_dim)
         # coord = x_feat[:, :2]
         # edge_idx = data.edge_index
-        _, attentions = self._forward(batch_size, data.mesh_feat, x_feat, get_attens=True)
+        _, attentions = self._transformer_forward(batch_size, data.mesh_feat, x_feat, get_attens=True)
         return attentions
 
 

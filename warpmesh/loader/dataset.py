@@ -209,6 +209,8 @@ class MeshDataset(Dataset):
             mesh_feat=self.get_mesh_feature(data),
             edge_index=torch.from_numpy(
                 data.item().get('edge_index_bi')).to(torch.int64),
+            edge_index_with_cluster=torch.from_numpy(
+                data.item().get('edge_index_bi')).to(torch.int64),
             y=torch.from_numpy(data.item().get('y')).float(),
             face=torch.from_numpy(
                 data.item().get('face_idxs')).to(torch.long).T if data.item().get('face_idxs') is not None else None,  # noqa: E501
@@ -239,7 +241,8 @@ class MeshDataset(Dataset):
             train_data = self.transform(train_data)
         if self.use_cluster:
             # train_data.edge_index = get_new_edges(train_data, r=self.r)
-            train_data.edge_index = data.item().get('cluster_edges')
+            train_data.edge_index_with_cluster = data.item().get('cluster_edges')
+        # print(self.use_cluster, train_data)
         return train_data
 
 
@@ -257,6 +260,8 @@ class MeshData(Data):
         if key == 'conv_feat_fix':
             return None
         if key == 'node_num':
+            return None
+        if key == 'edge_index_with_cluster':
             return None
         return super().__cat_dim__(key, value, *args, **kwargs)
 

@@ -46,6 +46,8 @@ run_id = 'kx25grpm' # MRT + 3 layers recurrent
 run_id = '790xybc1' # MRT + 2 layers recurrent
 run_id = 'zdj9ocmw' # MRT + 1 layer recurrent
 
+run_id = '2wta7yed' # MRT-1R with sampling
+run_id = '0bsy6m45' # MRT-1R no hessian
 
 
 
@@ -56,6 +58,8 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
                       "MRT-3R":['kx25grpm'],
+                      "MRT-1R-sampling":['2wta7yed'],
+                      "MRT-1R-no-hessian":['0bsy6m45'],
 
                       "MRT-1R-atten-mask0.50":['esn5ynfq'],
                       "MRT-1R-atten-mask0.50~0.90":['7yaerq40'],
@@ -77,21 +81,22 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRN":['0iwpdpnr'], 
                       "M2T":['gboubixk'], 
                       "M2N":['xqa8fnoj']}
-test_ms = 60
-
+test_ms = 35
+num_sample_vis = 5
 # models_to_compare = ["MRT", "MRN-LTE", "MRT-Sampling", "MRN-Sampling", "MRN", "M2T", "M2N"]
 # models_to_compare = ["MRT", "MRT-mask0.75", "MRT-mask0.50", "MRT-mask0.25", "MRN-LTE", "MRN", "M2T", "M2N"]
 # models_to_compare = ["MRT", "MRT-mask0.75", "MRT-mask0.50", "MRT-mask0.25"]
 # models_to_compare = ["MRT", "MRT-1R", "MRT-1R-atten-mask0.50", "MRT-1R-atten-mask0.50~0.90", "MRT-1R-mask0.50", "MRT-1R-mask0.50~0.9"]
 
-models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
-# models_to_compare = ["MRT", "MRT-1R", "MRT-2R","MRT-3R"]
+# models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
+models_to_compare = ["MRT", "MRT-1R", "MRT-2R","MRT-3R"]
+# models_to_compare = ["MRT-1R", "MRT-1R-no-hessian"]
 # test dataset, for benchmarking loss effects on model performance
-# test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 # test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
-random_seed = 555
+# test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
+random_seed = 234
 
 out_mesh_collections = {}
 out_loss_collections = {}
@@ -106,6 +111,8 @@ for model_name in models_to_compare:
     config = SimpleNamespace(**run.config)
     print(config)
     config.num_transformer_in = 4
+    if 'no-hessian' in model_name:
+      config.num_transformer_in = 3
     config.num_transformer_out = 16
     config.num_transformer_embed_dim = 64
     config.num_transformer_heads = 4
@@ -247,6 +254,7 @@ for model_name in models_to_compare:
     out_atten_collections[model_name] = []
     target_mesh = []
     target_face = []
+    target_hessian_norm = []
     num_step_recurrent = 5
     with torch.no_grad():
       cnt = 0
@@ -264,22 +272,24 @@ for model_name in models_to_compare:
               out = model.move(sample, num_step=3)
             else:
               out = model.move(sample, num_step=5)
+          print(out.shape)
           if 'MRT' in model_name:
              attentions = model.get_attention_scores(sample)
           deform_loss = loss_func(out, sample.y)*1000
-          print(f"{model_name} {cnt} deform loss: {deform_loss}")
+          print(f"{model_name} {cnt} deform loss: {deform_loss}, mesh vertices: {out.shape}")
           out_mesh_collections[model_name].append(out.detach().cpu().numpy())
           out_loss_collections[model_name].append(deform_loss)
           out_atten_collections[model_name].append(attentions)
           target_mesh.append(sample.y.detach().cpu().numpy())
           target_face.append(sample.face.detach().cpu().numpy())
+          target_hessian_norm.append(sample.mesh_feat[:,-1].detach().cpu().numpy())
           # compare_fig = wm.plot_mesh_compare(
           #     out.detach().cpu().numpy(), sample.y,
           #     sample.face
           # )
           # compare_fig.savefig(f"./out_images/img_method_{config.model_used}_reso_{test_ms}_{cnt}.png")
           cnt += 1
-          if cnt == 5:
+          if cnt == num_sample_vis:
             break
 
 
@@ -290,8 +300,17 @@ compare_fig.suptitle(f"Ouput Mesh Comparsion (mesh resolution {test_ms}, datalod
 compare_fig.savefig(f"./out_images/comparison_reso_{test_ms}_seed_{random_seed}_recurrent_{num_step_recurrent}.png")
 
 
-atten_fig = wm.plot_attentions_map(out_atten_collections, out_loss_collections)
+selected_node = torch.randint(low=0, high=test_ms*test_ms-1, size=(1,))
+selected_node = 888
+print(f"attention map selected node: {selected_node}")
+atten_fig = wm.plot_attentions_map_compare(out_mesh_collections, out_loss_collections, out_atten_collections, target_hessian_norm, target_mesh, target_face, selected_node=selected_node)
 atten_fig.tight_layout()
 atten_fig.subplots_adjust(top=0.95)
 atten_fig.suptitle(f"Ouput Attention (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)
-atten_fig.savefig(f"./out_images/attention_reso_{test_ms}_seed_{random_seed}_recurrent_{num_step_recurrent}.png")
+atten_fig.savefig(f"./out_images/attention_reso_{test_ms}_seed_{random_seed}_selected_node_{selected_node}.png")
+
+# atten_fig = wm.plot_attentions_map(out_atten_collections, out_loss_collections)
+# atten_fig.tight_layout()
+# atten_fig.subplots_adjust(top=0.95)
+# atten_fig.suptitle(f"Ouput Attention (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)
+# atten_fig.savefig(f"./out_images/attention_reso_{test_ms}_seed_{random_seed}_recurrent_{num_step_recurrent}.png")

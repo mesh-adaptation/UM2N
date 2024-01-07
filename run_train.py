@@ -2,7 +2,7 @@
 # %load_ext autoreload
 # %autoreload 2
 
-from warpmesh.model import M2N, train, evaluate, MRN, count_dataset_tangle, M2N_dynamic_drop, M2N_dynamic_no_drop, MRNAtten, M2NAtten
+from warpmesh.model import M2N, train, train_unsupervised, evaluate, MRN, count_dataset_tangle, M2N_dynamic_drop, M2N_dynamic_no_drop, MRNAtten, M2NAtten
 from warpmesh.model import MRNGlobalTransformerEncoder, MRNLocalTransformerEncoder, MRTransformer, M2Transformer
 from warpmesh.helper import mkdir_if_not_exist, plot_loss, plot_tangle
 from warpmesh.helper import save_namespace_to_yaml, load_yaml_to_namespace
@@ -46,81 +46,6 @@ config = load_yaml_to_namespace(f"./configs/{config_name}")
 now = datetime.now()
 now_date = now.strftime("%Y-%m-%d-%H:%M_")
 config.experiment_name = now_date + config_name
-
-# # ============================Training settting ============================
-# # [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
-# # [17, 20, 23, 25, 28, 30, 33, 35]
-
-# # @title Training Settings
-
-# config = Namespace(
-#     project = "warpmesh"
-# )
-
-# # @markdown ## Training params
-# config.num_epochs = 1000  # @param {type: "number"}
-# config.batch_size = 10  # @param {type: "number"}
-# config.print_interval = 1  # @param {type: "number"}
-# config.check_tangle_interval = 10  # @param {type: "number"}
-# config.multi_scale_check_interval = 50  # @param {type: "number"}
-# config.save_interval = 20  # @param {type: "number"}
-# config.learning_rate = 5e-5  # @param {type: "number"}
-# config.weight_decay = 0.1  # @param {type: "number"}
-# config.use_jacob = False # @param [True, False] {allow-input: false}
-# config.count_tangle_method = "inversion" # @param ["msg", "inversion"] {allow-input: false}
-# config.use_inversion_loss = False # @param [True, False] {allow-input: false}
-# config.use_inversion_diff_loss = False # @param [True, False] {allow-input: false}
-# config.use_area_loss = True  # @param [True, False] {allow-input: false}
-# config.inversion_loss_scaler = 1e10  # @param {type: "number"}
-# config.out_path = './out'
-# config.use_cluster = False # @param [True, False] {allow-input: false}
-# config.cluster_r = 0.35 # @param {type: "number"}
-
-# # @markdown ## Model setting
-
-# config.model_used = "MRN"  # @param ["MRN", "M2N", "M2N_dynamic_no_drop", "M2N_dynamic_drop", "MRNAtten"] {allow-input: false}
-
-# config.num_deform_in = 7  # @param {type: "number"}
-# config.num_gfe_in = 2  # @param {type: "number"}
-# config.num_lfe_in = 4   # @param {type: "number"}
-# config.num_deformer_loop = 5  # @param {type: "number"}
-
-
-# # @markdown ## Dataset type
-# config.n_grids = [15, 20] # @param
-# config.n_grids_test = [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35] # @param
-# config.train_data_set_type = "aniso" # @param ["aniso", "iso"] {allow-input: false}
-# config.train_boundary_scheme = "full" # @param ["pad", "full"] {allow-input: false}
-
-# # use normalised data?
-# config.is_normalise = True # @param {type:"boolean"}
-
-
-# # Feature used
-# config.x_feat = [
-#     "coord",
-#     "bd_mask",
-#     "bd_left_mask",
-#     "bd_right_mask",
-#     "bd_down_mask",
-#     "bd_up_mask",
-# ]
-# config.mesh_feat = [
-#     "coord",
-#     "u",
-#     "hessian_norm",
-#     # "grad_u",
-#     # "hessian",
-# ]
-# config.conv_feat = [
-#     "conv_uh",
-#     "conv_hessian_norm",
-# ]
-
-# config.conv_feat_fix = [
-#     "conv_uh_fix",
-#     # "conv_hessian_norm",
-# ]
 
 model = None
 if (config.model_used == "M2N"):
@@ -183,6 +108,8 @@ elif (config.model_used == "MRTransformer"):
     num_transformer_heads=config.num_transformer_heads, 
     num_transformer_layers=config.num_transformer_layers,
     transformer_training_mask=config.transformer_training_mask,
+    transformer_key_padding_training_mask=config.transformer_key_padding_training_mask,
+    transformer_attention_training_mask=config.transformer_attention_training_mask,
     transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,
     transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,
     deform_in_c=config.num_deform_in,
@@ -369,7 +296,11 @@ os.makedirs(output_folder, exist_ok=True)
 save_namespace_to_yaml(config, f"{output_folder}/{config.experiment_name}")
 
 for epoch in range(config.num_epochs + 1):
-  train_loss = train(train_loader, model, optimizer, device, loss_func=loss_func,
+#   train_loss = train(train_loader, model, optimizer, device, loss_func=loss_func,
+#                      use_area_loss=config.use_area_loss,
+#                      scaler=300,
+#                      )
+  train_loss = train_unsupervised(train_loader, model, optimizer, device, loss_func=loss_func,
                      use_area_loss=config.use_area_loss,
                      scaler=300,
                      )
