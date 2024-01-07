@@ -113,6 +113,7 @@ elif (config.model_used == "MRTransformer"):
     transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,
     transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,
     deform_in_c=config.num_deform_in,
+    deform_out_dim=config.num_deform_out,
     num_loop=config.num_deformer_loop,
 )
 elif (config.model_used == "M2Transformer"):
@@ -302,6 +303,7 @@ for epoch in range(config.num_epochs + 1):
 #                      )
   train_loss = train_unsupervised(train_loader, model, optimizer, device, loss_func=loss_func,
                      use_area_loss=config.use_area_loss,
+                     use_convex_loss=config.use_convex_loss,
                      scaler=300,
                      )
   test_loss = evaluate(test_loader, model, device, loss_func=loss_func,
@@ -312,7 +314,16 @@ for epoch in range(config.num_epochs + 1):
       "Deform Loss/Train": train_loss["deform_loss"],
       "Deform Loss/Test":test_loss["deform_loss"],
   }, step=epoch)
+  wandb.log({
+        "Equation residual/Train": train_loss["equation_residual"],
+        "Equation residual/Test":test_loss["equation_residual"],
+  }, step=epoch)
   print(f"Epoch: {epoch}")
+  if (config.use_convex_loss):
+      wandb.log({
+        "Convex loss/Train": train_loss["convex_loss"],
+        "Convex loss/Test":test_loss["convex_loss"],
+      }, step=epoch)
   if (config.use_inversion_loss):
       wandb.log({
           "Inversion Loss/Train": train_loss["inversion_loss"],

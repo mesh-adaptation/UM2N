@@ -26,9 +26,10 @@ class RecurrentGATConv(MessagePassing):
     """
     def __init__(self, coord_size=2,
                  hidden_size=512,
-                 heads=6, concat=False
+                 heads=6, output_dim=2, concat=False
                  ):
         super(RecurrentGATConv, self).__init__()
+        self.output_dim = output_dim
         # GAT layer
         self.to_hidden = GATv2Conv(
             in_channels=coord_size+hidden_size,
@@ -38,21 +39,23 @@ class RecurrentGATConv(MessagePassing):
         )
         # output coord layer
         self.to_coord = nn.Sequential(
-            nn.Linear(hidden_size, 2),
+            nn.Linear(hidden_size, self.output_dim),
         )
         # activation function
         self.activation = nn.SELU()
 
     def forward(self, coord, hidden_state, edge_index):
-        # find boundary
-        self.find_boundary(coord)
+        if self.output_dim == 2:
+            # find boundary
+            self.find_boundary(coord)
         # Recurrent GAT
         in_feat = torch.cat((coord, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
         hidden = self.activation(hidden)
         output_coord = self.to_coord(hidden)
-        # fix boundary
-        self.fix_boundary(output_coord)
+        if self.output_dim == 2:
+            # fix boundary
+            self.fix_boundary(output_coord)
         return output_coord, hidden
 
     def find_boundary(self, in_data):

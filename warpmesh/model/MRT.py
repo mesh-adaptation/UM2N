@@ -43,7 +43,7 @@ class MRTransformer(torch.nn.Module):
                  transformer_attention_training_mask=False,
                  transformer_training_mask_ratio_lower_bound=0.5,
                  transformer_training_mask_ratio_upper_bound=0.9,
-                 deform_in_c=7, num_loop=3, device='cuda'):
+                 deform_in_c=7, deform_out_dim=2, num_loop=3, device='cuda'):
         """
         Initialize MRN.
 
@@ -79,6 +79,7 @@ class MRTransformer(torch.nn.Module):
             coord_size=2,
             hidden_size=self.hidden_size,
             heads=6,
+            output_dim=deform_out_dim,
             concat=False
         )
     
