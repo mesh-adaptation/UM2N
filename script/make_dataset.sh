@@ -2,13 +2,13 @@
 # GitHub Username: acse-cw1722
 
 # number of samples for time-indepedent cases
-n_samples_train=100
+n_samples_train=400
 
 # training set build
 rand_seed=63
 # square uniform mesh grid num
-n_grid_start=25
-n_grid_end=35
+n_grid_start=15
+n_grid_end=20
 stride=5
 # length character for polygon mesh
 lcs=(0.055 0.05 0.045 0.04)

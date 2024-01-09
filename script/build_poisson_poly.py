@@ -50,7 +50,7 @@ random.seed(rand_seed)
 np.random.seed(rand_seed)
 
 # ====  Parameters ======================
-problem = "possion_poly"
+problem = "poisson_poly"
 
 n_samples = args.n_samples
 
@@ -368,7 +368,8 @@ if __name__ == "__main__":
                 high_res_mesh, "CG", 1)
 
             res_high_res = poisson_eq.discretise(high_res_mesh)
-            u_exact = res_high_res["u_exact"]
+            u_exact = fd.interpolate(
+                res_high_res["u_exact"], res_high_res["function_space"])
 
             uh = fd.project(uh, high_res_function_space)
             uh_new = fd.project(uh_new, high_res_function_space)

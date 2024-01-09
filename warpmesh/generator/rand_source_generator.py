@@ -82,20 +82,20 @@ class RandSourceGenerator():
                 self.dist_params["x_end"] - self.dist_params["x_start"]) / 8
 
             self.μ_dict["x"].append(round(random.uniform(
-                self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
+                self.dist_params["c_min"], self.dist_params["c_max"]), 3)) # noqa
             self.μ_dict["y"].append(round(random.uniform(
-                self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
+                self.dist_params["c_min"], self.dist_params["c_max"]), 3)) # noqa
 
             self.σ_dict["x"].append(
-                max(round(random.gauss(σ_mean, σ_sigma), 4), eps))
+                max(round(random.gauss(σ_mean, σ_sigma), 3), eps))
             self.σ_dict["y"].append(
-                max(round(random.gauss(σ_mean, σ_sigma), 4), eps))
+                max(round(random.gauss(σ_mean, σ_sigma), 3), eps))
             self.z_list.append(round(random.uniform(
                 self.dist_params["z_min"],
-                self.dist_params["z_max"]), 4))
+                self.dist_params["z_max"]), 3))
             self.w_list.append(round(random.uniform(
                 self.dist_params["w_min"],
-                self.dist_params["w_max"]), 4))
+                self.dist_params["w_max"]), 3))
 
     def get_dist_params(self):
         """
@@ -124,8 +124,7 @@ class RandSourceGenerator():
             "v": None,
     }):
         """
-        Return analytical solution of Helmholtz equation.
-
+        Return analytical solution field.
         Returns:
             firedrake.Function: Analytical solution.
         """

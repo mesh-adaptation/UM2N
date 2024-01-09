@@ -3,6 +3,7 @@
 
 warpmesh.egg-info/*
 .eggs/*
+data/dataset*
 data/dataset/*
 data/helmholtz*
 data/output/*
@@ -20,6 +21,8 @@ script/git_push.sh
 script/check_tangle.ipynb
 script/compare_error.ipynb
 scirpt/play_tangle.ipynb
+
+eval/*
 
 .gitmodules
 

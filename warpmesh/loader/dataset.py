@@ -239,7 +239,7 @@ class MeshDataset(Dataset):
                 'μ_y': data.item().get('μ_y'),
                 'z': data.item().get('z'),
                 'w': data.item().get('w'),
-                'simple_u': data.item().get('simple_u'),
+                'simple_u': data.item().get('use_iso'),
                 'n_dist': data.item().get('n_dist'),
             }
 

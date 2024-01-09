@@ -52,7 +52,7 @@ class MRTransformer(torch.nn.Module):
             num_loop (int): Number of loops for the recurrent layer.
         """
         super().__init__()
-        self.device =device
+        self.device = device
         self.num_loop = num_loop
         self.hidden_size = 512  # set here
         self.mask_in_trainig = transformer_training_mask
@@ -77,7 +77,7 @@ class MRTransformer(torch.nn.Module):
             heads=6,
             concat=False
         )
-    
+
     def _forward(self, batch_size, mesh_feat, x_feat, get_attens=False):
         """
         Forward pass for MRN.
@@ -110,7 +110,7 @@ class MRTransformer(torch.nn.Module):
             # Attention mask
             attention_mask = torch.zeros([batch_size*self.num_heads, node_num, node_num], dtype=torch.bool).to(self.device)
             attention_mask[:, mask, mask] = True
-        
+
         features = self.transformer_encoder(transformer_input, key_padding_mask=key_padding_mask, attention_mask=attention_mask)
         features = features.reshape(-1, self.num_transformer_out)
         features = torch.cat([x_feat[:, 2:], features], dim=1)
@@ -121,7 +121,7 @@ class MRTransformer(torch.nn.Module):
         else:
             atten_scores = self.transformer_encoder.get_attention_scores(x=transformer_input, key_padding_mask=key_padding_mask)
             return features, atten_scores
-    
+
     def move(self, data, num_step=1):
         """
         Move the mesh according to the deformation learned, with given number

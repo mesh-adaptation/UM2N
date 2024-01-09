@@ -54,6 +54,7 @@ def plot_mesh(coord, face, ax=None):
     ax.set_aspect('equal')
     return ax, fig
 
+
 def plot_attention(attentions, ax=None):
     fig = None
     if ax is None:
@@ -61,6 +62,7 @@ def plot_attention(attentions, ax=None):
     ax.imshow(attentions[-1])
     ax.set_aspect('equal')
     return ax, fig
+
 
 def plot_mesh_compare(coord_out, coord_target, face):
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
@@ -79,12 +81,13 @@ def plot_mesh_compare_benchmark(coord_out, coord_target, face, loss, tangle):
     ax[1].set_title("Target")
     return fig
 
+
 def plot_multiple_mesh_compare(out_mesh_collections, out_loss_collections, target_mesh, target_face):
     model_names = list(out_mesh_collections.keys())
     num_models = len(model_names)
     num_samples = len(out_mesh_collections[model_names[0]])
     fig, ax = plt.subplots(num_samples, num_models+1, figsize=(4*num_models + 1, 4*num_samples))
-    
+
     for n_model, model_name in enumerate(model_names):
         all_mesh = out_mesh_collections[model_name]
         all_loss = out_loss_collections[model_name]
@@ -103,7 +106,7 @@ def plot_attentions_map(out_atten_collections, out_loss_collections):
     num_models = len(model_names)
     num_samples = len(out_atten_collections[model_names[0]])
     fig, ax = plt.subplots(num_samples, num_models, figsize=(4*num_models, 4*num_samples))
-    
+
     for n_model, model_name in enumerate(model_names):
         all_atten = out_atten_collections[model_name]
         all_loss = out_loss_collections[model_name]

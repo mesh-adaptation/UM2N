@@ -10,6 +10,13 @@ import matplotlib.pyplot as plt
 import random
 from argparse import ArgumentParser
 import time
+import wandb
+from types import SimpleNamespace
+
+entity = 'w-chunyang'
+project_name = 'warpmesh'
+run_id = 'sr7waaso'
+epoch = 1299
 
 
 def arg_parse():
@@ -25,12 +32,12 @@ def arg_parse():
     parser.add_argument('--n_grid', type=int, default=20,
                         help='number of grids of a\
                             discretized mesh')
-    parser.add_argument('--field_type', type=str, default="iso",
+    parser.add_argument('--field_type', type=str, default="aniso",
                         help='anisotropic or isotropic data type(aniso/iso)')
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument('--boundary_scheme', type=str, default="pad",
+    parser.add_argument('--boundary_scheme', type=str, default="full",
                         help='scheme used to generate the dataset (pad/full))')
-    parser.add_argument('--n_samples', type=int, default=400,
+    parser.add_argument('--n_samples', type=int, default=3,
                         help='number of samples generated')
     parser.add_argument('--rand_seed', type=int, default=63,
                         help='number of samples generated')
@@ -48,7 +55,7 @@ rand_seed = args.rand_seed
 random.seed(rand_seed)
 
 # ====  Parameters ======================
-problem = "poisson"
+problem = "holmholtz"
 
 n_samples = args.n_samples
 
@@ -113,7 +120,7 @@ def move_data(target, source, start, num_file):
 
 
 project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-dataset_dir = os.path.join(project_dir, "data", "dataset", problem)
+dataset_dir = os.path.join(project_dir, "data", "dataset", "helmholtz")
 problem_specific_dir = os.path.join(
         dataset_dir,
         "z=<{},{}>_ndist={}_max_dist={}_<{}x{}>_n={}_{}_{}".format(
@@ -183,10 +190,11 @@ if __name__ == "__main__":
                     "c_min": c_min,
                     "c_max": c_max,
                 })
-            poisson_eq = wm.RandPoissonEqGenerator(
+            helmholtz_eq = wm.RandHelmholtzEqGenerator(
                 rand_u_generator)
-            res = poisson_eq.discretise(mesh)  # discretise the equation
+            res = helmholtz_eq.discretise(mesh)  # discretise the equation
             dist_params = rand_u_generator.get_dist_params()
+            print("dist_params", dist_params)
             # Solve the equation
             solver = wm.EquationSolver(params={
                 "function_space": res["function_space"],
@@ -199,7 +207,7 @@ if __name__ == "__main__":
             hessian = wm.MeshGenerator(params={
                     "num_grid_x": num_grid_x,
                     "num_grid_y": num_grid_y,
-                    "eq": poisson_eq,
+                    "eq": helmholtz_eq,
                     "mesh": fd.RectangleMesh(
                         num_grid_x, num_grid_y, scale_x, scale_y)
                     }
@@ -208,7 +216,7 @@ if __name__ == "__main__":
             hessian_norm = wm.MeshGenerator(params={
                     "num_grid_x": num_grid_x,
                     "num_grid_y": num_grid_y,
-                    "eq": poisson_eq,
+                    "eq": helmholtz_eq,
                     "mesh": fd.RectangleMesh(
                         num_grid_x, num_grid_y, scale_x, scale_y)
                     }
@@ -224,7 +232,7 @@ if __name__ == "__main__":
             mesh_gen = wm.MeshGenerator(params={
                 "num_grid_x": num_grid_x,
                 "num_grid_y": num_grid_y,
-                "eq": poisson_eq,
+                "eq": helmholtz_eq,
                 "mesh": fd.RectangleMesh(
                     num_grid_x, num_grid_y, scale_x, scale_y)
             })
@@ -254,7 +262,7 @@ if __name__ == "__main__":
             # )
 
             # solve the equation on the new mesh
-            new_res = poisson_eq.discretise(new_mesh)
+            new_res = helmholtz_eq.discretise(new_mesh)
             new_solver = wm.EquationSolver(params={
                 "function_space": new_res["function_space"],
                 "LHS": new_res["LHS"],
@@ -334,6 +342,7 @@ if __name__ == "__main__":
                 os.path.join(
                     problem_plot_dir, "plot_{}.png".format(i))
             )
+
             # ==========================================
 
             # generate log file
@@ -341,7 +350,8 @@ if __name__ == "__main__":
             high_res_function_space = fd.FunctionSpace(
                 high_res_mesh, "CG", 1)
 
-            res_high_res = poisson_eq.discretise(high_res_mesh)
+            res_high_res = helmholtz_eq.discretise(high_res_mesh)
+            # u_exact = res_high_res["u_exact"]
             u_exact = fd.interpolate(
                 res_high_res["u_exact"], res_high_res["function_space"])
 
@@ -355,6 +365,45 @@ if __name__ == "__main__":
                 u_exact, uh_new
             )
 
+            api = wandb.Api()
+            run = api.run(f"{entity}/{project_name}/{run_id}")
+            config = SimpleNamespace(**run.config)
+            dataset_path = problem_data_dir
+            dataset = wm.MeshDataset(
+                dataset_path,
+                transform=wm.normalise if wm.normalise else None,
+                x_feature=config.x_feat,
+                mesh_feature=config.mesh_feat,
+                conv_feature=config.conv_feat,
+                conv_feature_fix=config.conv_feat_fix,
+                load_analytical=True,
+                use_run_time_cluster=False,
+                use_cluster=False,
+                r=0.35,
+                M=25,
+                dist_weight=False,
+                add_nei=True,
+            )
+            print(dataset[i].dist_params)
+            compare_res = wm.compare_error(
+                dataset[i], mesh, high_res_mesh, new_mesh, 0
+            )
+
+            print("compare_res", compare_res)
+
+            mesh_dataset = fd.UnitSquareMesh(num_grid_x, num_grid_y)
+            mesh_dataset.coordinates.dat.data[:] = dataset[i].y.detach().cpu().numpy() # noqa
+
+            # fig = plt.figure(figsize=(10, 5))
+
+            # ax1 = fig.add_subplot(2, 1, 1, projection='3d')
+            # fd.trisurf(compare_res["u_exact"], axes=ax1)
+            # ax1.set_title("u_exact from compare function")
+
+            # ax2 = fig.add_subplot(2, 1, 2, projection='3d')
+            # fd.trisurf(u_exact, axes=ax2)
+            # ax2.set_title("u_exact og")   
+
             df = pd.DataFrame({
                 "error_og": error_original_mesh,
                 "error_adapt": error_optimal_mesh,
@@ -367,6 +416,7 @@ if __name__ == "__main__":
             print("error og/optimal:",
                   error_original_mesh, error_optimal_mesh)
             i += 1
+            plt.show()
         except fd.exceptions.ConvergenceError:
             pass
 
