@@ -118,7 +118,7 @@ class MeshGenerator():
         H, h = fd.TrialFunction(
             function_space_ten), fd.TestFunction(function_space_ten)
         a = fd.inner(h, H) * fd.dx(domain=mesh)
-        L = -fd.inner(fd.div(h), fd.grad(uh)) * fd.dx(domain=mesh)
+        L = -fd.inner(fd.div(h), fd.grad( )) * fd.dx(domain=mesh)
         L += fd.dot(fd.grad(uh), fd.dot(h, n)) * fd.ds(domain=mesh)
         prob = fd.LinearVariationalProblem(a, L, l2_projection)
         hessian_prob = fd.LinearVariationalSolver(prob)

@@ -216,6 +216,7 @@ class MeshDataset(Dataset):
         # advance version
         train_data = MeshData(
             x=self.get_x_feature(data),  # noqa: x here is the coordinate related features
+            bd_mask=torch.from_numpy(data.item().get('bd_mask')).int(),
             conv_feat=self.get_conv_feature(data),
             conv_feat_fix=self.get_conv_feature_fix(data),
             mesh_feat=self.get_mesh_feature(data),

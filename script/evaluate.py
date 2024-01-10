@@ -27,7 +27,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 entity = 'w-chunyang'
 project_name = 'warpmesh'
-run_id = 'sr7waaso'
+# run_id = 'sr7waaso'  # MRT with no mask
+run_id = 'gl1zpjc5'  # MRN 3-loop
 epoch = 1299
 # ds_root = (  # square
 #         '/Users/chunyang/projects/WarpMesh/data/dataset/poisson/'
@@ -202,7 +203,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         model.eval()
         with torch.no_grad():
             start = time.perf_counter()
-            out = model(sample)
+            out = model(sample, poly_mesh=True if domain == "poly" else False)
             end = time.perf_counter()
             dur_ms = (end - start) * 1000
         temp_time_consumption = dur_ms
@@ -272,18 +273,25 @@ def write_sumo(eval_dir):
     error_model = 0
     error_og = 0
     time_MA = 0
+    num_tangle = 0
     time_model = 0
-    count = 0
+    pass_count = 0
+    fail_count = 0
+    total_count = 0
 
     for file_names in log_files:
+        total_count += 1
         log_df = pd.read_csv(file_names)
         if log_df['tangled_element'][0] == 0:
-            count += 1
+            pass_count += 1
             error_og += log_df['error_og'][0]
             error_MA += log_df['error_ma'][0]
             error_model += log_df['error_model'][0]
             time_MA += log_df['time_consumption_MA'][0]
             time_model += log_df['time_consumption_model'][0]
+        else:
+            fail_count += 1
+            num_tangle += log_df['tangled_element'][0]
 
     sumo_df = pd.DataFrame({
         'error_reduction_MA': (error_og - error_MA) / error_og,
@@ -291,6 +299,10 @@ def write_sumo(eval_dir):
         'time_MA': time_MA,
         'time_model': time_model,
         'acceleration_ratio': time_MA / time_model,
+        'tangle_total': num_tangle,
+        'TEpM(tangled Elements per Mesh)': num_tangle / total_count,
+        'failed_case': fail_count,
+        'total_case': total_count,
         'dataset_path': ds_root,
     }, index=[0])
     sumo_df.to_csv(os.path.join(eval_dir, 'sumo.csv'))

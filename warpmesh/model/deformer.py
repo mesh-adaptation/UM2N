@@ -25,7 +25,7 @@ class RecurrentGATConv(MessagePassing):
     """
     def __init__(self, coord_size=2,
                  hidden_size=512,
-                 heads=6, concat=False
+                 heads=6, concat=False,
                  ):
         super(RecurrentGATConv, self).__init__()
         # GAT layer
@@ -42,8 +42,10 @@ class RecurrentGATConv(MessagePassing):
         # activation function
         self.activation = nn.SELU()
 
-    def forward(self, coord, hidden_state, edge_index):
+    def forward(self, coord, hidden_state, edge_index, bd_mask, poly_mesh):
         # find boundary
+        self.bd_mask = bd_mask.squeeze().bool()
+        self.poly_mesh = poly_mesh
         self.find_boundary(coord)
         # Recurrent GAT
         in_feat = torch.cat((coord, hidden_state), dim=1)
@@ -60,8 +62,16 @@ class RecurrentGATConv(MessagePassing):
         self.left_node_idx = in_data[:, 1] == 0
         self.right_node_idx = in_data[:, 1] == 1
 
+        if self.poly_mesh:
+            self.bd_pos_x = in_data[self.bd_mask, 0].clone()
+            self.bd_pos_y = in_data[self.bd_mask, 1].clone()
+
     def fix_boundary(self, in_data):
         in_data[self.upper_node_idx, 0] = 1
         in_data[self.down_node_idx, 0] = 0
         in_data[self.left_node_idx, 1] = 0
         in_data[self.right_node_idx, 1] = 1
+
+        if self.poly_mesh:
+            in_data[self.bd_mask, 0] = self.bd_pos_x
+            in_data[self.bd_mask, 1] = self.bd_pos_y

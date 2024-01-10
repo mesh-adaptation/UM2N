@@ -33,12 +33,12 @@ class MRTransformer(torch.nn.Module):
         lin (nn.Linear): Linear layer for feature transformation.
         deformer (RecurrentGATConv): GAT-based deformer block.
     """
-    def __init__(self, num_transformer_in=4, 
-                 num_transformer_out=16, 
-                 num_transformer_embed_dim=64, 
-                 num_transformer_heads=4, 
-                 num_transformer_layers=1, 
-                 transformer_training_mask=False, 
+    def __init__(self, num_transformer_in=4,
+                 num_transformer_out=16,
+                 num_transformer_embed_dim=64,
+                 num_transformer_heads=4,
+                 num_transformer_layers=1,
+                 transformer_training_mask=False,
                  transformer_training_mask_ratio_lower_bound=0.5,
                  transformer_training_mask_ratio_upper_bound=0.9,
                  deform_in_c=7, num_loop=3, device='cuda'):
@@ -148,7 +148,7 @@ class MRTransformer(torch.nn.Module):
 
         return coord
 
-    def forward(self, data):
+    def forward(self, data, poly_mesh=False):
         """
         Forward pass for MRN.
 
@@ -158,6 +158,7 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
+        bd_mask = data.bd_mask
         conv_feat_in = data.conv_feat
         batch_size = batch_size = conv_feat_in.shape[0]
         feat_dim = data.x.shape[-1]
@@ -168,7 +169,8 @@ class MRTransformer(torch.nn.Module):
 
         # Recurrent GAT deform
         for i in range(self.num_loop):
-            coord, hidden = self.deformer(coord, hidden, edge_idx)
+            coord, hidden = self.deformer(
+                coord, hidden, edge_idx, bd_mask, poly_mesh)
 
         return coord
 
