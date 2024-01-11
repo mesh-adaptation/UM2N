@@ -286,7 +286,7 @@ if __name__ == "__main__":
             mesh_processor = wm.MeshProcessor(
                 original_mesh=mesh, optimal_mesh=new_mesh,
                 function_space=new_res["function_space"],
-                use_4_edge=False, poly_mesh=True,
+                use_4_edge=False,
                 num_boundary=num_boundary,
                 feature={
                     "uh": uh.dat.data_ro.reshape(-1, 1),
@@ -312,6 +312,7 @@ if __name__ == "__main__":
                     "jacobian_det": jacobian_det,
                 },
                 dist_params=dist_params,
+                poly_mesh=True,
             )
 
             mesh_processor.save_taining_data(

@@ -173,6 +173,9 @@ class MRN(torch.nn.Module):
             coord (Tensor): Deformed coordinates.
         """
         bd_mask = data.bd_mask
+        if (data.poly_mesh is not False):
+            poly_mesh = True if data.poly_mesh.sum() > 0 else False
+
         coord = data.x[:, :2]  # [num_nodes * batch_size, 2]
         conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]

@@ -159,6 +159,9 @@ class MRTransformer(torch.nn.Module):
             coord (Tensor): Deformed coordinates.
         """
         bd_mask = data.bd_mask
+        if (data.poly_mesh is not False):
+            poly_mesh = True if data.poly_mesh.sum() > 0 else False
+
         conv_feat_in = data.conv_feat
         batch_size = batch_size = conv_feat_in.shape[0]
         feat_dim = data.x.shape[-1]

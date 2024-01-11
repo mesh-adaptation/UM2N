@@ -302,6 +302,7 @@ class MeshProcessor():
             "nu": self.nu,
             "gauss_list": self.gauss_list,
             "duration": self.dur,
+            "poly_mesh": self.poly_mesh,
         }
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)
