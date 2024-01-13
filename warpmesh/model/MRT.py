@@ -186,5 +186,3 @@ class MRTransformer(torch.nn.Module):
         # edge_idx = data.edge_index
         _, attentions = self._forward(batch_size, data.mesh_feat, x_feat, get_attens=True)
         return attentions
-
-
