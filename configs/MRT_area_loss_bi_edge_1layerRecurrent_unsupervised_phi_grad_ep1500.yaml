@@ -1,5 +1,5 @@
-batch_size: 10
-check_tangle_interval: 10
+batch_size: 5
+check_tangle_interval: 20
 cluster_r: 0.35
 conv_feat:
 - conv_uh
@@ -22,30 +22,30 @@ n_grids:
 - 20
 n_grids_test:
 - 15
-- 16
-- 17
-- 18
-- 19
+# - 16
+# - 17
+# - 18
+# - 19
 - 20
-- 21
-- 22
-- 23
-- 24
-- 25
-- 26
-- 27
-- 28
-- 29
+# - 21
+# - 22
+# - 23
+# - 24
+# - 25
+# - 26
+# - 27
+# - 28
+# - 29
 - 30
-- 31
-- 32
-- 33
-- 34
+# - 31
+# - 32
+# - 33
+# - 34
 - 35
 num_deform_in: 3
-num_deform_out: 2
+num_deform_out: 1
 num_deformer_loop: 1
-num_epochs: 1000
+num_epochs: 1500
 num_gfe_in: 2
 num_lfe_in: 4
 num_transformer_in: 4
@@ -58,6 +58,7 @@ transformer_key_padding_training_mask: false
 transformer_attention_training_mask: false
 transformer_training_mask_ratio_lower_bound: 0.5
 transformer_training_mask_ratio_upper_bound: 0.9
+deform_out_type: 'phi_grad'
 out_path: ./out
 print_interval: 1
 project: warpmesh

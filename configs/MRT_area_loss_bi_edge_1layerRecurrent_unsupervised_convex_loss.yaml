@@ -1,4 +1,4 @@
-batch_size: 10
+batch_size: 5
 check_tangle_interval: 10
 cluster_r: 0.35
 conv_feat:
@@ -43,7 +43,7 @@ n_grids_test:
 - 34
 - 35
 num_deform_in: 3
-num_deform_out: 2
+num_deform_out: 1
 num_deformer_loop: 1
 num_epochs: 1000
 num_gfe_in: 2
@@ -66,7 +66,7 @@ train_boundary_scheme: full
 train_data_set_type: aniso
 use_area_loss: true
 use_cluster: false
-use_convex_loss: false
+use_convex_loss: true
 use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false

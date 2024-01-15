@@ -7,7 +7,7 @@ conv_feat:
 conv_feat_fix:
 - conv_uh_fix
 count_tangle_method: inversion
-data_root: ./data/helmholtz/
+data_root: ./data/with_sampling/helmholtz/
 inversion_loss_scaler: 10000000000.0
 is_normalise: true
 learning_rate: 5.0e-05
@@ -43,7 +43,6 @@ n_grids_test:
 - 34
 - 35
 num_deform_in: 3
-num_deform_out: 2
 num_deformer_loop: 1
 num_epochs: 1000
 num_gfe_in: 2
@@ -65,8 +64,7 @@ save_interval: 20
 train_boundary_scheme: full
 train_data_set_type: aniso
 use_area_loss: true
-use_cluster: false
-use_convex_loss: false
+use_cluster: true
 use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false
@@ -74,3 +72,7 @@ weight_decay: 0.1
 x_feat:
 - coord
 - bd_mask
+# - bd_left_mask
+# - bd_right_mask
+# - bd_down_mask
+# - bd_up_mask

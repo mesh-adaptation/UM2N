@@ -1,5 +1,6 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
+# Modified by Mingrui Zhang
 
 import os 
 import sys
@@ -26,10 +27,20 @@ class RecurrentGATConv(MessagePassing):
     """
     def __init__(self, coord_size=2,
                  hidden_size=512,
-                 heads=6, output_dim=2, concat=False
+                 heads=6, output_type='coord',
+                 concat=False, device='cuda'
                  ):
         super(RecurrentGATConv, self).__init__()
-        self.output_dim = output_dim
+        assert output_type in ['coord', 'phi_grad', 'phi'], f"output type {output_type} is invalid"
+        self.device = device
+        self.output_type = output_type
+        if self.output_type == 'coord' or 'phi_grad':
+            self.output_dim = 2
+        elif output_type == 'phi':
+            self.output_dim = 1
+        else:
+            raise Exception(f"Output type {output_type} is invalid.")
+
         # GAT layer
         self.to_hidden = GATv2Conv(
             in_channels=coord_size+hidden_size,
@@ -37,26 +48,58 @@ class RecurrentGATConv(MessagePassing):
             heads=heads,
             concat=concat
         )
-        # output coord layer
-        self.to_coord = nn.Sequential(
+        # output layer
+        self.to_output = nn.Sequential(
             nn.Linear(hidden_size, self.output_dim),
         )
         # activation function
         self.activation = nn.SELU()
 
-    def forward(self, coord, hidden_state, edge_index):
-        if self.output_dim == 2:
-            # find boundary
-            self.find_boundary(coord)
+    def forward(self, coord, hidden_state, edge_index, coord_ori):
+        # if self.output_dim == 2:
+        #     # find boundary
+        #     self.find_boundary(coord)
+        # data.mesh_feat.requires_grad = True
+        # coord_ori = data.mesh_feat[:, :2]
+
         # Recurrent GAT
         in_feat = torch.cat((coord, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
         hidden = self.activation(hidden)
-        output_coord = self.to_coord(hidden)
-        if self.output_dim == 2:
+        output = self.to_output(hidden)
+        phix = None
+        phiy = None
+        if self.output_type == 'coord':
+            output_coord = output
+            # find boundary
+            self.find_boundary(coord_ori)
             # fix boundary
             self.fix_boundary(output_coord)
-        return output_coord, hidden
+        elif self.output_type == 'phi_grad':
+            output_coord = output + coord_ori
+            # find boundary
+            self.find_boundary(coord_ori)
+            # fix boundary
+            self.fix_boundary(output_coord)
+            phix = output[:, 0]
+            phiy = output[:, 1]
+        elif self.output_type == 'phi':
+            # Compute the residual to the equation
+            grad_seed = torch.ones(output.shape).to(self.device)
+            phi_grad = torch.autograd.grad(output, coord_ori, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=False)[0]
+            # print(f"[phi grad] {phi_grad.shape}, [coord_ori] {coord_ori.shape}")
+            phix = phi_grad[:, 0]
+            phiy = phi_grad[:, 1]
+            # New coord
+            coord_x = (coord_ori[:, 0] + phix).reshape(-1, 1)
+            coord_y = (coord_ori[:, 1] + phiy).reshape(-1, 1)
+            output_coord = torch.cat([coord_x, coord_y], dim=-1).reshape(-1, 2)
+            # find boundary
+            self.find_boundary(coord_ori)
+            # fix boundary
+            self.fix_boundary(output_coord)
+            # print('[phi] output coord shape ', output_coord.shape)
+        return output_coord, hidden, (phix, phiy)
 
     def find_boundary(self, in_data):
         self.upper_node_idx = in_data[:, 0] == 1

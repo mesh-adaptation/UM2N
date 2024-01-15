@@ -12,8 +12,8 @@ from io import BytesIO
 
 import warnings
 warnings.filterwarnings('ignore')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device('cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
 
 # run_id = 'welbby7t'
 # run_id = 'vwopbol5'
@@ -50,10 +50,34 @@ run_id = '2wta7yed' # MRT-1R with sampling
 run_id = '0bsy6m45' # MRT-1R no hessian
 
 
+run_id = 'fzgaycnv' # MRT-1R output phi
+
+run_id = 'mug27xhl' # MRT-1R output phi convex loss
+
+
+run_id = '9ygg08yg' # MRT-1R output phi, constrain bd
+
+run_id = 'u14bt77h' # output phi grad
+
+run_id = 'f4q1v2pd' # output coord
+
+run_id = 'kst5ig88' # output phi grad large eq residual
+
+
+run_id = 'c2kyy4vl' # purely unsupervised
+run_id = 'a2af7x3j' # weight_d = 0.01 weight_u
 
 run_id_collections = {"MRT":['mfn1hnrg'],
 
                       "MRT-no-udlr":['2b0ouh5p'],
+                      "MRT-1R-phi":['fzgaycnv'],
+                      "MRT-1R-phi-convex":['mug27xhl'],
+                      "MRT-1R-phi-bd":['9ygg08yg'],
+                      "MRT-1R-phi-grad":['u14bt77h'],
+                      "MRT-1R-phi-grad-eq":['kst5ig88'],
+                      "MRT-1R-coord":['f4q1v2pd'],
+                      "MRT-1R-phi-grad-un":['c2kyy4vl'],
+                      "MRT-1R-phi-grad-quasi-un":['a2af7x3j'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
@@ -81,7 +105,8 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRN":['0iwpdpnr'], 
                       "M2T":['gboubixk'], 
                       "M2N":['xqa8fnoj']}
-test_ms = 35
+# test_ms = 'poly'
+test_ms = 50
 num_sample_vis = 5
 # models_to_compare = ["MRT", "MRN-LTE", "MRT-Sampling", "MRN-Sampling", "MRN", "M2T", "M2N"]
 # models_to_compare = ["MRT", "MRT-mask0.75", "MRT-mask0.50", "MRT-mask0.25", "MRN-LTE", "MRN", "M2T", "M2N"]
@@ -89,14 +114,15 @@ num_sample_vis = 5
 # models_to_compare = ["MRT", "MRT-1R", "MRT-1R-atten-mask0.50", "MRT-1R-atten-mask0.50~0.90", "MRT-1R-mask0.50", "MRT-1R-mask0.50~0.9"]
 
 # models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
-models_to_compare = ["MRT", "MRT-1R", "MRT-2R","MRT-3R"]
+# models_to_compare = ["MRT-1R-phi", "MRT-1R-phi-bd"]
+models_to_compare = ["MRT-1R-phi-bd", "MRT-1R-phi-grad", "MRT-1R-phi-grad-un","MRT-1R-phi-grad-quasi-un", "MRT-1R-coord"]
 # models_to_compare = ["MRT-1R", "MRT-1R-no-hessian"]
 # test dataset, for benchmarking loss effects on model performance
-test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+# test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-# test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 # test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
-random_seed = 234
+random_seed = 123456
 
 out_mesh_collections = {}
 out_loss_collections = {}
@@ -117,6 +143,8 @@ for model_name in models_to_compare:
     config.num_transformer_embed_dim = 64
     config.num_transformer_heads = 4
     config.num_transformer_layers = 1
+    if run_id == '9ygg08yg':
+      config.deform_out_type = 'phi'
 
     model = None
     if (config.model_used == "M2N"):
@@ -179,7 +207,9 @@ for model_name in models_to_compare:
         num_transformer_heads=config.num_transformer_heads, 
         num_transformer_layers=config.num_transformer_layers,
         deform_in_c=config.num_deform_in,
+        deform_out_type=config.deform_out_type,
         num_loop=config.num_deformer_loop,
+        device=device
     )
     elif (config.model_used == "M2Transformer"):
       model = wm.M2Transformer(
@@ -208,7 +238,7 @@ for model_name in models_to_compare:
     #     print(file.name)
 
     
-    epoch = 999
+    epoch = 399
     # TODO: the MRN-Sampling ('hegubzg0') only trained 800 epochs
     if run_id == 'hegubzg0':
        epoch = 799
@@ -256,41 +286,61 @@ for model_name in models_to_compare:
     target_face = []
     target_hessian_norm = []
     num_step_recurrent = 5
-    with torch.no_grad():
-      cnt = 0
-      torch.manual_seed(random_seed)
-      for batch in loader:
-          sample = batch.to(device)
-          if model_name == 'MRT':
-            out = model.move(sample, num_step=5)
-          else:
-            if 'MRT-1R' in model_name:
-              out = model.move(sample, num_step=1)
-            elif 'MRT-2R' in model_name:
-              out = model.move(sample, num_step=2)
-            elif 'MRT-3R' in model_name:
-              out = model.move(sample, num_step=3)
+    # with torch.no_grad():
+    cnt = 0
+    torch.manual_seed(random_seed)
+    for batch in loader:
+        sample = batch.to(device)
+        if model_name == 'MRT':
+          out = model.move(sample, num_step=5)
+        else:
+          if 'MRT-1R' in model_name:
+            if 'phi' in model_name:
+              sample.x.requires_grad = True
+              out, (phix, phiy) = model.move(sample, num_step=1)
+              feat_dim = sample.mesh_feat.shape[-1]
+              # mesh_feat [coord_x, coord_y, u, hessian_norm]
+              node_num = sample.mesh_feat.reshape(1, -1, feat_dim).shape[1]
+
+              # # Compute the residual to the equation
+              # grad_seed = torch.ones(out.shape).to(device)
+              # phi_grad = torch.autograd.grad(out, sample.x, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              # phix = phi_grad[:, 0]
+              # phiy = phi_grad[:, 1]
+
+              # New coord
+              # coord_x = (sample.x[:, 0] + phix).reshape(1, node_num, 1)
+              # coord_y = (sample.x[:, 1] + phiy).reshape(1, node_num, 1)
+              # out = torch.cat([coord_x, coord_y], dim=-1).reshape(-1, 2)
+            elif 'MRT-1R-coord' in model_name:
+              out, (phix, phiy) = model.move(sample, num_step=1)
             else:
-              out = model.move(sample, num_step=5)
-          print(out.shape)
-          if 'MRT' in model_name:
-             attentions = model.get_attention_scores(sample)
-          deform_loss = loss_func(out, sample.y)*1000
-          print(f"{model_name} {cnt} deform loss: {deform_loss}, mesh vertices: {out.shape}")
-          out_mesh_collections[model_name].append(out.detach().cpu().numpy())
-          out_loss_collections[model_name].append(deform_loss)
-          out_atten_collections[model_name].append(attentions)
-          target_mesh.append(sample.y.detach().cpu().numpy())
-          target_face.append(sample.face.detach().cpu().numpy())
-          target_hessian_norm.append(sample.mesh_feat[:,-1].detach().cpu().numpy())
-          # compare_fig = wm.plot_mesh_compare(
-          #     out.detach().cpu().numpy(), sample.y,
-          #     sample.face
-          # )
-          # compare_fig.savefig(f"./out_images/img_method_{config.model_used}_reso_{test_ms}_{cnt}.png")
-          cnt += 1
-          if cnt == num_sample_vis:
-            break
+              out = model.move(sample, num_step=1)
+          elif 'MRT-2R' in model_name:
+            out = model.move(sample, num_step=2)
+          elif 'MRT-3R' in model_name:
+            out = model.move(sample, num_step=3)
+          else:
+            out = model.move(sample, num_step=5)
+        print(out.shape)
+        if 'MRT' in model_name:
+            attentions = model.get_attention_scores(sample)
+        deform_loss = loss_func(out, sample.y)*1000
+        print(f"{model_name} {cnt} deform loss: {deform_loss}, mesh vertices: {out.shape}")
+        out_mesh_collections[model_name].append(out.detach().cpu().numpy())
+        out_loss_collections[model_name].append(deform_loss)
+        out_atten_collections[model_name].append(attentions)
+        target_mesh.append(sample.y.detach().cpu().numpy())
+        target_face.append(sample.face.detach().cpu().numpy())
+        target_hessian_norm.append(sample.mesh_feat[:,-1].detach().cpu().numpy())
+        # compare_fig = wm.plot_mesh_compare(
+        #     out.detach().cpu().numpy(), sample.y,
+        #     sample.face
+        # )
+        # compare_fig.savefig(f"./out_images/img_method_{config.model_used}_reso_{test_ms}_{cnt}.png")
+        cnt += 1
+        if cnt == num_sample_vis:
+          break
 
 
 compare_fig = wm.plot_multiple_mesh_compare(out_mesh_collections, out_loss_collections, target_mesh, target_face)
@@ -300,14 +350,14 @@ compare_fig.suptitle(f"Ouput Mesh Comparsion (mesh resolution {test_ms}, datalod
 compare_fig.savefig(f"./out_images/comparison_reso_{test_ms}_seed_{random_seed}_recurrent_{num_step_recurrent}.png")
 
 
-selected_node = torch.randint(low=0, high=test_ms*test_ms-1, size=(1,))
-selected_node = 888
-print(f"attention map selected node: {selected_node}")
-atten_fig = wm.plot_attentions_map_compare(out_mesh_collections, out_loss_collections, out_atten_collections, target_hessian_norm, target_mesh, target_face, selected_node=selected_node)
-atten_fig.tight_layout()
-atten_fig.subplots_adjust(top=0.95)
-atten_fig.suptitle(f"Ouput Attention (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)
-atten_fig.savefig(f"./out_images/attention_reso_{test_ms}_seed_{random_seed}_selected_node_{selected_node}.png")
+# selected_node = torch.randint(low=0, high=test_ms*test_ms-1, size=(1,))
+# selected_node = 888
+# print(f"attention map selected node: {selected_node}")
+# atten_fig = wm.plot_attentions_map_compare(out_mesh_collections, out_loss_collections, out_atten_collections, target_hessian_norm, target_mesh, target_face, selected_node=selected_node)
+# atten_fig.tight_layout()
+# atten_fig.subplots_adjust(top=0.95)
+# atten_fig.suptitle(f"Ouput Attention (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)
+# atten_fig.savefig(f"./out_images/attention_reso_{test_ms}_seed_{random_seed}_selected_node_{selected_node}.png")
 
 # atten_fig = wm.plot_attentions_map(out_atten_collections, out_loss_collections)
 # atten_fig.tight_layout()

@@ -43,7 +43,9 @@ class MRTransformer(torch.nn.Module):
                  transformer_attention_training_mask=False,
                  transformer_training_mask_ratio_lower_bound=0.5,
                  transformer_training_mask_ratio_upper_bound=0.9,
-                 deform_in_c=7, deform_out_dim=2, num_loop=3, device='cuda'):
+                 deform_in_c=7, 
+                 deform_out_type='coord',
+                 num_loop=3, device='cuda'):
         """
         Initialize MRN.
 
@@ -79,8 +81,9 @@ class MRTransformer(torch.nn.Module):
             coord_size=2,
             hidden_size=self.hidden_size,
             heads=6,
-            output_dim=deform_out_dim,
-            concat=False
+            concat=False,
+            output_type=deform_out_type,
+            device=device
         )
     
     def _transformer_forward(self, batch_size, mesh_feat, x_feat, get_attens=False):
@@ -130,10 +133,9 @@ class MRTransformer(torch.nn.Module):
     
     def transformer_monitor(self, data):
         conv_feat_in = data.conv_feat
-        batch_size = batch_size = conv_feat_in.shape[0]
+        batch_size = conv_feat_in.shape[0]
         feat_dim = data.x.shape[-1]
         x_feat = data.x.reshape(-1, feat_dim)
-        coord = x_feat[:, :2]
         edge_idx = data.edge_index
 
         hidden = self._transformer_forward(batch_size, data.mesh_feat, x_feat)
@@ -148,7 +150,7 @@ class MRTransformer(torch.nn.Module):
         # hidden = F.selu(self.lin(hidden))
         # =====================================================================
         
-        return coord, hidden, edge_idx
+        return hidden, edge_idx
 
     
     def move(self, data, num_step=1):
@@ -163,13 +165,16 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
-        coord, hidden, edge_idx = self.transformer_monitor(data)
+        data.mesh_feat.requires_grad = True
+        hidden, edge_idx = self.transformer_monitor(data)
+        coord_ori = data.mesh_feat[:, :2]
+        coord = coord_ori
 
         # Recurrent GAT deform
         for i in range(num_step):
-            coord, hidden = self.deformer(coord, hidden, edge_idx)
+            coord, hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori)
 
-        return coord
+        return coord, (phix, phiy)
 
     def forward(self, data):
         """
@@ -181,13 +186,16 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
-        coord, hidden, edge_idx = self.transformer_monitor(data)
+        data.mesh_feat.requires_grad = True
+        hidden, edge_idx = self.transformer_monitor(data)
+        coord_ori = data.mesh_feat[:, :2]
+        coord = coord_ori
 
         # Recurrent GAT deform
         for i in range(self.num_loop):
-            coord, hidden = self.deformer(coord, hidden, edge_idx)
+            coord, hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori)
 
-        return coord
+        return coord, (phix, phiy)
 
     def get_attention_scores(self, data):
         conv_feat_in = data.conv_feat
