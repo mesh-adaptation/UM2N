@@ -9,7 +9,7 @@ import firedrake as fd
 
 from matplotlib import pyplot as plt
 
-n_grid = 64
+n_grid = 60
 T = 1
 n_step = 600
 dt = T / n_step
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     vector_space = fd.VectorFunctionSpace(mesh, "CG", 1)
     scalar_space = fd.FunctionSpace(mesh, "CG", 1)
 
-    dq_trial = fd.TrialFunction(scalar_space)
+    du_trial = fd.TrialFunction(scalar_space)
     phi = fd.TestFunction(scalar_space)
     n = fd.FacetNormal(mesh)
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     c = fd.Function(vector_space).interpolate(c_exp)
     cn = 0.5*(fd.dot(c, n) + abs(fd.dot(c, n)))
 
-    a = phi*dq_trial*fd.dx
+    a = phi*du_trial*fd.dx
 
     L1 = dtc*(u*fd.div(phi*c)*fd.dx
               - fd.conditional(fd.dot(c, n) < 0, phi*fd.dot(c, n)*u_in, 0.0)*fd.ds  # noqa
@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
     du = fd.Function(scalar_space)
 
-    params = {'ksp_type': 'preonly', 'pc_type': 'bjacobi', 'sub_pc_type': 'ilu'}
+    params = {'ksp_type': 'preonly', 'pc_type': 'bjacobi', 'sub_pc_type': 'ilu'}  # noqa
     prob1 = fd.LinearVariationalProblem(a, L1, du)
     solv1 = fd.LinearVariationalSolver(prob1, solver_parameters=params)
     prob2 = fd.LinearVariationalProblem(a, L2, du)
@@ -100,7 +100,6 @@ if __name__ == '__main__':
         print(t)
         c_exp = get_c(x, y, t)
         c_temp = fd.Function(vector_space).interpolate(c_exp)
-        cn_temp = 0.5*(fd.dot(c, n) + abs(fd.dot(c, n)))
         c.project(c_temp)
 
         solv1.solve()
@@ -116,10 +115,4 @@ if __name__ == '__main__':
         step += 1
         if step % 20 == 0:
             fd.tripcolor(u)
-        # break
     plt.show()
-
-    # fd.quiver(c)
-    # fd.tripcolor(u_0)
-
-    # plt.show()

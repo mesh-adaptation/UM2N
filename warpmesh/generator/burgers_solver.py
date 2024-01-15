@@ -42,6 +42,7 @@ class BurgersSolver():
         self.error_adapt_list = []
         self.error_og_list = []
         self.best_error_iter = 0
+
         # X and Y coordinates
         self.x, self.y = fd.SpatialCoordinate(mesh)
         self.x_fine, self.y_fine = fd.SpatialCoordinate(self.mesh_fine)
@@ -194,7 +195,7 @@ class BurgersSolver():
             self.error_adapt_list = []
             self.error_og_list = []
             mesh_new = fd.UnitSquareMesh(self.mesh_size, self.mesh_size)
-            self.step += 1
+
             print("step: {}, t: {}".format(self.step, t))
             # solve on fine mesh
             fd.solve(self.F_fine == 0, self.u_fine)
@@ -285,7 +286,7 @@ class BurgersSolver():
             self.u_fine_buffer.assign(self.u_fine)
             # self.u_.assign(self.u)
             t += self.dt
-
+            self.step += 1
         return
 
     def get_error(self):

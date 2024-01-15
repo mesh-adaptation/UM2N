@@ -28,15 +28,21 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 entity = 'w-chunyang'
 project_name = 'warpmesh'
 # run_id = 'sr7waaso'  # MRT with no mask
-run_id = 'gl1zpjc5'  # MRN 3-loop
-epoch = 1299
-# ds_root = (  # square
-#         '/Users/chunyang/projects/WarpMesh/data/dataset/poisson/'
-#         'z=<0,1>_ndist=None_max_dist=6_<20x20>_n=400_aniso_full')
-ds_root = (  # poly
-    '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz_poly'
-    '/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full'
-)
+# run_id = 'gl1zpjc5'  # MRN 3-loop
+run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
+
+epoch = 599
+ds_root = (  # square
+        '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz/'
+        'z=<0,1>_ndist=None_max_dist=6_<25x25>_n=100_aniso_full')
+# ds_root = (  # poly
+#     '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz_poly'
+#     '/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full'
+# )
+# ds_root = (  # poly
+#     '/Users/chunyang/projects/WarpMesh/data/dataset/poisson_poly'
+#     '/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full'
+# )
 
 
 def init_dir(config):
