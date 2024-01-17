@@ -20,11 +20,6 @@ def arg_parse():
                         help='scalar coefficient of the swirl (velocity)')
     parser.add_argument('--save_interval', type=int, default=5,
                         help='interval for stroing sample file')
-    parser.add_argument('--mesh_type', type=str, default="unstructured",
-                        help='mesh type (uniform/unstructured))')
-    parser.add_argument('--n_grid', type=int, default=30,
-                        help='number of grids of a\
-                            discretized mesh')
     parser.add_argument('--lc', type=float, default=4.5e-2,
                         help='the length characteristic of the elements in the\
                             mesh (if using unstructured mesh)')
@@ -44,7 +39,6 @@ n_step = 500
 dt = T / n_step
 
 # mesh setup
-mesh_type = args.mesh_type
 lc = args.lc
 
 # parameters for domain scale
@@ -55,11 +49,6 @@ scale_y = 1
 sigma = args.sigma
 r_0 = args.r_0
 alpha = args.alpha
-
-# parameters for squar mesh
-num_grid = args.n_grid
-num_grid_x = num_grid
-num_grid_y = num_grid
 
 # params for stroing files
 save_interval = args.save_interval
@@ -89,7 +78,7 @@ project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 dataset_dir = os.path.join(project_dir, "data", "dataset", problem)
 problem_specific_dir = os.path.join(
         dataset_dir,
-        f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_meshtype_{mesh_type}_n_grid_{num_grid}_lc_{lc}_interval_{save_interval}")  # noqa
+        f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_lc_{lc}_interval_{save_interval}")  # noqa
 
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
@@ -279,22 +268,17 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
 # ====  Data Generation Scripts ======================
 if __name__ == "__main__":
     print("In build_dataset.py")
-    # mesh init
-    mesh = fd.UnitSquareMesh(num_grid_x, num_grid_y)
-    mesh_new = fd.UnitSquareMesh(num_grid_x, num_grid_y)
-    mesh_fine = fd.UnitSquareMesh(100, 100)
-    if mesh_type == "unstructured":
-        mesh_gen = wm.UnstructuredSquareMesh()
-        mesh = mesh_gen.get_mesh(
-            res=lc,
-            file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
-        mesh_new = mesh_gen.get_mesh(
-            res=lc,
-            file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
-        mesh_gen_fine = wm.UnstructuredSquareMesh()
-        mesh_fine = mesh_gen_fine.get_mesh(
-            res=2e-2,
-            file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh"))
+    mesh_gen = wm.UnstructuredSquareMesh()
+    mesh = mesh_gen.get_mesh(
+        res=lc,
+        file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
+    mesh_new = mesh_gen.get_mesh(
+        res=lc,
+        file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
+    mesh_gen_fine = wm.UnstructuredSquareMesh()
+    mesh_fine = mesh_gen_fine.get_mesh(
+        res=2e-2,
+        file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh"))
 
     # solver defination
     swril_solver = wm.SwirlSolver(
@@ -315,7 +299,6 @@ if __name__ == "__main__":
         'alpha': [alpha],
         'r_0': [r_0],
         'save_interval': [save_interval],
-        'n_grid': [num_grid],
         'T': [T],
         "n_step": [n_step],
         "dt": [dt],

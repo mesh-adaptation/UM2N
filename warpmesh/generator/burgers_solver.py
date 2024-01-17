@@ -22,18 +22,17 @@ class BurgersSolver():
     """
 
     # def __init__(self, mesh, rand_generator, **kwargs):
-    def __init__(self, mesh, **kwargs):
+    def __init__(self, mesh, mesh_fine, mesh_new, **kwargs):
         """
         Initialise the solver.
         kwargs:
         - nu: The viscosity of the fluid.
         - dt: The time interval.
-        - mesh_size: The size of the mesh.
         """
         # Mesh
         self.mesh = mesh
-        self.mesh_size = kwargs.pop("mesh_size", 32)
-        self.mesh_fine = fd.UnitSquareMesh(100, 100)
+        self.mesh_fine = mesh_fine
+        self.mesh_new = mesh_new
 
         self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
         self.init_coord_fine = self.mesh_fine.coordinates.vector().array().reshape(-1, 2) # noqa
@@ -194,7 +193,7 @@ class BurgersSolver():
         while t < self.T - 0.5*self.dt:
             self.error_adapt_list = []
             self.error_og_list = []
-            mesh_new = fd.UnitSquareMesh(self.mesh_size, self.mesh_size)
+            mesh_new = self.mesh_new
 
             print("step: {}, t: {}".format(self.step, t))
             # solve on fine mesh

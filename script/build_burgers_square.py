@@ -21,9 +21,9 @@ def arg_parse():
                         help='number of distributions used to\
                             generate the dataset (this will disable\
                                 max_dist)')
-    parser.add_argument('--n_grid', type=int, default=20,
-                        help='number of grids of a\
-                            discretized mesh')
+    parser.add_argument('--lc', type=float, default=6e-2,
+                        help='the length characteristic of the elements in the\
+                            mesh')
     parser.add_argument('--field_type', type=str, default="iso",
                         help='anisotropic or isotropic data type(aniso/iso)')
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
@@ -58,9 +58,7 @@ scale_y = 1
 # parameters for random source
 max_dist = args.max_dist
 n_dist = args.n_dist
-num_grid = args.n_grid
-num_grid_x = num_grid
-num_grid_y = num_grid
+lc = args.lc
 
 # parameters for anisotropic data - distribution height scaler
 z_min = 0
@@ -87,7 +85,7 @@ df = pd.DataFrame({
     'cmax': [c_max],
     'data_type': [data_type],
     'scheme': [scheme],
-    'n_grid': [num_grid],
+    'lc': [lc],
 })
 
 
@@ -111,9 +109,8 @@ project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 dataset_dir = os.path.join(project_dir, "data", "dataset", problem)
 problem_specific_dir = os.path.join(
         dataset_dir,
-        "z=<{},{}>_ndist={}_max_dist={}_<{}x{}>_n={}_{}_{}".format(
-            z_min, z_max, n_dist, max_dist,
-            num_grid_x, num_grid_y, n_case,
+        "lc={}_n={}_{}_{}".format(
+            lc, n_case,
             data_type, scheme))
 
 
@@ -121,6 +118,24 @@ problem_data_dir = os.path.join(problem_specific_dir, "data")
 problem_plot_dir = os.path.join(problem_specific_dir, "plot")
 problem_log_dir = os.path.join(problem_specific_dir, "log")
 
+problem_mesh_dir = os.path.join(problem_specific_dir, "mesh")
+problem_mesh_fine_dir = os.path.join(problem_specific_dir, "mesh_fine")
+
+if not os.path.exists(problem_mesh_dir):
+    os.makedirs(problem_mesh_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_mesh_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_mesh_dir, f))
+
+if not os.path.exists(problem_mesh_fine_dir):
+    os.makedirs(problem_mesh_fine_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_mesh_fine_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_mesh_fine_dir, f))
 
 if not os.path.exists(problem_data_dir):
     os.makedirs(problem_data_dir)
@@ -395,13 +410,24 @@ if __name__ == "__main__":
     for idx in range(1, n_case + 1):
         try:
             print(f"Case {idx} building ...")
-            mesh = fd.RectangleMesh(
-                num_grid_x, num_grid_y, scale_x, scale_y)
+            unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(scale=scale_x)  # noqa
+            mesh = unstructure_square_mesh_gen.get_mesh(
+                res=lc, file_path=os.path.join(
+                    problem_mesh_dir, "mesh.msh"
+                )
+            )
+            mesh_new = fd.Mesh(os.path.join(
+                    problem_mesh_dir, "mesh.msh"
+                ))
+            mesh_fine = unstructure_square_mesh_gen.get_mesh(
+                res=2e-2, file_path=os.path.join(
+                    problem_mesh_fine_dir, "mesh.msh"
+                )
+            )
             # Generate Random solution field
             gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
             solver = wm.BurgersSolver(
-                mesh, gauss_list=gaussian_list, nu=nu,
-                mesh_size=num_grid
+                mesh, mesh_fine, mesh_new, gauss_list=gaussian_list, nu=nu,
             )
             solver.solve_problem(sample_from_loop)
             print()
