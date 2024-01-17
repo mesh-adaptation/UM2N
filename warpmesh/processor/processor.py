@@ -101,7 +101,8 @@ class MeshProcessor():
                 "w": None,
                 "use_iso": None,
             },
-            gauss_list=None,   # used in burgers equation bumps generation
+            gauss_list=None,    # used in burgers equation bumps generation
+            swirl_params=None,  # used in swirl test case for init ring gen
             dur=None,
     ):
         self.use_4_edge = use_4_edge
@@ -128,6 +129,8 @@ class MeshProcessor():
         self.nu = nu
         self.gauss_list = gauss_list
         self.dur = dur  # time consumed for MA solving
+        # swirl case params
+        self.swirl_params = swirl_params
         self.to_train_data()
 
     def get_conv_feat_poly(self):
@@ -303,6 +306,7 @@ class MeshProcessor():
             "gauss_list": self.gauss_list,
             "duration": self.dur,
             "poly_mesh": self.poly_mesh,
+            "swirl_params": self.swirl_params,
         }
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)

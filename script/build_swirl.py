@@ -7,30 +7,27 @@ import warpmesh as wm
 import firedrake as fd
 import shutil
 import matplotlib.pyplot as plt
-import random
 from argparse import ArgumentParser
 
 
 def arg_parse():
     parser = ArgumentParser()
-    parser.add_argument('--max_dist', type=int, default=6,
-                        help='max number of distributions used to\
-                            generate the dataset (only works if\
-                                n_dist is not set)')
-    parser.add_argument('--n_dist', type=int, default=None,
-                        help='number of distributions used to\
-                            generate the dataset (this will disable\
-                                max_dist)')
-    parser.add_argument('--n_grid', type=int, default=25,
+    parser.add_argument('--sigma', type=float, default=(0.05/3),
+                        help='sigma used to control the initial ring shape')
+    parser.add_argument('--r_0', type=float, default=0.2,
+                        help='radius of the initial ring')
+    parser.add_argument('--alpha', type=float, default=1.5,
+                        help='scalar coefficient of the swirl (velocity)')
+    parser.add_argument('--save_interval', type=int, default=100,
+                        help='interval for stroing sample file')
+    parser.add_argument('--mesh_type', type=str, default="unstructured",
+                        help='mesh type (uniform/unstructured))')
+    parser.add_argument('--n_grid', type=int, default=30,
                         help='number of grids of a\
                             discretized mesh')
-    parser.add_argument('--field_type', type=str, default="iso",
-                        help='anisotropic or isotropic data type(aniso/iso)')
-    # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument('--boundary_scheme', type=str, default="pad",
-                        help='scheme used to generate the dataset (pad/full))')
-    parser.add_argument('--rand_seed', type=int, default=63,
-                        help='number of samples generated')
+    parser.add_argument('--lc', type=float, default=4.5e-2,
+                        help='the length characteristic of the elements in the\
+                            mesh (if using unstructured mesh)')
     args_ = parser.parse_args()
     print(args_)
     return args_
@@ -38,53 +35,38 @@ def arg_parse():
 
 args = arg_parse()
 
-data_type = args.field_type
-use_iso = True if data_type == "iso" else False
-
-rand_seed = args.rand_seed
-random.seed(rand_seed)
-
 # ====  Parameters ======================
 problem = "swirl"
+
+# simulation time & time steps
+T = 1
+n_step = 500
+dt = T / n_step
+
+# mesh setup
+mesh_type = args.mesh_type
+lc = args.lc
 
 # parameters for domain scale
 scale_x = 1
 scale_y = 1
 
-# parameters for random source
-max_dist = args.max_dist
-n_dist = args.n_dist
+# params for initial condition
+sigma = args.sigma
+r_0 = args.r_0
+alpha = args.alpha
+
+# parameters for squar mesh
 num_grid = args.n_grid
 num_grid_x = num_grid
 num_grid_y = num_grid
 
-# parameters for anisotropic data - distribution height scaler
-z_min = 0
-z_max = 1
-
-# parameters for isotropic data
-w_min = 0.05
-w_max = 0.2
-
-scheme = args.boundary_scheme
-c_min = 0.2 if scheme == "pad" else 0
-c_max = 0.8 if scheme == "pad" else 1
-
-# parameters for data split
-p_train = 0.75
-p_test = 0.15
-p_val = 0.1
+# params for stroing files
+save_interval = args.save_interval
+# list storing failing dts
+fail_t = []
 
 # =======================================
-
-
-df = pd.DataFrame({
-    'cmin': [c_min],
-    'cmax': [c_max],
-    'data_type': [data_type],
-    'scheme': [scheme],
-    'n_grid': [num_grid],
-})
 
 
 def move_data(target, source, start, num_file):
@@ -107,15 +89,14 @@ project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 dataset_dir = os.path.join(project_dir, "data", "dataset", problem)
 problem_specific_dir = os.path.join(
         dataset_dir,
-        "z=<{},{}>_ndist={}_max_dist={}_<{}x{}>_n={}_{}".format(
-            z_min, z_max, n_dist, max_dist,
-            num_grid_x, num_grid_y,
-            data_type, scheme))
+        f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_meshtype_{mesh_type}_n_grid_{num_grid}_lc_{lc}_interval_{save_interval}")  # noqa
 
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
 problem_plot_dir = os.path.join(problem_specific_dir, "plot")
 problem_log_dir = os.path.join(problem_specific_dir, "log")
+problem_mesh_dir = os.path.join(problem_specific_dir, "mesh")
+problem_mesh_fine_dir = os.path.join(problem_specific_dir, "mesh_fine")
 
 
 if not os.path.exists(problem_data_dir):
@@ -142,10 +123,31 @@ else:
     for f in filelist:
         os.remove(os.path.join(problem_log_dir, f))
 
-df.to_csv(os.path.join(problem_specific_dir, "info.csv"))
+if not os.path.exists(problem_mesh_dir):
+    os.makedirs(problem_mesh_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_mesh_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_mesh_dir, f))
 
+if not os.path.exists(problem_mesh_fine_dir):
+    os.makedirs(problem_mesh_fine_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_mesh_fine_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_mesh_fine_dir, f))
 
 i = 0
+
+
+def fail_callback(t):
+    """
+    Call back for failing cases.
+    Log current time for those cases which MA did not converge.
+    """
+    fail_t.append(t)
 
 
 def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
@@ -155,9 +157,13 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
                      function_space,
                      function_space_fine,
                      uh_fine, dur,
+                     sigma, alpha, r_0, t,
                      error_og_list=[],
                      error_adapt_list=[],
                      ):
+    """
+    Call back function for storing data.
+    """
     global i
     print("before processing")
     mesh_processor = wm.MeshProcessor(
@@ -186,6 +192,12 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
             "hessian_norm": hessian_norm,
             "jacobian": jacobian,
             "jacobian_det": jacobian_det,
+        },
+        swirl_params={
+            "t": t,
+            "sigma": sigma,
+            "alpha": alpha,
+            "r_0": r_0,
         },
         dur=dur
     )
@@ -267,10 +279,51 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
 # ====  Data Generation Scripts ======================
 if __name__ == "__main__":
     print("In build_dataset.py")
+    # mesh init
     mesh = fd.UnitSquareMesh(num_grid_x, num_grid_y)
     mesh_new = fd.UnitSquareMesh(num_grid_x, num_grid_y)
     mesh_fine = fd.UnitSquareMesh(100, 100)
-    swril_solver = wm.SwirlSolver(mesh, mesh_fine, mesh_new, T=1, n_step=600)
-    swril_solver.solve_problem(sample_from_loop)
+    if mesh_type == "unstructured":
+        mesh_gen = wm.UnstructuredSquareMesh()
+        mesh = mesh_gen.get_mesh(
+            res=lc,
+            file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
+        mesh_new = mesh_gen.get_mesh(
+            res=lc,
+            file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
+        mesh_gen_fine = wm.UnstructuredSquareMesh()
+        mesh_fine = mesh_gen_fine.get_mesh(
+            res=2e-2,
+            file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh"))
+
+    # solver defination
+    swril_solver = wm.SwirlSolver(
+        mesh, mesh_fine, mesh_new,
+        sigma=sigma, alpha=alpha, r_0=r_0,
+        save_interval=save_interval,
+        T=T, n_step=n_step,
+    )
+
+    swril_solver.solve_problem(
+        callback=sample_from_loop,
+        fail_callback=fail_callback
+    )
     print("Done!")
+
+    df = pd.DataFrame({
+        'sigma': [sigma],
+        'alpha': [alpha],
+        'r_0': [r_0],
+        'save_interval': [save_interval],
+        'n_grid': [num_grid],
+        'T': [T],
+        "n_step": [n_step],
+        "dt": [dt],
+        "fail_t": [fail_t],
+        "lc": [lc],
+        "num_fail_cases": [len(fail_t)],
+    })
+
+    df.to_csv(os.path.join(problem_specific_dir, "info.csv"))
+
 # ====  Data Generation Scripts ======================

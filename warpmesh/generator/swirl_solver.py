@@ -12,29 +12,20 @@ import matplotlib.pyplot as plt           # noqa
 
 from tqdm import tqdm                     # noqa
 
-# solver params
-n_grid = 30
-T = 1
-n_step = 600
-dt = T / n_step
 
-sigma = (0.05 / 6)
-x_0 = 0.25
-y_0 = 0.25
-r_0 = 0.2
-
-
-def get_c(x, y, t, threshold=0.5):
+def get_c(x, y, t, threshold=0.5, alpha=1.5):
     """
     Compute the velocity field which transports the
     solution field u.
+    Args:
+        alpha (float): coefficient for velocity magnitude.
 
     Return:
         velocity (ufl.tensors): expression of the swirl velocity field
     """
     a = 1 if t < threshold else -1
-    v_x = (3/2) * a * fd.sin(fd.pi * x)**2 * fd.sin(2 * fd.pi * y)
-    v_y = -1*(3/2) * a * fd.sin(fd.pi * y)**2 * fd.sin(2 * fd.pi * x)
+    v_x = alpha * a * fd.sin(fd.pi * x)**2 * fd.sin(2 * fd.pi * y)
+    v_y = -1 * alpha * a * fd.sin(fd.pi * y)**2 * fd.sin(2 * fd.pi * x)
     velocity = fd.as_vector((v_x, v_y))
     return velocity
 
@@ -72,6 +63,7 @@ class SwirlSolver():
         self.mesh = mesh                    # coarse mesh
         self.mesh_fine = mesh_fine            # fine mesh
         self.mesh_new = mesh_new            # adapted mesh
+        self.save_interval = kwargs.pop("save_interval", 5)
         # Init coords setup
         self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
         self.init_coord_fine = self.mesh_fine.coordinates.vector().array().reshape(-1, 2) # noqa
@@ -107,15 +99,16 @@ class SwirlSolver():
         # simulation params
         self.T = kwargs.pop("T", 1)
         self.t = 0.0
-        self.n_step = kwargs.pop("n_step", 600)
-        self.threshold = T / 2                          # Time point the swirl direction get reverted  # noqa
+        self.n_step = kwargs.pop("n_step", 500)
+        self.threshold = self.T / 2                          # Time point the swirl direction get reverted  # noqa
         self.dt = self.T / self.n_step
         self.dtc = fd.Constant(self.dt)
         # initial condition params
         self.sigma = kwargs.pop("sigma", (0.05/6))
+        self.alpha = kwargs.pop("alpha", 1.5)
+        self.r_0 = kwargs.pop("r_0", 0.2)
         self.x_0 = kwargs.pop("x_0", 0.25)
         self.y_0 = kwargs.pop("y_0", 0.25)
-        self.r_0 = kwargs.pop("r_0", 0.2)
 
         # initital condition of u on coarse / fine mesh
         u_init_exp = get_u_0(self.x, self.y, self.r_0, self.x_0, self.y_0, self.sigma)  # noqa
@@ -216,7 +209,7 @@ class SwirlSolver():
         Solve the PDE problem using RK (SSPRK) scheme on the coarse mesh
         store the solution field to a varaible: self.u_cur
         """
-        c_exp = get_c(self.x, self.y, t)
+        c_exp = get_c(self.x, self.y, t, alpha=self.alpha)
         c_temp = fd.Function(self.vector_space).interpolate(c_exp)
         self.c.project(c_temp)
 
@@ -234,7 +227,7 @@ class SwirlSolver():
         Solve the PDE problem using RK (SSPRK) scheme on the fine mesh
         store the solution field to a varaible: self.u_cur_fine
         """
-        c_exp = get_c(self.x_fine, self.y_fine, t)
+        c_exp = get_c(self.x_fine, self.y_fine, t, alpha=self.alpha)
         c_temp = fd.Function(self.vector_space_fine).interpolate(c_exp)
         self.c_fine.project(c_temp)
 
@@ -270,111 +263,112 @@ class SwirlSolver():
 
         return 1 + (5 * monitor)
 
-    def solve_problem(self, callback=None):
+    def solve_problem(self, callback=None, fail_callback=None):
         print("In solve problem")
         self.t = 0.0
         step = 0
-        for i in tqdm(range(self.n_step)):
-            print(f"step: {step}, t: {self.t:.2f}")
+        for i in range(self.n_step):
+            print(f"step: {step}, t: {self.t:.5f}")
             # error tracking lists init
             self.error_adapt_list = []
             self.error_og_list = []
             # solve PDE problem on fine mesh
             self.solve_u_fine(self.t)
-            if step % 60 == 0:
-                # mesh movement - calculate the adapted coords
-                start = time.perf_counter()
-                adapter = mv.MongeAmpereMover(
-                    self.mesh,
-                    monitor_function=self.monitor_function,
-                    rtol=1e-3,
-                )
-                adapter.move()
-                end = time.perf_counter()
-                dur_ms = (end - start) * 1e3
-                self.mesh_new.coordinates.dat.data[:] = self.adapt_coord
+            if ((step+1) % self.save_interval == 0) or (step == 0):
+                print(f"---- getting samples: step: {step}, t: {self.t:.5f}")
+                try:
+                    # mesh movement - calculate the adapted coords
+                    start = time.perf_counter()
+                    adapter = mv.MongeAmpereMover(
+                        self.mesh,
+                        monitor_function=self.monitor_function,
+                        rtol=1e-3,
+                    )
+                    adapter.move()
+                    end = time.perf_counter()
+                    dur_ms = (end - start) * 1e3
+                    self.mesh_new.coordinates.dat.data[:] = self.adapt_coord
 
-                # calculate solution on original mesh
-                self.mesh.coordinates.dat.data[:] = self.init_coord
-                self.project_u_()
-                self.solve_u(self.t)
-                function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-                self.uh = fd.Function(function_space).project(self.u_cur)
+                    # calculate solution on original mesh
+                    self.mesh.coordinates.dat.data[:] = self.init_coord
+                    self.project_u_()
+                    self.solve_u(self.t)
+                    function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+                    self.uh = fd.Function(function_space).project(self.u_cur)
 
-                # calculate solution on adapted mesh
-                self.mesh.coordinates.dat.data[:] = self.adapt_coord
-                self.project_u_()
-                self.solve_u(self.t)
-                function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)
-                self.uh_new = fd.Function(function_space_new).project(self.u_cur)  # noqa
+                    # calculate solution on adapted mesh
+                    self.mesh.coordinates.dat.data[:] = self.adapt_coord
+                    self.project_u_()
+                    self.solve_u(self.t)
+                    function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)
+                    self.uh_new = fd.Function(function_space_new).project(self.u_cur)  # noqa
 
-                # error measuring
-                error_og, error_adapt = self.get_error()
-                print(
-                    f"error_og: {error_og}, \terror_adapt: {error_adapt}"
-                )
+                    # error measuring
+                    error_og, error_adapt = self.get_error()
+                    print(
+                        f"error_og: {error_og}, \terror_adapt: {error_adapt}"
+                    )
 
-                # put coords back to init state and sampling for datasets gen
-                self.mesh.coordinates.dat.data[:] = self.init_coord
+                    # put coords back to init state and sampling for datasets
+                    self.mesh.coordinates.dat.data[:] = self.init_coord
 
-                # plotting
-                plot = False
-                if plot is True:
-                    self.plot_res()
-                    plt.show()
+                    # plotting
+                    plot = False
+                    if plot is True:
+                        self.plot_res()
+                        plt.show()
 
-                # retrive info from original mesh and save data
-                function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-                function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
-                uh_fine = fd.Function(function_space_fine)
-                uh_fine.project(self.u_fine)
+                    # retrive info from original mesh and save data
+                    function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+                    function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
+                    uh_fine = fd.Function(function_space_fine)
+                    uh_fine.project(self.u_fine)
 
-                func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-                uh_grad = fd.interpolate(
-                    fd.grad(self.uh), func_vec_space)
-                hessian_norm = self.f_norm
-                hessian = self.l2_projection
-                phi = adapter.phi
-                phi_grad = adapter.grad_phi
-                sigma = adapter.sigma
-                I = fd.Identity(2)  # noqa
-                jacobian = I + sigma
-                jacobian_det = fd.Function(
-                    function_space, name="jacobian_det")
-                jacobian_det.project(
-                    jacobian[0, 0] * jacobian[1, 1] -
-                    jacobian[0, 1] * jacobian[1, 0])
-                self.jacob_det = fd.project(
-                    jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1))
-                self.jacob = fd.project(
-                    jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
-                )
-                callback(
-                    uh=self.uh, uh_grad=uh_grad, hessian_norm=hessian_norm,
-                    hessian=hessian,
-                    phi=phi, grad_phi=phi_grad,
-                    jacobian=self.jacob, jacobian_det=self.jacob_det,
-                    mesh_new=self.mesh_new,
-                    mesh_og=self.mesh,
-                    uh_new=self.uh_new,
-                    uh_fine=uh_fine,
-                    function_space=function_space,
-                    function_space_fine=function_space_fine,
-                    error_adapt_list=self.error_adapt_list,
-                    error_og_list=self.error_og_list,
-                    dur=dur_ms
-                )
+                    func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+                    uh_grad = fd.interpolate(
+                        fd.grad(self.uh), func_vec_space)
+                    hessian_norm = self.f_norm
+                    hessian = self.l2_projection
+                    phi = adapter.phi
+                    phi_grad = adapter.grad_phi
+                    sigma = adapter.sigma
+                    I = fd.Identity(2)  # noqa
+                    jacobian = I + sigma
+                    jacobian_det = fd.Function(
+                        function_space, name="jacobian_det")
+                    jacobian_det.project(
+                        jacobian[0, 0] * jacobian[1, 1] -
+                        jacobian[0, 1] * jacobian[1, 0])
+                    self.jacob_det = fd.project(
+                        jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1))
+                    self.jacob = fd.project(
+                        jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
+                    )
+                    callback(
+                        uh=self.uh, uh_grad=uh_grad, hessian_norm=hessian_norm,
+                        hessian=hessian,
+                        phi=phi, grad_phi=phi_grad,
+                        jacobian=self.jacob, jacobian_det=self.jacob_det,
+                        mesh_new=self.mesh_new,
+                        mesh_og=self.mesh,
+                        uh_new=self.uh_new,
+                        uh_fine=uh_fine,
+                        function_space=function_space,
+                        function_space_fine=function_space_fine,
+                        error_adapt_list=self.error_adapt_list,
+                        error_og_list=self.error_og_list,
+                        dur=dur_ms,
+                        sigma=self.sigma, alpha=self.alpha, r_0=self.r_0,
+                        t=self.t,
+                    )
+                except fd.exceptions.ConvergenceError:
+                    fail_callback(self.t)
+                    pass
             # time stepping and prep for next solving iter
             self.t += dt
             step += 1
             self.u_fine.assign(self.u_cur_fine)
             self.u_fine_buffer.assign(self.u_cur_fine)
-
-            if step % 20 == 0:
-                # fd.tripcolor(self.u)
-                # fd.tripcolor(self.u_fine)
-                pass
-        # plt.show()
         return
 
     def get_error(self):
