@@ -12,8 +12,8 @@ from io import BytesIO
 
 import warnings
 warnings.filterwarnings('ignore')
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device('cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cpu')
 
 # run_id = 'welbby7t'
 # run_id = 'vwopbol5'
@@ -67,6 +67,10 @@ run_id = 'kst5ig88' # output phi grad large eq residual
 run_id = 'c2kyy4vl' # purely unsupervised
 run_id = 'a2af7x3j' # weight_d = 0.01 weight_u
 
+
+run_id = 'bzlj9vcl' # unsupervised 1 1 1
+
+
 run_id_collections = {"MRT":['mfn1hnrg'],
 
                       "MRT-no-udlr":['2b0ouh5p'],
@@ -78,6 +82,7 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R-coord":['f4q1v2pd'],
                       "MRT-1R-phi-grad-un":['c2kyy4vl'],
                       "MRT-1R-phi-grad-quasi-un":['a2af7x3j'],
+                      "MRT-1R-phi-grad-un-111": ['bzlj9vcl'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
@@ -106,7 +111,7 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "M2T":['gboubixk'], 
                       "M2N":['xqa8fnoj']}
 # test_ms = 'poly'
-test_ms = 50
+test_ms = 35
 num_sample_vis = 5
 # models_to_compare = ["MRT", "MRN-LTE", "MRT-Sampling", "MRN-Sampling", "MRN", "M2T", "M2N"]
 # models_to_compare = ["MRT", "MRT-mask0.75", "MRT-mask0.50", "MRT-mask0.25", "MRN-LTE", "MRN", "M2T", "M2N"]
@@ -115,14 +120,14 @@ num_sample_vis = 5
 
 # models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
 # models_to_compare = ["MRT-1R-phi", "MRT-1R-phi-bd"]
-models_to_compare = ["MRT-1R-phi-bd", "MRT-1R-phi-grad", "MRT-1R-phi-grad-un","MRT-1R-phi-grad-quasi-un", "MRT-1R-coord"]
+models_to_compare = ["MRT-1R-phi-grad-un-111", "MRT-1R-coord"]
 # models_to_compare = ["MRT-1R", "MRT-1R-no-hessian"]
 # test dataset, for benchmarking loss effects on model performance
-# test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+# test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 # test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
-random_seed = 123456
+random_seed = 1236
 
 out_mesh_collections = {}
 out_loss_collections = {}

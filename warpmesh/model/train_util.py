@@ -1,7 +1,10 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
+# Modified by Mingrui Zhang
 
 import torch
+import torch.nn as nn
+import numpy as np
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing
 
@@ -467,6 +470,32 @@ def compute_phi_grad():
 def compute_phi_hessian():
     pass
 
+
+def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
+    """
+    u: [bs, node_num, 1]
+    ori_mesh_x: [bs, node_num, 1]
+    ori_mesh_y: [bs, node_num, 1]
+    moved_x: [bs, node_num, 1]
+    moved_y: [bs, node_num, 1]
+
+    Note: node_num equals to sample_num
+    """
+    sample_num = u.shape[1]
+    # For a sample point of interest, we need to do a weighted summation over all other sample points
+    # To avoid using a loop, we expand an additonal dim of size sample_num
+    original_mesh = torch.cat((ori_mesh_x, ori_mesh_y), dim=-1).unsqueeze(-2).repeat(1, 1, sample_num, 1)
+    moved_mesh = torch.cat((moved_x, moved_y), dim=-1).unsqueeze(-2).repeat(1, 1, sample_num, 1)
+    
+    distance = -torch.norm(original_mesh - moved_mesh, dim=-1) * np.sqrt(sample_num)
+    normalize = nn.Softmax(dim=-1)
+    weight = normalize(distance)
+
+    u_interpolated = torch.sum(u * weight, dim=-1).unsqueeze(-1)
+    # print(f"interpolated shape: {u_interpolated.shape}")
+    return u_interpolated
+
+
 def train_unsupervised(
         loader, model, optimizer, device, loss_func,
         use_jacob=False,
@@ -544,12 +573,26 @@ def train_unsupervised(
             det_hessian = (phixx + 1) * (phiyy + 1) - phixy * phiyx
             det_hessian = det_hessian.reshape(bs, node_num, 1)
         
-            monitor = data.mesh_feat[:, -1].reshape(bs, node_num, 1)
+            hessian_norm = data.mesh_feat[:, 3].reshape(bs, node_num, 1)
+            # solution = data.mesh_feat[:, 1].resahpe(bs, node_num, 1)
+            original_mesh_x = data.mesh_feat[:, 0].reshape(bs, node_num, 1)
+            original_mesh_y = data.mesh_feat[:, 1].reshape(bs, node_num, 1)
+
+            moved_x = phix.reshape(bs, node_num, 1) + original_mesh_x
+            moved_y = phiy.reshape(bs, node_num, 1) + original_mesh_y
+
+            # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
+            # Interpolate on new moved mesh
+            monitor = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
+            phixx = phixx.reshape(bs, node_num, 1)
+            phiyx = phiyx.reshape(bs, node_num, 1)
+            
             lhs = monitor * det_hessian
 
-            rhs = torch.sum(monitor, dim=(1, 2)) / node_num
+            rhs = torch.sum(hessian_norm, dim=(1, 2)) / node_num
             rhs = rhs.unsqueeze(-1).repeat(1, node_num).unsqueeze(-1)
             loss_eq_residual = 1000 * loss_func(lhs, rhs)
+            # print(f"diff between interpolation {torch.sum(monitor - hessian_norm)} lhs {torch.sum(lhs)} rhs {torch.sum(rhs)}")
 
             # Convex loss
             if use_convex_loss:
@@ -699,7 +742,19 @@ def evaluate_unsupervised(
             det_hessian = (phixx + 1) * (phiyy + 1) - phixy * phiyx
             det_hessian = det_hessian.reshape(bs, node_num, 1)
             
-            monitor = data.mesh_feat[:, -1].reshape(bs, node_num, 1)
+            hessian_norm = data.mesh_feat[:, -1].reshape(bs, node_num, 1)
+            # solution = data.mesh_feat[:, -2].resahpe(bs, node_num, 1)
+            original_mesh_x = data.mesh_feat[:, 0].reshape(bs, node_num, 1)
+            original_mesh_y = data.mesh_feat[:, 1].reshape(bs, node_num, 1)
+
+            moved_x = phix.reshape(bs, node_num, 1) + original_mesh_x
+            moved_y = phiy.reshape(bs, node_num, 1) + original_mesh_y
+
+            # Interpolate on new moved mesh
+            monitor = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
+            phixx = phixx.reshape(bs, node_num, 1)
+            phiyx = phiyx.reshape(bs, node_num, 1)
+            monitor = monitor * (1 + phixx) + monitor * phiyx
             lhs = monitor * det_hessian
             # print(f"det hessian: {det_hessian.shape} monitor: {monitor.shape}")
 
