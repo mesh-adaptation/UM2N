@@ -22,9 +22,9 @@ def arg_parse():
                         help='number of distributions used to\
                             generate the dataset (this will disable\
                                 max_dist)')
-    parser.add_argument('--n_grid', type=int, default=20,
-                        help='number of grids of a\
-                            discretized mesh')
+    parser.add_argument('--lc', type=float, default=6e-2,
+                        help='the length characteristic of the elements in the\
+                            mesh')
     parser.add_argument('--field_type', type=str, default="iso",
                         help='anisotropic or isotropic data type(aniso/iso)')
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
@@ -59,9 +59,7 @@ scale_y = 1
 # parameters for random source
 max_dist = args.max_dist
 n_dist = args.n_dist
-num_grid = args.n_grid
-num_grid_x = num_grid
-num_grid_y = num_grid
+lc = args.lc
 
 # parameters for anisotropic data - distribution height scaler
 z_min = 0
@@ -92,7 +90,7 @@ df = pd.DataFrame({
     'data_type': [data_type],
     'scheme': [scheme],
     'n_samples': [n_samples],
-    'n_grid': [num_grid],
+    'lc': [lc],
 })
 
 
@@ -116,9 +114,9 @@ project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 dataset_dir = os.path.join(project_dir, "data", "dataset", problem)
 problem_specific_dir = os.path.join(
         dataset_dir,
-        "z=<{},{}>_ndist={}_max_dist={}_<{}x{}>_n={}_{}_{}".format(
+        "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}".format(
             z_min, z_max, n_dist, max_dist,
-            num_grid_x, num_grid_y, n_samples,
+            lc, n_samples,
             data_type, scheme))
 
 
@@ -126,10 +124,27 @@ problem_data_dir = os.path.join(problem_specific_dir, "data")
 problem_plot_dir = os.path.join(problem_specific_dir, "plot")
 problem_log_dir = os.path.join(problem_specific_dir, "log")
 
+problem_mesh_dir = os.path.join(problem_specific_dir, "mesh")
+problem_mesh_fine_dir = os.path.join(problem_specific_dir, "mesh_fine")
 problem_train_dir = os.path.join(problem_specific_dir, "train")
 problem_test_dir = os.path.join(problem_specific_dir, "test")
 problem_val_dir = os.path.join(problem_specific_dir, "val")
 
+if not os.path.exists(problem_mesh_dir):
+    os.makedirs(problem_mesh_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_mesh_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_mesh_dir, f))
+
+if not os.path.exists(problem_mesh_fine_dir):
+    os.makedirs(problem_mesh_fine_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_mesh_fine_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_mesh_fine_dir, f))
 
 if not os.path.exists(problem_data_dir):
     os.makedirs(problem_data_dir)
@@ -165,8 +180,12 @@ if __name__ == "__main__":
     while (i < n_samples):
         try:
             print("Generating Sample: " + str(i))
-            mesh = fd.RectangleMesh(
-                num_grid_x, num_grid_y, scale_x, scale_y)
+            unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(scale=scale_x)  # noqa
+            mesh = unstructure_square_mesh_gen.get_mesh(
+                res=lc, file_path=os.path.join(
+                    problem_mesh_dir, f"mesh{i}.msh"
+                )
+            )
             # Generate Random solution field
             rand_u_generator = wm.RandSourceGenerator(
                 use_iso=use_iso, dist_params={
@@ -197,20 +216,14 @@ if __name__ == "__main__":
             uh = solver.solve_eq()
             # Generate Mesh
             hessian = wm.MeshGenerator(params={
-                    "num_grid_x": num_grid_x,
-                    "num_grid_y": num_grid_y,
                     "eq": poisson_eq,
-                    "mesh": fd.RectangleMesh(
-                        num_grid_x, num_grid_y, scale_x, scale_y)
+                    "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh"))  # noqa
                     }
             ).get_hessian(mesh)
 
             hessian_norm = wm.MeshGenerator(params={
-                    "num_grid_x": num_grid_x,
-                    "num_grid_y": num_grid_y,
                     "eq": poisson_eq,
-                    "mesh": fd.RectangleMesh(
-                        num_grid_x, num_grid_y, scale_x, scale_y)
+                    "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh"))  # noqa
                     }
             ).monitor_func(mesh)
 
@@ -222,11 +235,8 @@ if __name__ == "__main__":
                 fd.grad(uh), func_vec_space)
 
             mesh_gen = wm.MeshGenerator(params={
-                "num_grid_x": num_grid_x,
-                "num_grid_y": num_grid_y,
                 "eq": poisson_eq,
-                "mesh": fd.RectangleMesh(
-                    num_grid_x, num_grid_y, scale_x, scale_y)
+                "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh"))  # noqa
             })
 
             start = time.perf_counter()
@@ -337,7 +347,11 @@ if __name__ == "__main__":
             # ==========================================
 
             # generate log file
-            high_res_mesh = fd.UnitSquareMesh(80, 80)
+            high_res_mesh = unstructure_square_mesh_gen.get_mesh(
+                res=2e-2, file_path=os.path.join(
+                    problem_mesh_fine_dir, f"mesh{i}.msh"
+                )
+            )
             high_res_function_space = fd.FunctionSpace(
                 high_res_mesh, "CG", 1)
 

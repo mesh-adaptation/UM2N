@@ -365,7 +365,7 @@ class SwirlSolver():
                     fail_callback(self.t)
                     pass
             # time stepping and prep for next solving iter
-            self.t += dt
+            self.t += self.dt
             step += 1
             self.u_fine.assign(self.u_cur_fine)
             self.u_fine_buffer.assign(self.u_cur_fine)

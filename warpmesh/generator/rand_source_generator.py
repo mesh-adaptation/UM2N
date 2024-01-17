@@ -66,7 +66,7 @@ class RandSourceGenerator():
         self.RHS = None
         self.bc = None  # boundary conditions
 
-    def set_dist_params(self, eps=0.03):
+    def set_dist_params(self, eps=1/8):
         """
         Set parameters for Gaussian distribution from dist_params.
         """
@@ -77,9 +77,9 @@ class RandSourceGenerator():
         print("Generating {} Gaussian distributions".format(self.n_dist))
         for i in range(self.n_dist):
             σ_mean = (
-                self.dist_params["x_end"] - self.dist_params["x_start"]) / 6
+                self.dist_params["x_end"] - self.dist_params["x_start"]) / 4
             σ_sigma = (
-                self.dist_params["x_end"] - self.dist_params["x_start"]) / 8
+                self.dist_params["x_end"] - self.dist_params["x_start"]) / 6
 
             self.μ_dict["x"].append(round(random.uniform(
                 self.dist_params["c_min"], self.dist_params["c_max"]), 3)) # noqa

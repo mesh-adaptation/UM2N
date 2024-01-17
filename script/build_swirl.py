@@ -18,7 +18,7 @@ def arg_parse():
                         help='radius of the initial ring')
     parser.add_argument('--alpha', type=float, default=1.5,
                         help='scalar coefficient of the swirl (velocity)')
-    parser.add_argument('--save_interval', type=int, default=100,
+    parser.add_argument('--save_interval', type=int, default=5,
                         help='interval for stroing sample file')
     parser.add_argument('--mesh_type', type=str, default="unstructured",
                         help='mesh type (uniform/unstructured))')
