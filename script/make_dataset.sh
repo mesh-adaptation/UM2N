@@ -2,7 +2,7 @@
 # GitHub Username: acse-cw1722
 
 # number of samples for time-indepedent cases
-n_samples_train=10
+n_samples_train=400
 
 # training set build
 rand_seed=63
@@ -50,8 +50,8 @@ for i in "${lcs[@]}"; do
 done
 
 # burgers square
-python ./script/build_burgers_square.py --lc=0.005 --n_case=1
-python ./script/build_burgers_square.py --lc=0.045  --n_case=1
+python ./script/build_burgers_square.py --lc=0.005 --n_case=5
+python ./script/build_burgers_square.py --lc=0.045  --n_case=5
 
 # swirl test case square
 python ./script/build_swirl.py --lc=0.05 --alpha=1

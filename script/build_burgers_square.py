@@ -420,7 +420,7 @@ if __name__ == "__main__":
                     problem_mesh_dir, "mesh.msh"
                 ))
             mesh_fine = unstructure_square_mesh_gen.get_mesh(
-                res=2e-2, file_path=os.path.join(
+                res=1e-2, file_path=os.path.join(
                     problem_mesh_fine_dir, "mesh.msh"
                 )
             )

@@ -277,7 +277,7 @@ if __name__ == "__main__":
         file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
     mesh_gen_fine = wm.UnstructuredSquareMesh()
     mesh_fine = mesh_gen_fine.get_mesh(
-        res=2e-2,
+        res=1e-2,
         file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh"))
 
     # solver defination

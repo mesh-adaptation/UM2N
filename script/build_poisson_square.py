@@ -348,7 +348,7 @@ if __name__ == "__main__":
 
             # generate log file
             high_res_mesh = unstructure_square_mesh_gen.get_mesh(
-                res=2e-2, file_path=os.path.join(
+                res=1e-2, file_path=os.path.join(
                     problem_mesh_fine_dir, f"mesh{i}.msh"
                 )
             )
