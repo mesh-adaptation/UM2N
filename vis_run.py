@@ -70,6 +70,11 @@ run_id = 'a2af7x3j' # weight_d = 0.01 weight_u
 
 run_id = 'bzlj9vcl' # unsupervised 1 1 1
 
+run_id = '8ndi2teh' # unsupervised 1 1 1, small unsupervised
+
+
+run_id = '2f4florr' # unsupervised 1 01 01,  large unsupervised
+
 
 run_id_collections = {"MRT":['mfn1hnrg'],
 
@@ -83,6 +88,8 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R-phi-grad-un":['c2kyy4vl'],
                       "MRT-1R-phi-grad-quasi-un":['a2af7x3j'],
                       "MRT-1R-phi-grad-un-111": ['bzlj9vcl'],
+                      "MRT-1R-phi-grad-un-111-small": ['8ndi2teh'],
+                      "MRT-1R-phi-grad-un-111-large": ['2f4florr'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
@@ -110,8 +117,12 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRN":['0iwpdpnr'], 
                       "M2T":['gboubixk'], 
                       "M2N":['xqa8fnoj']}
+
+# dataset_name = 'helmholtz'
+dataset_name = 'swirl'
+
 # test_ms = 'poly'
-test_ms = 35
+test_ms = 30
 num_sample_vis = 5
 # models_to_compare = ["MRT", "MRN-LTE", "MRT-Sampling", "MRN-Sampling", "MRN", "M2T", "M2N"]
 # models_to_compare = ["MRT", "MRT-mask0.75", "MRT-mask0.50", "MRT-mask0.25", "MRN-LTE", "MRN", "M2T", "M2N"]
@@ -120,13 +131,20 @@ num_sample_vis = 5
 
 # models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
 # models_to_compare = ["MRT-1R-phi", "MRT-1R-phi-bd"]
-models_to_compare = ["MRT-1R-phi-grad-un-111", "MRT-1R-coord"]
+models_to_compare = ["MRT-1R-phi-grad-un-111", "MRT-1R-phi-grad-un-111-large", "MRT-1R-coord"]
 # models_to_compare = ["MRT-1R", "MRT-1R-no-hessian"]
 # test dataset, for benchmarking loss effects on model performance
-test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-# test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-# test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
-# test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
+
+
+if dataset_name == 'helmholtz':
+  test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+  # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+  # test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
+  # test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
+elif dataset_name == 'swirl':
+  # Swirl
+  test_dir = f"./data/swirl/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=iso_pad/data"
+
 random_seed = 1236
 
 out_mesh_collections = {}
@@ -243,7 +261,7 @@ for model_name in models_to_compare:
     #     print(file.name)
 
     
-    epoch = 399
+    epoch = 999
     # TODO: the MRN-Sampling ('hegubzg0') only trained 800 epochs
     if run_id == 'hegubzg0':
        epoch = 799
@@ -351,8 +369,8 @@ for model_name in models_to_compare:
 compare_fig = wm.plot_multiple_mesh_compare(out_mesh_collections, out_loss_collections, target_mesh, target_face)
 compare_fig.tight_layout()
 compare_fig.subplots_adjust(top=0.95)
-compare_fig.suptitle(f"Ouput Mesh Comparsion (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)
-compare_fig.savefig(f"./out_images/comparison_reso_{test_ms}_seed_{random_seed}_recurrent_{num_step_recurrent}.png")
+compare_fig.suptitle(f"{dataset_name}: Output Mesh Comparsion (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)
+compare_fig.savefig(f"./out_images/{dataset_name}_comparison_reso_{test_ms}_seed_{random_seed}_recurrent_{num_step_recurrent}.png")
 
 
 # selected_node = torch.randint(low=0, high=test_ms*test_ms-1, size=(1,))

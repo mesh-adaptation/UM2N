@@ -138,7 +138,7 @@ class MRTransformer(torch.nn.Module):
         x_feat = data.x.reshape(-1, feat_dim)
         edge_idx = data.edge_index
 
-        hidden = self._transformer_forward(batch_size, data.mesh_feat, x_feat)
+        hidden = self._transformer_forward(batch_size, data.mesh_feat[:,:4], x_feat)
 
         # TODO: more sampling points inspired by neural operator 
         # edge_idx = data.edge_index_with_cluster.reshape(2, -1)

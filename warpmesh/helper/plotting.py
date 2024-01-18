@@ -96,7 +96,7 @@ def plot_multiple_mesh_compare(out_mesh_collections, out_loss_collections, targe
         all_loss = out_loss_collections[model_name]
         for n_sample in range(num_samples):
             ax[n_sample, n_model], _ = plot_mesh(all_mesh[n_sample], target_face[n_sample], ax=ax[n_sample, n_model])
-            ax[n_sample, n_model].set_title(f"{model_name} (loss: {all_loss[n_sample]:.2f})", fontsize=16)
+            ax[n_sample, n_model].set_title(f"{model_name} (loss: {all_loss[n_sample]:.2f})", fontsize=12)
     # Plot the ground truth
     for n_sample in range(num_samples):
         ax[n_sample, num_models], _ = plot_mesh(target_mesh[n_sample], target_face[n_sample], ax=ax[n_sample, num_models])

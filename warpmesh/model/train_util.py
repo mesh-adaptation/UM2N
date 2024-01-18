@@ -491,9 +491,14 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     normalize = nn.Softmax(dim=-1)
     weight = normalize(distance)
 
+    print(torch.sum(original_mesh - moved_mesh), u.shape, weight.shape)
     u_interpolated = torch.sum(u * weight, dim=-1).unsqueeze(-1)
     # print(f"interpolated shape: {u_interpolated.shape}")
     return u_interpolated
+
+
+def monitor_grad(alpha, ux, uy):
+    return (1 + (torch.abs(ux)**2 + torch.abs(uy)**2) ** (1/2) / (0.01*alpha))
 
 
 def train_unsupervised(
@@ -572,7 +577,10 @@ def train_unsupervised(
             # print(f"phixx grad: {torch.sum(phixx)}, phixy grad: {torch.sum(phixy)}, phiyx grad: {torch.sum(phiyx)}, phiyy grad: {torch.sum(phiyy)}")
             det_hessian = (phixx + 1) * (phiyy + 1) - phixy * phiyx
             det_hessian = det_hessian.reshape(bs, node_num, 1)
-        
+
+            jacobian_x = data.mesh_feat[:, 4].reshape(bs, node_num, 1)
+            jacobian_y = data.mesh_feat[:, 5].reshape(bs, node_num, 1)
+
             hessian_norm = data.mesh_feat[:, 3].reshape(bs, node_num, 1)
             # solution = data.mesh_feat[:, 1].resahpe(bs, node_num, 1)
             original_mesh_x = data.mesh_feat[:, 0].reshape(bs, node_num, 1)
@@ -583,16 +591,32 @@ def train_unsupervised(
 
             # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
             # Interpolate on new moved mesh
-            monitor = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
-            phixx = phixx.reshape(bs, node_num, 1)
-            phiyx = phiyx.reshape(bs, node_num, 1)
-            
-            lhs = monitor * det_hessian
 
+            hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
+
+            # =========================== jacobian related attempts ==================
+            # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)
+            # jac_y = interpolate(jacobian_y, original_mesh_x, original_mesh_y, moved_x, moved_y)
+            # # alpha = torch.sum(torch.sqrt(torch.abs(jac_x)**2 + torch.abs(jac_y)**2), dim=(-1, -2)) / node_num**2
+            # alpha = 1.0
+
+            # phixx = phixx.reshape(bs, node_num, 1)
+            # phiyx = phiyx.reshape(bs, node_num, 1)
+            # phiyy = phiyy.reshape(bs, node_num, 1)
+            # phixy = phixy.reshape(bs, node_num, 1)
+
+            # jac_xi_1 = jac_x * (1 + phixx) + jac_y * phiyx
+            # jac_xi_2 = jac_x * phixy + jac_y * (1 + phiyy)
+            # print(torch.sum(jac_xi_1), torch.sum(jac_xi_2))
+            # monitor = monitor_grad(alpha, jac_xi_1, jac_xi_2) /1000
+            # =========================== 
+
+            lhs = hessian_norm_ * det_hessian
             rhs = torch.sum(hessian_norm, dim=(1, 2)) / node_num
             rhs = rhs.unsqueeze(-1).repeat(1, node_num).unsqueeze(-1)
             loss_eq_residual = 1000 * loss_func(lhs, rhs)
-            # print(f"diff between interpolation {torch.sum(monitor - hessian_norm)} lhs {torch.sum(lhs)} rhs {torch.sum(rhs)}")
+            # print(torch.sum(hessian_norm_ - hessian_norm), hessian_norm_.shape, det_hessian.shape, lhs.shape, rhs.shape)
+            # print(f"diff between interpolation jac x {torch.sum(jacobian_x - jac_x)} alpha: {alpha} monitor: {torch.sum(monitor)} det_hessian {torch.sum(det_hessian)} lhs {torch.sum(lhs)} rhs {torch.sum(rhs)}")
 
             # Convex loss
             if use_convex_loss:

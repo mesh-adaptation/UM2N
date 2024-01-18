@@ -15,6 +15,7 @@ mesh_feat:
 - coord
 - u
 - hessian_norm
+- grad_u
 model_used: MRTransformer
 multi_scale_check_interval: 50
 n_grids:
