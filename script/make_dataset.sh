@@ -55,6 +55,6 @@ python ./script/build_burgers_square.py --lc=0.045  --n_case=5
 
 # swirl test case square
 python ./script/build_swirl.py --lc=0.05 --alpha=1
-python ./script/build_swirl.py --lc=0.05 --alpha=1
-python ./script/build_swirl.py --lc=0.045 --alpha=1.5
+python ./script/build_swirl.py --lc=0.05 --alpha=1.5
+python ./script/build_swirl.py --lc=0.045 --alpha=1
 python ./script/build_swirl.py --lc=0.045--alpha=1.5

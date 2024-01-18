@@ -121,10 +121,14 @@ class MeshProcessor():
         self.y = self.optimal_coordinates  # (num_nodes, 2), ground truth
         self.cell_node_list = self.function_space.cell_node_list
         self.num_nodes = self.cell_node_list.shape[1]
+        print("init done")
         self.find_edges()
         self.find_bd()
+        print("edege_done")
         self.attach_feature()
+        print("attatch_feat done")
         self.conv_feat = self.get_conv_feat()
+        print("conv_feat done")
         # PDE params
         self.nu = nu
         self.gauss_list = gauss_list
@@ -214,35 +218,35 @@ class MeshProcessor():
         self.conv_uh_fix = conv_uh_fix
         self.conv_hessian_norm_fix = conv_hessian_norm_fix
 
-        # dynamic resolution sampling (sampled at mesh nodes)
-        x_coords_unique = np.unique(coords[:, 0])
-        y_coords_unique = np.unique(coords[:, 1])
-        conv_x = np.linspace(x_start, x_end, len(x_coords_unique))
-        conv_y = np.linspace(y_start, y_end, len(y_coords_unique))
+        # dynamic resolution sampling (sampled at mesh nodes) （disabled from 18th Jan 2024 for efficient concern）  # noqa
+        # x_coords_unique = np.unique(coords[:, 0])
+        # y_coords_unique = np.unique(coords[:, 1])
+        # conv_x = np.linspace(x_start, x_end, len(x_coords_unique))
+        # conv_y = np.linspace(y_start, y_end, len(y_coords_unique))
 
-        conv_uh = np.zeros((1, len(conv_x), len(conv_y)))
-        conv_hessian_norm = np.zeros((1, len(conv_x), len(conv_y)))
-        conv_xy = np.zeros((2, len(conv_x), len(conv_y)))
-        for i in range(len(conv_x)):
-            for j in range(len(conv_y)):
-                # (x, y) conv_feat
-                conv_xy[:, i, j] = np.array([conv_x[i], conv_y[j]])
-                # uh conv_feat
-                conv_uh[:, i, j] = self.raw_feature["uh"].at(
-                    [conv_x[i],
-                     conv_y[j]],
-                    tolerance=1e-4)
-                # uh norm conv_feat
-                conv_hessian_norm[:, i, j] = self.raw_feature[
-                    "hessian_norm"].at(
-                    [conv_x[i],
-                     conv_y[j]],
-                    tolerance=1e-4)
-        self.conv_xy = conv_xy
-        self.conv_uh = conv_uh
-        self.conv_hessian_norm = conv_hessian_norm
+        # conv_uh = np.zeros((1, len(conv_x), len(conv_y)))
+        # conv_hessian_norm = np.zeros((1, len(conv_x), len(conv_y)))
+        # conv_xy = np.zeros((2, len(conv_x), len(conv_y)))
+        # for i in range(len(conv_x)):
+        #     for j in range(len(conv_y)):
+        #         # (x, y) conv_feat
+        #         conv_xy[:, i, j] = np.array([conv_x[i], conv_y[j]])
+        #         # uh conv_feat
+        #         conv_uh[:, i, j] = self.raw_feature["uh"].at(
+        #             [conv_x[i],
+        #              conv_y[j]],
+        #             tolerance=1e-4)
+        #         # uh norm conv_feat
+        #         conv_hessian_norm[:, i, j] = self.raw_feature[
+        #             "hessian_norm"].at(
+        #             [conv_x[i],
+        #              conv_y[j]],
+        #             tolerance=1e-4)
+        self.conv_xy = conv_xy_fix
+        self.conv_uh = conv_uh_fix
+        self.conv_hessian_norm = conv_hessian_norm_fix
         res = np.concatenate(
-            [conv_xy, conv_uh, conv_hessian_norm], axis=0)
+            [self.conv_xy, self.conv_uh, self.conv_hessian_norm], axis=0)
         return res
 
     def attach_feature(self):
