@@ -2,7 +2,7 @@
 # GitHub Username: acse-cw1722
 
 # number of samples for time-indepedent cases
-n_samples_train=400
+n_samples_train=1
 
 # training set build
 rand_seed=63

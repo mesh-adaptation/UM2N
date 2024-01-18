@@ -22,7 +22,7 @@ def arg_parse():
                         help='number of distributions used to\
                             generate the dataset (this will disable\
                                 max_dist)')
-    parser.add_argument('--lc', type=float, default=6e-2,
+    parser.add_argument('--lc', type=float, default=3e-2,
                         help='the length characteristic of the elements in the\
                             mesh')
     parser.add_argument('--field_type', type=str, default="iso",

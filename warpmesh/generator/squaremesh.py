@@ -38,6 +38,7 @@ class UnstructuredSquareMesh():
         self.get_curve()
         self.get_plane()
         gmsh.model.geo.synchronize()
+        gmsh.option.setNumber("Mesh.Algorithm", 2)
         self.get_boundaries()
         gmsh.model.addPhysicalGroup(2, [1], name="My surface")
         gmsh.model.mesh.generate(2)
