@@ -204,7 +204,7 @@ class MRTransformer(torch.nn.Module):
         x_feat = data.x.reshape(-1, feat_dim)
         # coord = x_feat[:, :2]
         # edge_idx = data.edge_index
-        _, attentions = self._transformer_forward(batch_size, data.mesh_feat, x_feat, get_attens=True)
+        _, attentions = self._transformer_forward(batch_size, data.mesh_feat[:,:4], x_feat, get_attens=True)
         return attentions
 
 

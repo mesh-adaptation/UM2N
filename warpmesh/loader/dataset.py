@@ -140,6 +140,7 @@ class MeshDataset(Dataset):
         """
         mesh_list = []
         for key in self.mesh_feature:
+            print(key)
             feat = data.item().get(key)
             if (len(feat.shape) == 1):
                 feat = feat.reshape(-1, 1)
