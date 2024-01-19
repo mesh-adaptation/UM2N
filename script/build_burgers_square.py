@@ -328,7 +328,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
         },
         nu=nu,
         gauss_list=gauss_list,
-        dur=dur
+        dur=dur,
     )
 
     mesh_processor.save_taining_data(

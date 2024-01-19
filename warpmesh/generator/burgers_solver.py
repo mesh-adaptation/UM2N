@@ -276,7 +276,7 @@ class BurgersSolver():
                 function_space_fine=function_space_fine,
                 error_adapt_list=self.error_adapt_list,
                 error_og_list=self.error_og_list,
-                dur=dur_ms
+                dur=dur_ms,
             )
 
             # step forward in time
