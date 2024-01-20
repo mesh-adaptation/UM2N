@@ -75,6 +75,8 @@ run_id = '8ndi2teh' # unsupervised 1 1 1, small unsupervised
 
 run_id = '2f4florr' # unsupervised 1 01 01,  large unsupervised
 
+run_id = 'fhmqq8eg' # supervised phi grad test 
+
 
 run_id_collections = {"MRT":['mfn1hnrg'],
 
@@ -90,6 +92,7 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R-phi-grad-un-111": ['bzlj9vcl'],
                       "MRT-1R-phi-grad-un-111-small": ['8ndi2teh'],
                       "MRT-1R-phi-grad-un-111-large": ['2f4florr'],
+                      "MRT-1R-phi-grad-test": ['fhmqq8eg'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
@@ -132,7 +135,7 @@ num_sample_vis = 5
 # models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
 # models_to_compare = ["MRT-1R-phi", "MRT-1R-phi-bd"]
 # models_to_compare = ["MRT-1R-phi-grad-un-111", "MRT-1R-phi-bd", "MRT-1R-coord"]
-models_to_compare = ["MRT-1R-phi-bd"]
+models_to_compare = ["MRT-1R-phi-grad-test"]
 # models_to_compare = ["MRT-1R", "MRT-1R-no-hessian"]
 # test dataset, for benchmarking loss effects on model performance
 
@@ -140,7 +143,8 @@ models_to_compare = ["MRT-1R-phi-bd"]
 if dataset_name == 'helmholtz':
   # test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 
-  dataset_dir = f"./data/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=10_aniso_full"
+  # dataset_dir = f"./data/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=10_aniso_full"
+  dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full"
   # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
@@ -150,7 +154,7 @@ elif dataset_name == 'swirl':
   # test_dir = f"./data/swirl/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=iso_pad/data"
 test_dir = f"{dataset_dir}/data"
 
-random_seed = 6
+random_seed = 1
 
 
 phi_MA_collections = {}
@@ -211,7 +215,7 @@ for model_name in models_to_compare:
         load_jacobian=True
     )
     print("mesh feat mesh feat ", test_set[0].mesh_feat.shape)
-    loader = DataLoader(test_set, batch_size=1, shuffle=True)
+    loader = DataLoader(test_set, batch_size=1, shuffle=False)
 
     epoch = 999
     # TODO: the MRN-Sampling ('hegubzg0') only trained 800 epochs
@@ -267,6 +271,18 @@ for model_name in models_to_compare:
         else:
           if 'MRT-1R' in model_name:
             if 'phi' in model_name:
+              phi_MA_collections[model_name].append(sample.mesh_feat[:, 4].detach().cpu().numpy())
+              phix_MA_collections[model_name].append(sample.mesh_feat[:, 5].detach().cpu().numpy())
+              phiy_MA_collections[model_name].append(sample.mesh_feat[:, 6].detach().cpu().numpy())
+
+              # Mannually normlize for model input
+              mesh_val_feat = sample.mesh_feat[:, 2:]  # value feature (no coord)
+              min_val = torch.min(mesh_val_feat, dim=0).values
+              max_val = torch.max(mesh_val_feat, dim=0).values
+              max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
+              sample.mesh_feat[:, 2:] = sample.mesh_feat[:, 2:] / max_abs_val
+
+
               sample.x.requires_grad = True
               sample.mesh_feat.requires_grad = True
               out, (phix, phiy) = model.move(sample, num_step=1)
@@ -290,9 +306,7 @@ for model_name in models_to_compare:
               out_phixx_collections[model_name].append(phixx.detach().cpu().numpy())
               out_phiyy_collections[model_name].append(phiyy.detach().cpu().numpy())
 
-              phi_MA_collections[model_name].append(sample.mesh_feat[:, 4].detach().cpu().numpy())
-              phix_MA_collections[model_name].append(sample.mesh_feat[:, 5].detach().cpu().numpy())
-              phiy_MA_collections[model_name].append(sample.mesh_feat[:, 6].detach().cpu().numpy())
+
 
               # # Compute the residual to the equation
               # grad_seed = torch.ones(out.shape).to(device)
@@ -352,18 +366,21 @@ for model_name in models_to_compare:
 # coord = out_mesh_collections["MRT-1R-phi-grad-un-111"][0]
 
 ##################################################################
-phix_grad = out_phix_collections["MRT-1R-phi-bd"][0]
-phiy_grad = out_phiy_collections["MRT-1R-phi-bd"][0]
 
-phixx = out_phixx_collections["MRT-1R-phi-bd"][0]
-phiyy = out_phiyy_collections["MRT-1R-phi-bd"][0]
+model_name = "MRT-1R-phi-grad-test"
+num_selected = 1
+phix_grad = out_phix_collections[model_name][num_selected]
+phiy_grad = out_phiy_collections[model_name][num_selected]
 
-coord = out_mesh_collections["MRT-1R-phi-bd"][0]
+phixx = out_phixx_collections[model_name][num_selected]
+phiyy = out_phiyy_collections[model_name][num_selected]
+
+coord = out_mesh_collections[model_name][num_selected]
 
 
-phi_sample = phi_MA_collections["MRT-1R-phi-bd"][0]
-phix_sample = phix_MA_collections["MRT-1R-phi-bd"][0]
-phiy_sample = phiy_MA_collections["MRT-1R-phi-bd"][0]
+phi_sample = phi_MA_collections[model_name][num_selected]
+phix_sample = phix_MA_collections[model_name][num_selected]
+phiy_sample = phiy_MA_collections[model_name][num_selected]
 
 import os
 
@@ -375,17 +392,17 @@ model_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", "m
 model_mesh.coordinates.dat.data[:] = coord[:]
 det_model_raw = fd.Function(
     fd.FunctionSpace(model_mesh, "CG", 1))
-det_model_raw.dat.data[:] = -phix_grad.reshape(-1)[:]
+det_model_raw.dat.data[:] = phix_grad.reshape(-1)[:]
 
 fig, axs = plt.subplots(1, 3, figsize=(30, 8))
 
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0], vmin=-0.10, vmax=0.10)
+plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0])
 axs[0].set_title(f"{dataset_name} - Phi grad x (torch autograd)")
 plt.colorbar(plt_obj3)
 
 
 det_model_raw.dat.data[:] = phix_sample.reshape(-1)[:]
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[1], vmin=-0.10, vmax=0.10)
+plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[1])
 axs[1].set_title(f"{dataset_name} - Phi grad x (firedrake)")
 plt.colorbar(plt_obj3)
 
@@ -402,12 +419,12 @@ det_model_raw.dat.data[:] = phiy_grad.reshape(-1)[:]
 
 fig, axs = plt.subplots(1, 3, figsize=(30, 8))
 
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0], vmin=-0.10, vmax=0.10)
+plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0])
 axs[0].set_title(f"{dataset_name} - Phi grad y (torch grad)")
 plt.colorbar(plt_obj3)
 
 det_model_raw.dat.data[:] = phiy_sample.reshape(-1)[:]
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[1], vmin=-0.10, vmax=0.10)
+plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[1])
 axs[1].set_title(f"{dataset_name} - Phi grad y (firedrake)")
 plt.colorbar(plt_obj3)
 

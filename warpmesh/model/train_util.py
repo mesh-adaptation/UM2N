@@ -491,7 +491,7 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     normalize = nn.Softmax(dim=-1)
     weight = normalize(distance)
 
-    print(torch.sum(original_mesh - moved_mesh), u.shape, weight.shape)
+    # print(torch.sum(original_mesh - moved_mesh), u.shape, weight.shape)
     u_interpolated = torch.sum(u * weight, dim=-1).unsqueeze(-1)
     # print(f"interpolated shape: {u_interpolated.shape}")
     return u_interpolated
@@ -592,7 +592,8 @@ def train_unsupervised(
             # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
             # Interpolate on new moved mesh
 
-            hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
+            # hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
+            hessian_norm_ = hessian_norm
 
             # =========================== jacobian related attempts ==================
             # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)
