@@ -12,6 +12,8 @@ from argparse import ArgumentParser
 
 def arg_parse():
     parser = ArgumentParser()
+    parser.add_argument('--mesh_type', type=int, default=6,
+                        help='algorithm used to generate mesh')
     parser.add_argument('--sigma', type=float, default=(0.05/3),
                         help='sigma used to control the initial ring shape')
     parser.add_argument('--r_0', type=float, default=0.2,
@@ -29,6 +31,8 @@ def arg_parse():
 
 
 args = arg_parse()
+
+mesh_type = args.mesh_type
 
 # ====  Parameters ======================
 problem = "swirl"
@@ -75,10 +79,10 @@ def move_data(target, source, start, num_file):
 
 
 project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-dataset_dir = os.path.join(project_dir, "data", "dataset", problem)
+dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)  # noqa
 problem_specific_dir = os.path.join(
         dataset_dir,
-        f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_lc_{lc}_interval_{save_interval}")  # noqa
+        f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_lc_{lc}_interval_{save_interval}_meshtype_{mesh_type}")  # noqa
 
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
@@ -232,8 +236,6 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
         os.path.join(
             problem_plot_dir, "plot_{}.png".format(i))
     )
-    i += 1
-
     # fig, ax = plt.subplots()
     # ax.set_title("adapt error list")
     # ax.plot(error_adapt_list, linestyle='--', color='blue', label='adapt')
@@ -262,20 +264,23 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
         )
     print("error og/optimal:",
           error_original_mesh, error_optimal_mesh)
+
+    i += 1
     return
 
 
 # ====  Data Generation Scripts ======================
 if __name__ == "__main__":
     print("In build_dataset.py")
-    mesh_gen = wm.UnstructuredSquareMesh()
+
+    mesh_gen = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
     mesh = mesh_gen.get_mesh(
         res=lc,
         file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
     mesh_new = mesh_gen.get_mesh(
         res=lc,
         file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
-    mesh_gen_fine = wm.UnstructuredSquareMesh()
+    mesh_gen_fine = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
     mesh_fine = mesh_gen_fine.get_mesh(
         res=1e-2,
         file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh"))
@@ -292,7 +297,6 @@ if __name__ == "__main__":
         callback=sample_from_loop,
         fail_callback=fail_callback
     )
-    print("Done!")
 
     df = pd.DataFrame({
         'sigma': [sigma],
@@ -305,8 +309,10 @@ if __name__ == "__main__":
         "fail_t": [fail_t],
         "lc": [lc],
         "num_fail_cases": [len(fail_t)],
+        "mesh_type": [mesh_type],
     })
 
     df.to_csv(os.path.join(problem_specific_dir, "info.csv"))
 
+    print("Done!")
 # ====  Data Generation Scripts ======================

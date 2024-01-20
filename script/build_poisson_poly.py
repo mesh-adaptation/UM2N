@@ -15,6 +15,8 @@ import time
 
 def arg_parse():
     parser = ArgumentParser()
+    parser.add_argument('--mesh_type', type=int, default=2,
+                        help='algorithm used to generate mesh')
     parser.add_argument('--max_dist', type=int, default=6,
                         help='max number of distributions used to\
                             generate the dataset (only works if\
@@ -41,6 +43,8 @@ def arg_parse():
 
 
 args = arg_parse()
+
+mesh_type = args.mesh_type
 
 data_type = args.field_type
 use_iso = True if data_type == "iso" else False
@@ -93,6 +97,7 @@ df = pd.DataFrame({
     'scheme': [scheme],
     'n_samples': [n_samples],
     'lc': [lc],
+    'mesh_type': [mesh_type],
 })
 
 
@@ -113,13 +118,13 @@ def move_data(target, source, start, num_file):
 
 
 project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-dataset_dir = os.path.join(project_dir, "data", "dataset", problem)
+dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)  # noqa
 problem_specific_dir = os.path.join(
         dataset_dir,
-        "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}".format(
+        "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype_{}".format(
             z_min, z_max, n_dist, max_dist,
             lc, n_samples,
-            data_type, scheme))
+            data_type, scheme, mesh_type))
 
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
@@ -182,7 +187,7 @@ if __name__ == "__main__":
     while (i < n_samples):
         try:
             print("Generating Sample: " + str(i))
-            rand_poly_mesh_gen = wm.RandPolyMesh(scale=scale_x)
+            rand_poly_mesh_gen = wm.RandPolyMesh(scale=scale_x, mesh_type=mesh_type)  # noqa
             mesh = rand_poly_mesh_gen.get_mesh(
                 res=lc, file_path=os.path.join(
                     problem_mesh_dir, f"mesh{i}.msh"

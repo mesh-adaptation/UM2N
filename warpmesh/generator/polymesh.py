@@ -12,8 +12,9 @@ class RandPolyMesh():
     Create a random polygonal mesh by spliting the edge of a
     square randomly.
     """
-    def __init__(self, scale=1.0):
+    def __init__(self, scale=1.0, mesh_type=2):
         # params setup
+        self.mesh_type = mesh_type
         self.scale = scale
         self.start = 0
         self.end = self.scale
@@ -52,7 +53,7 @@ class RandPolyMesh():
         self.get_curve()
         self.get_plane()
         gmsh.model.geo.synchronize()
-        gmsh.option.setNumber("Mesh.Algorithm", 2)
+        gmsh.option.setNumber("Mesh.Algorithm", self.mesh_type)
         self.get_boundaries()
         gmsh.model.addPhysicalGroup(2, [1], name="My surface")
         gmsh.model.mesh.generate(2)
@@ -154,11 +155,11 @@ class RandPolyMesh():
         return fig
 
 
-# if __name__ == "__main__":
-#     import matplotlib.pyplot as plt
-#     mesh_gen = RandPolyMesh()
-#     mesh_coarse = mesh_gen.get_mesh(res=5e-2, file_path="./temp1.msh")
-#     mesh_fine = mesh_gen.get_mesh(res=4e-2, file_path="./temp2.msh")
-#     mesh_gen.show('./temp1.msh')
-#     mesh_gen.show('./temp2.msh')
-#     plt.show()
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    mesh_gen = RandPolyMesh(mesh_type=2)
+    mesh_coarse = mesh_gen.get_mesh(res=5e-2, file_path="./temp1.msh")
+    mesh_fine = mesh_gen.get_mesh(res=4e-2, file_path="./temp2.msh")
+    mesh_gen.show('./temp1.msh')
+    mesh_gen.show('./temp2.msh')
+    plt.show()
