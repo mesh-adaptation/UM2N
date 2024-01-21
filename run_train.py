@@ -354,74 +354,74 @@ for epoch in range(config.num_epochs + 1):
           "Area Loss/Test":test_loss["area_loss"],
       }, step=epoch)
 
-  if (epoch) % config.check_tangle_interval == 0:
-      train_tangle = count_dataset_tangle(train_set, model, device, method=config.count_tangle_method)
-      test_tangle = count_dataset_tangle(test_set, model, device, method=config.count_tangle_method)
-      wandb.log({
-          "Tangled Elements per Mesh/Train": train_tangle,
-          "Tangled Elements per Mesh/Test":test_tangle,
-      }, step=epoch)
+  # if (epoch) % config.check_tangle_interval == 0:
+  #     train_tangle = count_dataset_tangle(train_set, model, device, method=config.count_tangle_method)
+  #     test_tangle = count_dataset_tangle(test_set, model, device, method=config.count_tangle_method)
+  #     wandb.log({
+  #         "Tangled Elements per Mesh/Train": train_tangle,
+  #         "Tangled Elements per Mesh/Test":test_tangle,
+  #     }, step=epoch)
   # check loss and tangle for each mesh_size under different datasets:
-  if (epoch) % config.multi_scale_check_interval == 0:
-    # iso_pad_losses = [
-    #     evaluate_func(
-    #         loader_i, model, device, loss_func=loss_func,
-    #         use_jacob=config.use_jacob)["deform_loss"] for loader_i in iso_pad_loaders
-    #     ]
-    # torch.cuda.empty_cache()
-    # gc.collect()
-    # iso_full_losses = [
-    #     evaluate_func(
-    #         loader_i, model, device, loss_func=loss_func,
-    #         use_jacob=config.use_jacob)["deform_loss"] for loader_i in iso_full_loaders
-    #     ]
-    # torch.cuda.empty_cache()
-    # gc.collect()
-    # aniso_pad_losses = [
-    #     evaluate_func(
-    #         loader_i, model, device, loss_func=loss_func,
-    #         use_jacob=config.use_jacob)["deform_loss"] for loader_i in aniso_pad_loaders
-    #     ]
-    # torch.cuda.empty_cache()
-    # gc.collect()
-    aniso_full_losses = [
-        evaluate_func(
-            loader_i, model, device, loss_func=loss_func,
-            use_jacob=config.use_jacob)["deform_loss"] for loader_i in aniso_full_loaders
-        ]
-    torch.cuda.empty_cache()
-    gc.collect()
-    # iso_pad_tangle = [
-    #     count_dataset_tangle(train_set_i, model, device, method=config.count_tangle_method) for train_set_i in iso_pad_sets
-    #     ]
-    # torch.cuda.empty_cache()
-    # gc.collect()
-    # iso_full_tangle = [
-    #     count_dataset_tangle(train_set_i, model, device, method=config.count_tangle_method) for train_set_i in iso_full_sets
-    #     ]
-    # torch.cuda.empty_cache()
-    # gc.collect()
-    # aniso_pad_tangle = [
-    #     count_dataset_tangle(train_set_i, model, device, method=config.count_tangle_method) for train_set_i in aniso_pad_sets
-    #     ]
-    # torch.cuda.empty_cache()
-    # gc.collect()
-    aniso_full_tangle = [
-        count_dataset_tangle(train_set_i, model, device, method=config.count_tangle_method) for train_set_i in aniso_full_sets
-        ]
-    torch.cuda.empty_cache()
-    gc.collect()
-    for i in range(len(config.n_grids_test)):
-      n_grids = config.n_grids_test[i]
-    #   wandb.log({f"TEpM(iso_pad)/mesh_size:{n_grids}": iso_pad_tangle[i]}, step=epoch)
-    #   wandb.log({f"TEpM(iso_full)/mesh_size:{n_grids}": iso_full_tangle[i]}, step=epoch)
-    #   wandb.log({f"TEpM(aniso_pad)/mesh_size:{n_grids}": aniso_pad_tangle[i]}, step=epoch)
-      wandb.log({f"TEpM(aniso_full)/mesh_size:{n_grids}": aniso_full_tangle[i]}, step=epoch)
+  # if (epoch) % config.multi_scale_check_interval == 0:
+  #   # iso_pad_losses = [
+  #   #     evaluate_func(
+  #   #         loader_i, model, device, loss_func=loss_func,
+  #   #         use_jacob=config.use_jacob)["deform_loss"] for loader_i in iso_pad_loaders
+  #   #     ]
+  #   # torch.cuda.empty_cache()
+  #   # gc.collect()
+  #   # iso_full_losses = [
+  #   #     evaluate_func(
+  #   #         loader_i, model, device, loss_func=loss_func,
+  #   #         use_jacob=config.use_jacob)["deform_loss"] for loader_i in iso_full_loaders
+  #   #     ]
+  #   # torch.cuda.empty_cache()
+  #   # gc.collect()
+  #   # aniso_pad_losses = [
+  #   #     evaluate_func(
+  #   #         loader_i, model, device, loss_func=loss_func,
+  #   #         use_jacob=config.use_jacob)["deform_loss"] for loader_i in aniso_pad_loaders
+  #   #     ]
+  #   # torch.cuda.empty_cache()
+  #   # gc.collect()
+  #   aniso_full_losses = [
+  #       evaluate_func(
+  #           loader_i, model, device, loss_func=loss_func,
+  #           use_jacob=config.use_jacob)["deform_loss"] for loader_i in aniso_full_loaders
+  #       ]
+  #   torch.cuda.empty_cache()
+  #   gc.collect()
+  #   # iso_pad_tangle = [
+  #   #     count_dataset_tangle(train_set_i, model, device, method=config.count_tangle_method) for train_set_i in iso_pad_sets
+  #   #     ]
+  #   # torch.cuda.empty_cache()
+  #   # gc.collect()
+  #   # iso_full_tangle = [
+  #   #     count_dataset_tangle(train_set_i, model, device, method=config.count_tangle_method) for train_set_i in iso_full_sets
+  #   #     ]
+  #   # torch.cuda.empty_cache()
+  #   # gc.collect()
+  #   # aniso_pad_tangle = [
+  #   #     count_dataset_tangle(train_set_i, model, device, method=config.count_tangle_method) for train_set_i in aniso_pad_sets
+  #   #     ]
+  #   # torch.cuda.empty_cache()
+  #   # gc.collect()
+  #   aniso_full_tangle = [
+  #       count_dataset_tangle(train_set_i, model, device, method=config.count_tangle_method) for train_set_i in aniso_full_sets
+  #       ]
+  #   torch.cuda.empty_cache()
+  #   gc.collect()
+  #   for i in range(len(config.n_grids_test)):
+  #     n_grids = config.n_grids_test[i]
+  #   #   wandb.log({f"TEpM(iso_pad)/mesh_size:{n_grids}": iso_pad_tangle[i]}, step=epoch)
+  #   #   wandb.log({f"TEpM(iso_full)/mesh_size:{n_grids}": iso_full_tangle[i]}, step=epoch)
+  #   #   wandb.log({f"TEpM(aniso_pad)/mesh_size:{n_grids}": aniso_pad_tangle[i]}, step=epoch)
+  #     wandb.log({f"TEpM(aniso_full)/mesh_size:{n_grids}": aniso_full_tangle[i]}, step=epoch)
 
-    #   wandb.log({f"Deform Loss(iso_pad)/mesh_size:{n_grids}": iso_pad_losses[i]}, step=epoch)
-    #   wandb.log({f"Deform Loss(iso_full)/mesh_size:{n_grids}": iso_full_losses[i]}, step=epoch)
-    #   wandb.log({f"Deform Loss(aniso_pad)/mesh_size:{n_grids}": aniso_pad_losses[i]}, step=epoch)
-      wandb.log({f"Deform Loss(aniso_full)/mesh_size:{n_grids}": aniso_full_losses[i]}, step=epoch)
+  #   #   wandb.log({f"Deform Loss(iso_pad)/mesh_size:{n_grids}": iso_pad_losses[i]}, step=epoch)
+  #   #   wandb.log({f"Deform Loss(iso_full)/mesh_size:{n_grids}": iso_full_losses[i]}, step=epoch)
+  #   #   wandb.log({f"Deform Loss(aniso_pad)/mesh_size:{n_grids}": aniso_pad_losses[i]}, step=epoch)
+  #     wandb.log({f"Deform Loss(aniso_full)/mesh_size:{n_grids}": aniso_full_losses[i]}, step=epoch)
 
   if (epoch + 1) % config.save_interval == 0:
     torch.save(model.state_dict(), "{}/model_{}.pth".format(output_folder, epoch))

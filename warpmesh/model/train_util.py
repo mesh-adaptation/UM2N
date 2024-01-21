@@ -586,12 +586,13 @@ def train_unsupervised(
             monitor = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
             phixx = phixx.reshape(bs, node_num, 1)
             phiyx = phiyx.reshape(bs, node_num, 1)
+            monitor = monitor * (1 + phixx) + monitor * phiyx
             
             lhs = monitor * det_hessian
 
             rhs = torch.sum(hessian_norm, dim=(1, 2)) / node_num
             rhs = rhs.unsqueeze(-1).repeat(1, node_num).unsqueeze(-1)
-            loss_eq_residual = 1000 * loss_func(lhs, rhs)
+            loss_eq_residual = 1000 * loss_func(lhs, rhs) * 0.5
             # print(f"diff between interpolation {torch.sum(monitor - hessian_norm)} lhs {torch.sum(lhs)} rhs {torch.sum(rhs)}")
 
             # Convex loss
@@ -758,8 +759,8 @@ def evaluate_unsupervised(
             lhs = monitor * det_hessian
             # print(f"det hessian: {det_hessian.shape} monitor: {monitor.shape}")
 
-            rhs = torch.sum(monitor, dim=(1, 2)) / node_num
-            loss_eq_residual = 1000 * loss_func(lhs, rhs)
+            rhs = torch.sum(hessian_norm, dim=(1, 2)) / node_num
+            loss_eq_residual = 1000 * loss_func(lhs, rhs) * 0.5
 
             if use_convex_loss:
                 loss_convex = torch.mean(torch.min(torch.tensor(0).type_as(phixx).to(device), 1 + phixx)**2 + torch.min(torch.tensor(0).type_as(phiyy).to(device), 1 + phiyy)**2)
