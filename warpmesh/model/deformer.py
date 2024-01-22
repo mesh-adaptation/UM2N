@@ -34,7 +34,7 @@ class RecurrentGATConv(MessagePassing):
         assert output_type in ['coord', 'phi_grad', 'phi'], f"output type {output_type} is invalid"
         self.device = device
         self.output_type = output_type
-        if self.output_type == 'coord' or 'phi_grad':
+        if self.output_type == 'coord' or self.output_type == 'phi_grad':
             self.output_dim = 2
         elif output_type == 'phi':
             self.output_dim = 1
@@ -99,7 +99,7 @@ class RecurrentGATConv(MessagePassing):
             # fix boundary
             self.fix_boundary(output_coord)
             # print('[phi] output coord shape ', output_coord.shape)
-        return output_coord, hidden, (phix, phiy)
+        return (output_coord, output), hidden, (phix, phiy)
 
     def find_boundary(self, in_data):
         self.upper_node_idx = in_data[:, 0] == 1

@@ -481,24 +481,32 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
 
     Note: node_num equals to sample_num
     """
+    batch_size = u.shape[0]
     sample_num = u.shape[1]
-    # For a sample point of interest, we need to do a weighted summation over all other sample points
-    # To avoid using a loop, we expand an additonal dim of size sample_num
-    original_mesh = torch.cat((ori_mesh_x, ori_mesh_y), dim=-1).unsqueeze(-2).repeat(1, 1, sample_num, 1)
-    moved_mesh = torch.cat((moved_x, moved_y), dim=-1).unsqueeze(-2).repeat(1, 1, sample_num, 1)
-    
-    distance = -torch.norm(original_mesh - moved_mesh, dim=-1) * np.sqrt(sample_num)
-    normalize = nn.Softmax(dim=-1)
-    weight = normalize(distance)
+    # print(f"batch size: {batch_size}, sample num: {sample_num}")
+    u_interpolateds = []
+    for bs in range(batch_size):
+        # For a sample point of interest, we need to do a weighted summation over all other sample points
+        # To avoid using a loop, we expand an additonal dim of size sample_num
+        original_mesh = torch.cat((ori_mesh_x[bs], ori_mesh_y[bs]), dim=-1)
+        moved_mesh = torch.cat((moved_x[bs], moved_y[bs]), dim=-1).unsqueeze(-2).repeat(1, sample_num, 1)
+        # print(f"new mesh shape {moved_mesh.shape}, original mesh shape {original_mesh.shape}")
+        # print((moved_mesh - original_mesh),(moved_mesh - original_mesh).shape)
+        # print("check dimension ", (moved_mesh - original_mesh)[:, 0])
 
-    # print(torch.sum(original_mesh - moved_mesh), u.shape, weight.shape)
-    u_interpolated = torch.sum(u * weight, dim=-1).unsqueeze(-1)
-    # print(f"interpolated shape: {u_interpolated.shape}")
-    return u_interpolated
-
-
-def monitor_grad(alpha, ux, uy):
-    return (1 + (torch.abs(ux)**2 + torch.abs(uy)**2) ** (1/2) / (0.01*alpha))
+        # The second dimension of distance is the different sample points
+        distance = -torch.norm(moved_mesh - original_mesh, dim=-1) * np.sqrt(sample_num)
+        # print('raw distance ', torch.norm(moved_mesh - original_mesh, dim=-1))
+        # print('distance ', torch.norm(moved_mesh - original_mesh, dim=-1)* np.sqrt(sample_num))
+        normalize = nn.Softmax(dim=-1)
+        weight = normalize(distance)
+        # print('weight shape ', weight.shape, u[bs].shape)
+        # print('weight ', weight, u, u[bs].permute(1, 0) * weight)
+        # print(u.shape, weight.shape)
+        u_interpolateds.append(torch.sum(u[bs].permute(1, 0) * weight, dim=-1).unsqueeze(-1))
+        # print(f"interpolated shape: {u_interpolateds[-1]}")
+        # print('inte ', u_interpolated)
+    return torch.stack(u_interpolateds, dim=0)
 
 
 def train_unsupervised(
@@ -542,7 +550,7 @@ def train_unsupervised(
         data.x.requires_grad = True
         data.mesh_feat.requires_grad = True
 
-        output_coord, (phix, phiy) = model(data)
+        (output_coord, output), (phix, phiy) = model(data)
 
         feat_dim = data.mesh_feat.shape[-1]
         # mesh_feat [coord_x, coord_y, u, hessian_norm]
@@ -730,7 +738,7 @@ def evaluate_unsupervised(
         area_loss = 0
 
         # with torch.no_grad():
-        output_coord, (phix, phiy) = model(data)
+        (output_coord, output), (phix, phiy) = model(data)
 
         feat_dim = data.mesh_feat.shape[-1]
         # mesh_feat [coord_x, coord_y, u, hessian_norm]
