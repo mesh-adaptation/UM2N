@@ -33,6 +33,7 @@ class MRTransformer(torch.nn.Module):
         lin (nn.Linear): Linear layer for feature transformation.
         deformer (RecurrentGATConv): GAT-based deformer block.
     """
+
     def __init__(self, num_transformer_in=4, 
                  num_transformer_out=16, 
                  num_transformer_embed_dim=64, 
@@ -56,7 +57,7 @@ class MRTransformer(torch.nn.Module):
             num_loop (int): Number of loops for the recurrent layer.
         """
         super().__init__()
-        self.device =device
+        self.device = device
         self.num_loop = num_loop
         self.hidden_size = 512  # set here
         self.mask_in_trainig = transformer_training_mask
@@ -85,7 +86,7 @@ class MRTransformer(torch.nn.Module):
             output_type=deform_out_type,
             device=device
         )
-    
+
     def _transformer_forward(self, batch_size, mesh_feat, x_feat, get_attens=False):
         """
         Forward pass for MRN.
@@ -130,7 +131,7 @@ class MRTransformer(torch.nn.Module):
         else:
             atten_scores = self.transformer_encoder.get_attention_scores(x=transformer_input, key_padding_mask=key_padding_mask)
             return features, atten_scores
-    
+
     def transformer_monitor(self, data):
         conv_feat_in = data.conv_feat
         batch_size = conv_feat_in.shape[0]
@@ -152,7 +153,6 @@ class MRTransformer(torch.nn.Module):
         
         return hidden, edge_idx
 
-    
     def move(self, data, num_step=1):
         """
         Move the mesh according to the deformation learned, with given number
@@ -177,7 +177,7 @@ class MRTransformer(torch.nn.Module):
 
         return (coord, model_output), (phix, phiy)
 
-    def forward(self, data):
+    def forward(self, data, poly_mesh=False):
         """
         Forward pass for MRN.
 
@@ -187,15 +187,21 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
+        bd_mask = data.bd_mask
+        if (data.poly_mesh is not False):
+            poly_mesh = True if data.poly_mesh.sum() > 0 else False
+
         data.mesh_feat.requires_grad = True
         hidden, edge_idx = self.transformer_monitor(data)
         coord_ori = data.mesh_feat[:, :2]
         coord = coord_ori
 
+
         model_output = None
         # Recurrent GAT deform
         for i in range(self.num_loop):
-            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori)
+            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori, bd_mask, poly_mesh)
+
 
         return (coord, model_output), (phix, phiy)
 
@@ -208,5 +214,3 @@ class MRTransformer(torch.nn.Module):
         # edge_idx = data.edge_index
         _, attentions = self._transformer_forward(batch_size, data.mesh_feat[:,:4], x_feat, get_attens=True)
         return attentions
-
-

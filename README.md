@@ -40,7 +40,7 @@ This will install [firedrake](https://www.firedrakeproject.org/download.html) an
 
 ## 💿 Dataset generation
 
-In case you do not wish to generate the dataset by yourself, here is a pre-generated dataset on google drive: [link](https://drive.google.com/drive/folders/1hNTi9IUjlBGyJazh_99STd6zI52JKMh2?usp=drive_link). The naming convention of the file is 'z=<0,1>_n_dist={number_of_distribution_used}_max_dist={maximum_distribution_used}_<{number_of_grid_in_x_direction}_{number_of_grid_in_y_direction}>_n={number_of_samples}_{data_set_type}'
+In case you do not wish to generate the dataset by yourself, here is a pre-generated dataset on google drive: [link](https://drive.google.com/drive/folders/1sQ-9zWbTryCXwihqaqazrQ4Vp1MRdBPK?usp=sharing) In this folder you can find all cases used to train/test the model. The naming convention of the file is 'z=<0,1>_n_dist={number_of_distribution_used}_max_dist={maximum_distribution_used}_<{number_of_grid_in_x_direction}_{number_of_grid_in_y_direction}>_n={number_of_samples}_{data_set_type}'
 
 if `n_dist = None`, then the number of gaussian distribution used will be randomly choosed from 1 to `max_dist`, otherwise, `n_dist` will be used to generate a fixed number of gaussian distribution version dataset.
 
@@ -53,7 +53,11 @@ after download, you should put the downloaded folder `helmholtz` under `data/dat
 ```{shell}
 . script/make_dataset.sh
 ```
-This command will make datasets of sizes from 15 to 35, both isotropic and anisotropic datasets. The datasets will be saved in `data/dataset` folder.
+This command will make following datasets by solving Monge-Ampère eq with following PDEs:
+
++ Burgers equation (on square domain)
++ Helmholtz equation (both square/random polygon domain)
++ Poisson equation (both square/random polygon domain)
 
 User can modify the variables
 ```

@@ -23,12 +23,12 @@ class MeshGenerator():
     def __init__(self, params={
         "num_grid_x": None,
         "num_grid_y": None,
-        "helmholtz_eq": None,
+        "eq": None,
         "mesh": None,
     }):
-        self.eq = params["helmholtz_eq"]
-        self.num_grid_x = params["num_grid_x"]
-        self.num_grid_y = params["num_grid_y"]
+        self.eq = params["eq"]
+        # self.num_grid_x = params["num_grid_x"]
+        # self.num_grid_y = params["num_grid_y"]
         self.mesh = params["mesh"]
 
     def move_mesh(self):
@@ -40,7 +40,8 @@ class MeshGenerator():
         - The moved mesh
         """
         mover = mv.MongeAmpereMover(
-            self.mesh, self.monitor_func, method="relaxation", rtol=1e-3)
+            self.mesh, self.monitor_func, method="relaxation", rtol=1e-3,
+            maxiter=500)
         mover.move()
         # extract Hessian of the movement
         sigma = mover.sigma
@@ -53,7 +54,24 @@ class MeshGenerator():
             jacobian[0, 1] * jacobian[1, 0])
         self.jacob_det = jacobian_det
         self.jacob = jacobian
+        # extract phi of the movement
+        self.phi = mover.phi
+        # extract phi_grad
+        self.grad_phi = mover.grad_phi
+
         return self.mesh
+
+    def get_grad_phi(self):
+        """
+        Returns the gradient of phi of the mesh movement.
+        """
+        return self.grad_phi
+
+    def get_phi(self):
+        """
+        Returns the phi of the mesh movement.
+        """
+        return self.phi
 
     def get_monitor_val(self):
         """

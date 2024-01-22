@@ -2,12 +2,11 @@
 # GitHub Username: acse-cw1722
 # Modified by Mingrui Zhang
 
-import os 
+import os
 import sys
 from torch_geometric.nn import GATv2Conv, MessagePassing
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 cur_dir = os.path.dirname(__file__)
@@ -29,6 +28,7 @@ class RecurrentGATConv(MessagePassing):
                  hidden_size=512,
                  heads=6, output_type='coord',
                  concat=False, device='cuda'
+
                  ):
         super(RecurrentGATConv, self).__init__()
         assert output_type in ['coord', 'phi_grad', 'phi'], f"output type {output_type} is invalid"
@@ -55,13 +55,16 @@ class RecurrentGATConv(MessagePassing):
         # activation function
         self.activation = nn.SELU()
 
-    def forward(self, coord, hidden_state, edge_index, coord_ori):
+
+    def forward(self, coord, hidden_state, edge_index, coord_ori, bd_mask, poly_mesh):
+        self.bd_mask = bd_mask.squeeze().bool()
+        self.poly_mesh = poly_mesh
         # if self.output_dim == 2:
         #     # find boundary
         #     self.find_boundary(coord)
         # data.mesh_feat.requires_grad = True
         # coord_ori = data.mesh_feat[:, :2]
-
+        
         # Recurrent GAT
         in_feat = torch.cat((coord, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
@@ -107,8 +110,16 @@ class RecurrentGATConv(MessagePassing):
         self.left_node_idx = in_data[:, 1] == 0
         self.right_node_idx = in_data[:, 1] == 1
 
+        if self.poly_mesh:
+            self.bd_pos_x = in_data[self.bd_mask, 0].clone()
+            self.bd_pos_y = in_data[self.bd_mask, 1].clone()
+
     def fix_boundary(self, in_data):
         in_data[self.upper_node_idx, 0] = 1
         in_data[self.down_node_idx, 0] = 0
         in_data[self.left_node_idx, 1] = 0
         in_data[self.right_node_idx, 1] = 1
+
+        if self.poly_mesh:
+            in_data[self.bd_mask, 0] = self.bd_pos_x
+            in_data[self.bd_mask, 1] = self.bd_pos_y

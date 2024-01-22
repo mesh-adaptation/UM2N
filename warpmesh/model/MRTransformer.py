@@ -13,7 +13,8 @@ sys.path.append(cur_dir)
 from extractor import (  # noqa: E402
     LocalFeatExtractor, GlobalFeatExtractor
 )
-__all__ = ['MRN', 'RecurrentGATConv']
+from transformer_model import TransformerModel
+__all__ = ['MRTransformer']
 
 
 class RecurrentGATConv(MessagePassing):
@@ -44,10 +45,8 @@ class RecurrentGATConv(MessagePassing):
         # activation function
         self.activation = nn.SELU()
 
-    def forward(self, coord, hidden_state, edge_index, bd_mask, poly_mesh):
+    def forward(self, coord, hidden_state, edge_index):
         # find boundary
-        self.bd_mask = bd_mask.squeeze().bool()
-        self.poly_mesh = poly_mesh
         self.find_boundary(coord)
         # Recurrent GAT
         in_feat = torch.cat((coord, hidden_state), dim=1)
@@ -64,9 +63,58 @@ class RecurrentGATConv(MessagePassing):
         self.left_node_idx = in_data[:, 1] == 0
         self.right_node_idx = in_data[:, 1] == 1
 
-        if self.poly_mesh:
-            self.bd_pos_x = in_data[self.bd_mask, 0].clone()
-            self.bd_pos_y = in_data[self.bd_mask, 1].clone()
+    def fix_boundary(self, in_data):
+        in_data[self.upper_node_idx, 0] = 1
+        in_data[self.down_node_idx, 0] = 0
+        in_data[self.left_node_idx, 1] = 0
+        in_data[self.right_node_idx, 1] = 1
+
+
+class MLPDeformer(MessagePassing):
+    """
+    Implements a Recurrent Graph Attention Network (GAT) Convolution layer.
+
+    Attributes:
+        to_hidden (GATv2Conv): Graph Attention layer.
+        to_coord (nn.Sequential): Output layer for coordinates.
+        activation (nn.SELU): Activation function.
+    """
+    def __init__(self, coord_size=2,
+                 hidden_size=512,
+                 heads=6, concat=False
+                 ):
+        super(RecurrentGATConv, self).__init__()
+        # GAT layer
+        self.to_hidden = GATv2Conv(
+            in_channels=coord_size+hidden_size,
+            out_channels=hidden_size,
+            heads=heads,
+            concat=concat
+        )
+        # output coord layer
+        self.to_coord = nn.Sequential(
+            nn.Linear(hidden_size, 2),
+        )
+        # activation function
+        self.activation = nn.SELU()
+
+    def forward(self, coord, hidden_state, edge_index):
+        # find boundary
+        self.find_boundary(coord)
+        # Recurrent GAT
+        in_feat = torch.cat((coord, hidden_state), dim=1)
+        hidden = self.to_hidden(in_feat, edge_index)
+        hidden = self.activation(hidden)
+        output_coord = self.to_coord(hidden)
+        # fix boundary
+        self.fix_boundary(output_coord)
+        return output_coord, hidden
+
+    def find_boundary(self, in_data):
+        self.upper_node_idx = in_data[:, 0] == 1
+        self.down_node_idx = in_data[:, 0] == 0
+        self.left_node_idx = in_data[:, 1] == 0
+        self.right_node_idx = in_data[:, 1] == 1
 
     def fix_boundary(self, in_data):
         in_data[self.upper_node_idx, 0] = 1
@@ -74,16 +122,12 @@ class RecurrentGATConv(MessagePassing):
         in_data[self.left_node_idx, 1] = 0
         in_data[self.right_node_idx, 1] = 1
 
-        if self.poly_mesh:
-            in_data[self.bd_mask, 0] = self.bd_pos_x
-            in_data[self.bd_mask, 1] = self.bd_pos_y
 
-
-class MRN(torch.nn.Module):
+class MRTransformer(torch.nn.Module):
     """
     Mesh Refinement Network (MRN) implementing global and local feature
-        extraction
-    and recurrent graph-based deformations.
+        extraction and recurrent graph-based deformations. 
+        The global feature extraction is performed by a transformer.
 
     Attributes:
         num_loop (int): Number of loops for the recurrent layer.
@@ -108,15 +152,18 @@ class MRN(torch.nn.Module):
         """
         super().__init__()
         self.num_loop = num_loop
-        self.gfe_out_c = 16
-        self.lfe_out_c = 16
+        # self.gfe_out_c = 16
+        # self.lfe_out_c = 16
         self.hidden_size = 512  # set here
         # minus 2 because we are not using x,y coord (first 2 channels)
-        self.all_feat_c = (
-            (deform_in_c-2) + self.gfe_out_c + self.lfe_out_c)
+        # self.all_feat_c = (
+        #     (deform_in_c-2) + self.gfe_out_c + self.lfe_out_c)
 
-        self.gfe = GlobalFeatExtractor(in_c=gfe_in_c, out_c=self.gfe_out_c)
-        self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
+        self.transformer_in_dim = 4
+        self.transformer_out_dim = 16
+        self.transformer_encoder = TransformerModel(input_dim=self.transformer_in_dim, embed_dim=64, output_dim=self.transformer_out_dim, num_heads=4, num_layers=1)
+        self.all_feat_c = (
+            (deform_in_c-2) + self.transformer_out_dim)
         # use a linear layer to transform the input feature to hidden
         # state size
         self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
@@ -126,7 +173,49 @@ class MRN(torch.nn.Module):
             heads=6,
             concat=False
         )
-        # self.deformer = GATDeformerBlock(in_dim=self.deformer_in_feat)
+
+    def _forward(self, data):
+        """
+        Forward pass for MRN.
+
+        Args:
+            data (Data): Input data object containing mesh and feature info.
+
+        Returns:
+            coord (Tensor): Deformed coordinates.
+        """
+        # coord = data.x[:, :2]  # [num_nodes * batch_size, 2]
+        conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
+        batch_size = conv_feat_in.shape[0]
+        mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 4]
+        feat_dim = mesh_feat.shape[-1]
+        # mesh_feat [coord_x, coord_y, u, hessian_norm]
+        features = self.transformer_encoder(mesh_feat.reshape(batch_size, -1, feat_dim))
+        features = features.reshape(-1, self.transformer_out_dim)
+        features = torch.cat([data.x[:, 2:], features], dim=1)
+        features = F.selu(self.lin(features))
+        return features
+
+    def forward(self, data):
+        """
+        Forward pass for MRN.
+
+        Args:
+            data (Data): Input data object containing mesh and feature info.
+
+        Returns:
+            coord (Tensor): Deformed coordinates.
+        """
+
+        coord = data.x[:, :2]
+        edge_idx = data.edge_index
+        hidden = self._forward(data)
+
+        # Recurrent GAT deform
+        for i in range(self.num_loop):
+            coord, hidden = self.deformer(coord, hidden, edge_idx)
+
+        return coord
 
     def move(self, data, num_step=1):
         """
@@ -140,60 +229,12 @@ class MRN(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
-        coord = data.x[:, :2]  # [num_nodes * batch_size, 2]
-        conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
-        mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
-        edge_idx = data.edge_index  # [num_edges * batch_size, 2]
-        node_num = data.node_num
-
-        conv_feat = self.gfe(conv_feat_in)
-        conv_feat = conv_feat.repeat_interleave(
-            node_num.reshape(-1), dim=0)
-
-        local_feat = self.lfe(mesh_feat, edge_idx)
-
-        hidden_in = torch.cat(
-            [data.x[:, 2:], local_feat, conv_feat], dim=1)
-        hidden = F.selu(self.lin(hidden_in))
+        coord = data.x[:, :2]
+        edge_idx = data.edge_index
+        hidden = self._forward(data)
 
         # Recurrent GAT deform
         for i in range(num_step):
             coord, hidden = self.deformer(coord, hidden, edge_idx)
-
-        return coord
-
-    def forward(self, data, poly_mesh=False):
-        """
-        Forward pass for MRN.
-
-        Args:
-            data (Data): Input data object containing mesh and feature info.
-
-        Returns:
-            coord (Tensor): Deformed coordinates.
-        """
-        bd_mask = data.bd_mask
-        if (data.poly_mesh is not False):
-            poly_mesh = True if data.poly_mesh.sum() > 0 else False
-
-        coord = data.x[:, :2]  # [num_nodes * batch_size, 2]
-        conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
-        mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
-        edge_idx = data.edge_index  # [num_edges * batch_size, 2]
-        node_num = data.node_num
-
-        conv_feat = self.gfe(conv_feat_in)
-        conv_feat = conv_feat.repeat_interleave(
-            node_num.reshape(-1), dim=0)
-
-        local_feat = self.lfe(mesh_feat, edge_idx)
-
-        hidden_in = torch.cat(
-            [data.x[:, 2:], local_feat, conv_feat], dim=1)
-        hidden = F.selu(self.lin(hidden_in))
-
-        # Recurrent GAT deform
-        for i in range(self.num_loop):
-            coord, hidden = self.deformer(coord, hidden, edge_idx, bd_mask, poly_mesh)  # noqa
 
         return coord

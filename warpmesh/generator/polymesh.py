@@ -1,25 +1,34 @@
 import firedrake as fd
+import numpy as np
 import gmsh
+import random
 
 
-__all__ = ["UnstructuredSquareMesh"]
+__all__ = ["RandPolyMesh"]
 
 
-class UnstructuredSquareMesh():
+class RandPolyMesh():
     """
     Create a random polygonal mesh by spliting the edge of a
     square randomly.
     """
-
     def __init__(self, scale=1.0, mesh_type=2):
         # params setup
         self.mesh_type = mesh_type
         self.scale = scale
         self.start = 0
         self.end = self.scale
-
+        self.split_threshold = 0.3
+        self.mid = (self.start + self.end) / 2
+        self.quater = (self.start + self.mid) / 2
+        self.three_quater = (self.mid + self.end) / 2
+        self.mid_interval = (self.end - self.start) / 3
+        self.quater_interval = (self.mid - self.start) / 4
+        # temp vars
         self.points = []
         self.lines = []
+        # generate mesh
+        self.get_rand_points()
         return
 
     def get_mesh(self, res=1e-1, file_path="./temp.msh"):
@@ -29,12 +38,16 @@ class UnstructuredSquareMesh():
         self.lc = res
         self.start = 0
         self.end = self.scale
+        self.mid = (self.start + self.end) / 2
+        self.quater = (self.start + self.mid) / 2
+        self.three_quater = (self.mid + self.end) / 2
+        self.mid_interval = (self.end - self.start) / 3
+        self.quater_interval = (self.mid - self.start) / 4
         self.file_path = file_path
         # temp vars
         self.points = []
         self.lines = []
         # generate mesh
-        self.get_corner_points()
         self.get_points()
         self.get_line()
         self.get_curve()
@@ -49,12 +62,59 @@ class UnstructuredSquareMesh():
         self.num_boundary = len(self.lines)
         return fd.Mesh(self.file_path)
 
-    def get_corner_points(self):
+    def get_rand(self, mean, interval):
+        return random.uniform(mean - interval, mean + interval)
+
+    def get_rand_points(self):
         points = []
-        points.append([0, 0])
-        points.append([1, 0])
-        points.append([1, 1])
-        points.append([0, 1])
+        split_p = np.random.uniform(0, 1, 4)
+        # edge 1
+        if (split_p[0] < self.split_threshold):
+            points.append(
+                [self.get_rand(self.quater, self.quater_interval), 0])
+            points.append(
+                [self.get_rand(self.three_quater, self.quater_interval), 0]
+            )
+        else:
+            points.append([self.get_rand(self.mid, self.mid_interval), 0])
+        # edge 2
+        if (split_p[1] < self.split_threshold):
+            points.append(
+                [self.scale, self.get_rand(self.quater, self.quater_interval)]
+            )
+            points.append(
+                [self.scale, self.get_rand(
+                    self.three_quater, self.quater_interval)])
+        else:
+            points.append(
+                [self.scale, self.get_rand(self.mid, self.mid_interval)]
+            )
+        # edge 3
+        if (split_p[2] < self.split_threshold):
+            points.append(
+                [self.get_rand(self.three_quater, self.quater_interval),
+                 self.scale]
+            )
+            points.append(
+                [self.get_rand(self.quater, self.quater_interval),
+                 self.scale]
+            )
+        else:
+            points.append(
+                [self.get_rand(self.mid, self.mid_interval),
+                 self.scale]
+            )
+        # edge 4
+        if (split_p[3] < self.split_threshold):
+            points.append([
+                0, self.get_rand(self.three_quater, self.quater_interval)])
+            points.append([
+                0, self.get_rand(self.quater, self.quater_interval)])
+        else:
+            points.append(
+                [0, self.get_rand(self.mid, self.mid_interval)]
+            )
+            # points.append(p1)
         self.raw_points = points
         return
 
@@ -94,14 +154,10 @@ class UnstructuredSquareMesh():
         fig = fd.triplot(mesh)
         return fig
 
-    def load_mesh(self, file_path):
-        return fd.Mesh(file_path)
-
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    
-    mesh_gen = UnstructuredSquareMesh(mesh_type=1)
+    mesh_gen = RandPolyMesh(mesh_type=2)
     mesh_coarse = mesh_gen.get_mesh(res=5e-2, file_path="./temp1.msh")
     mesh_fine = mesh_gen.get_mesh(res=4e-2, file_path="./temp2.msh")
     mesh_gen.show('./temp1.msh')

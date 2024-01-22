@@ -66,7 +66,7 @@ class RandSourceGenerator():
         self.RHS = None
         self.bc = None  # boundary conditions
 
-    def set_dist_params(self):
+    def set_dist_params(self, eps=1/8):
         """
         Set parameters for Gaussian distribution from dist_params.
         """
@@ -76,26 +76,26 @@ class RandSourceGenerator():
             self.n_dist = self.dist_params["n_dist"]
         print("Generating {} Gaussian distributions".format(self.n_dist))
         for i in range(self.n_dist):
-            σ_mean = random.gauss((
-                self.dist_params["x_end"] -
-                self.dist_params["x_start"])/24)
-            σ_sigma = random.gauss((
-                self.dist_params["y_end"] -
-                self.dist_params["y_start"])/48)
-    
-            self.μ_dict["x"].append(round(random.uniform(
-                self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
-            self.μ_dict["y"].append(round(random.uniform(
-                self.dist_params["c_min"], self.dist_params["c_max"]), 4)) # noqa
+            σ_mean = (
+                self.dist_params["x_end"] - self.dist_params["x_start"]) / 4
+            σ_sigma = (
+                self.dist_params["x_end"] - self.dist_params["x_start"]) / 6
 
-            self.σ_dict["x"].append(round(random.gauss(σ_mean, σ_sigma), 4))
-            self.σ_dict["y"].append(round(random.gauss(σ_mean, σ_sigma), 4))
+            self.μ_dict["x"].append(round(random.uniform(
+                self.dist_params["c_min"], self.dist_params["c_max"]), 3)) # noqa
+            self.μ_dict["y"].append(round(random.uniform(
+                self.dist_params["c_min"], self.dist_params["c_max"]), 3)) # noqa
+
+            self.σ_dict["x"].append(
+                max(round(random.gauss(σ_mean, σ_sigma), 3), eps))
+            self.σ_dict["y"].append(
+                max(round(random.gauss(σ_mean, σ_sigma), 3), eps))
             self.z_list.append(round(random.uniform(
                 self.dist_params["z_min"],
-                self.dist_params["z_max"]), 4))
+                self.dist_params["z_max"]), 3))
             self.w_list.append(round(random.uniform(
                 self.dist_params["w_min"],
-                self.dist_params["w_max"]), 4))
+                self.dist_params["w_max"]), 3))
 
     def get_dist_params(self):
         """
@@ -124,8 +124,7 @@ class RandSourceGenerator():
             "v": None,
     }):
         """
-        Return analytical solution of Helmholtz equation.
-
+        Return analytical solution field.
         Returns:
             firedrake.Function: Analytical solution.
         """

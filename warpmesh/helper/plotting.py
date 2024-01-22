@@ -7,10 +7,13 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
 
-
 __all__ = [
     'plot_loss', 'plot_tangle',
-    'plot_mesh', 'plot_mesh_compare', 'plot_multiple_mesh_compare', 'plot_attentions_map', 'plot_attentions_map_compare'
+    'plot_mesh',
+    'plot_mesh_compare_benchmark',
+    'plot_mesh', 'plot_mesh_compare', 'plot_multiple_mesh_compare',
+    'plot_attentions_map', 'plot_attentions_map_compare'
+
 ]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -69,6 +72,7 @@ def plot_hessian(coord, face, hessian, ax=None):
     return ax, fig
 
 
+
 def plot_attention(attentions, ax=None):
     fig = None
     if ax is None:
@@ -76,6 +80,7 @@ def plot_attention(attentions, ax=None):
     ax.imshow(attentions[-1])
     ax.set_aspect('equal')
     return ax, fig
+
 
 def plot_mesh_compare(coord_out, coord_target, face):
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
@@ -85,12 +90,22 @@ def plot_mesh_compare(coord_out, coord_target, face):
     ax[1].set_title("Target")
     return fig
 
+
+def plot_mesh_compare_benchmark(coord_out, coord_target, face, loss, tangle):
+    fig, ax = plt.subplots(1, 2, figsize=(16, 8))
+    ax[0], _ = plot_mesh(coord_out, face, ax=ax[0])
+    ax[0].set_title(f"Output | Loss: {loss:.2f} | Tangle: {tangle:.2f}")
+    ax[1], _ = plot_mesh(coord_target, face, ax=ax[1])
+    ax[1].set_title("Target")
+    return fig
+
+
 def plot_multiple_mesh_compare(out_mesh_collections, out_loss_collections, target_mesh, target_face):
     model_names = list(out_mesh_collections.keys())
     num_models = len(model_names)
     num_samples = len(out_mesh_collections[model_names[0]])
     fig, ax = plt.subplots(num_samples, num_models+1, figsize=(4*num_models + 1, 4*num_samples))
-    
+
     for n_model, model_name in enumerate(model_names):
         all_mesh = out_mesh_collections[model_name]
         all_loss = out_loss_collections[model_name]
@@ -109,7 +124,7 @@ def plot_attentions_map(out_atten_collections, out_loss_collections):
     num_models = len(model_names)
     num_samples = len(out_atten_collections[model_names[0]])
     fig, ax = plt.subplots(num_samples, num_models, figsize=(4*num_models, 4*num_samples))
-    
+
     for n_model, model_name in enumerate(model_names):
         all_atten = out_atten_collections[model_name]
         all_loss = out_loss_collections[model_name]
@@ -121,7 +136,6 @@ def plot_attentions_map(out_atten_collections, out_loss_collections):
     #     ax[n_sample, num_models], _ = plot_mesh(target_mesh[n_sample], target_face[n_sample], ax=ax[n_sample, num_models])
     #     ax[n_sample, num_models].set_title("Target", fontsize=16)
     return fig
-
 
 def plot_attention_on_mesh(coord, face, atten_weights, selected_node=200, ax=None):
     fig = None

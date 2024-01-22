@@ -25,28 +25,24 @@ from types import SimpleNamespace
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# entity = 'w-chunyang'
-# project_name = 'warpmesh'
-
-entity = 'mz-team' 
+entity = 'w-chunyang'
 project_name = 'warpmesh'
-
-
 # run_id = 'sr7waaso'  # MRT with no mask
-run_id = 'gl1zpjc5'  # MRN 3-loop
+# run_id = 'gl1zpjc5'  # MRN 3-loop
+run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
 
-run_id = 'u14bt77h' # output phi grad
-run_id = 'f4q1v2pd' # output coord
-run_id = 'kst5ig88' # output phi grad large eq residual
-
-epoch = 999
-# ds_root = (  # square
-#         '/Users/chunyang/projects/WarpMesh/data/dataset/poisson/'
-#         'z=<0,1>_ndist=None_max_dist=6_<20x20>_n=400_aniso_full')
-ds_root = (  # poly
-    '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz_poly'
-    '/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full'
-)
+epoch = 599
+ds_root = (  # square
+        '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz/'
+        'z=<0,1>_ndist=None_max_dist=6_<25x25>_n=100_aniso_full')
+# ds_root = (  # poly
+#     '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz_poly'
+#     '/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full'
+# )
+# ds_root = (  # poly
+#     '/Users/chunyang/projects/WarpMesh/data/dataset/poisson_poly'
+#     '/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full'
+# )
 
 
 def init_dir(config):
@@ -147,7 +143,6 @@ def load_model(config, epoch, experiment_dir):
             transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,  # noqa
             transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,  # noqa
             deform_in_c=config.num_deform_in,
-            deform_out_type=config.deform_out_type,
             num_loop=config.num_deformer_loop,
             device=device,
         )
@@ -214,7 +209,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         model.eval()
         with torch.no_grad():
             start = time.perf_counter()
-            out, (phix, phiy) = model(sample, poly_mesh=True if domain == "poly" else False)
+            out = model(sample, poly_mesh=True if domain == "poly" else False)
             end = time.perf_counter()
             dur_ms = (end - start) * 1000
         temp_time_consumption = dur_ms
@@ -335,3 +330,4 @@ if __name__ == "__main__":
     write_sumo(eval_dir)
 
     exit()
+
