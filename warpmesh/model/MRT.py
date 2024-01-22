@@ -165,6 +165,11 @@ class MRTransformer(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
+        bd_mask = data.bd_mask
+        poly_mesh = False
+        if (data.poly_mesh is not False):
+            poly_mesh = True if data.poly_mesh.sum() > 0 else False
+
         data.mesh_feat.requires_grad = True
         hidden, edge_idx = self.transformer_monitor(data)
         coord_ori = data.mesh_feat[:, :2]
@@ -173,7 +178,7 @@ class MRTransformer(torch.nn.Module):
         model_output = None
         # Recurrent GAT deform
         for i in range(self.num_loop):
-            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori)
+            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori, bd_mask, poly_mesh)
 
         return (coord, model_output), (phix, phiy)
 
@@ -188,6 +193,7 @@ class MRTransformer(torch.nn.Module):
             coord (Tensor): Deformed coordinates.
         """
         bd_mask = data.bd_mask
+        poly_mesh = False
         if (data.poly_mesh is not False):
             poly_mesh = True if data.poly_mesh.sum() > 0 else False
 

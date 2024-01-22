@@ -145,8 +145,8 @@ num_sample_vis = 5
 
 
 models_to_compare = ["MRT-1R-phi-grad-un-111-small"]
-models_to_compare = ["MRT-1R-phi-grad-un-grad-test"]
-models_to_compare = ["MRT-1R-phi-grad"]
+# models_to_compare = ["MRT-1R-phi-grad-un-grad-test"]
+# models_to_compare = ["MRT-1R-phi-grad"]
 
 if dataset_name == 'helmholtz':
   # test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
@@ -399,8 +399,8 @@ for model_name in models_to_compare:
 ##################################################################
 
 model_name = "MRT-1R-phi-grad-un-111-small"
-model_name = "MRT-1R-phi-grad-un-grad-test"
-model_name = "MRT-1R-phi-grad"
+# model_name = "MRT-1R-phi-grad-un-grad-test"
+# model_name = "MRT-1R-phi-grad"
 num_selected = 2
 
 phix = out_phix_collections[model_name][num_selected]
@@ -433,7 +433,7 @@ variables_collections = {r'$\nabla_x \phi$': (phix, phix_sample),
 
 num_variables = len(variables_collections.keys())
 
-font_size = 20
+font_size = 24
 mesh_gen = wm.UnstructuredSquareMesh()
 
 if dataset_name == 'helmholtz':
