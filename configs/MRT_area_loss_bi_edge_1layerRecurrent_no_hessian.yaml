@@ -14,7 +14,7 @@ learning_rate: 5.0e-05
 mesh_feat:
 - coord
 - u
-- hessian_norm
+# - hessian_norm
 model_used: MRTransformer
 multi_scale_check_interval: 50
 n_grids:
@@ -43,12 +43,11 @@ n_grids_test:
 - 34
 - 35
 num_deform_in: 3
-num_deform_out: 2
 num_deformer_loop: 1
 num_epochs: 1000
 num_gfe_in: 2
 num_lfe_in: 4
-num_transformer_in: 4
+num_transformer_in: 3
 num_transformer_out: 16
 num_transformer_embed_dim: 64
 num_transformer_heads: 4
@@ -66,7 +65,6 @@ train_boundary_scheme: full
 train_data_set_type: aniso
 use_area_loss: true
 use_cluster: false
-use_convex_loss: false
 use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false
@@ -74,3 +72,7 @@ weight_decay: 0.1
 x_feat:
 - coord
 - bd_mask
+# - bd_left_mask
+# - bd_right_mask
+# - bd_down_mask
+# - bd_up_mask

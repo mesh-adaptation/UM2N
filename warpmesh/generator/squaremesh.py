@@ -10,6 +10,7 @@ class UnstructuredSquareMesh():
     Create a random polygonal mesh by spliting the edge of a
     square randomly.
     """
+
     def __init__(self, scale=1.0, mesh_type=2):
         # params setup
         self.mesh_type = mesh_type
@@ -93,9 +94,13 @@ class UnstructuredSquareMesh():
         fig = fd.triplot(mesh)
         return fig
 
+    def load_mesh(self, file_path):
+        return fd.Mesh(file_path)
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+    
     mesh_gen = UnstructuredSquareMesh(mesh_type=1)
     mesh_coarse = mesh_gen.get_mesh(res=5e-2, file_path="./temp1.msh")
     mesh_fine = mesh_gen.get_mesh(res=4e-2, file_path="./temp2.msh")
