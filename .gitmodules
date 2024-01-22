@@ -2,6 +2,3 @@
 	path = install/movement
 	url = https://github.com/pyroteus/movement.git
 
-[submodule "Graphormer"]
-	path = Graphormer
-	url = https://github.com/microsoft/GraphFormers.git
