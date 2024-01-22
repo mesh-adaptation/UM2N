@@ -125,8 +125,8 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "M2T":['gboubixk'], 
                       "M2N":['xqa8fnoj']}
 
-# dataset_name = 'helmholtz'
-dataset_name = 'swirl'
+dataset_name = 'helmholtz'
+# dataset_name = 'swirl'
 
 # test_ms = 'poly'
 test_ms = 20
