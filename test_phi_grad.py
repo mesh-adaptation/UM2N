@@ -76,7 +76,9 @@ run_id = '8ndi2teh' # unsupervised 1 1 1, small unsupervised
 
 run_id = '2f4florr' # unsupervised 1 01 01,  large unsupervised
 
-run_id = 'fhmqq8eg' # supervised phi grad test 
+run_id = 'fhmqq8eg' # supervised phi grad test
+
+run_id = 's6qrcn54' # unsupervised 1 1 1, large unsupervised
 
 
 run_id_collections = {"MRT":['mfn1hnrg'],
@@ -94,6 +96,7 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R-phi-grad-un-111-small": ['8ndi2teh'],
                       "MRT-1R-phi-grad-un-111-large": ['2f4florr'],
                       "MRT-1R-phi-grad-test": ['fhmqq8eg'],
+                      "MRT-1R-phi-grad-un-grad-test": ['s6qrcn54'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
@@ -122,8 +125,8 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "M2T":['gboubixk'], 
                       "M2N":['xqa8fnoj']}
 
-dataset_name = 'helmholtz'
-# dataset_name = 'swirl'
+# dataset_name = 'helmholtz'
+dataset_name = 'swirl'
 
 # test_ms = 'poly'
 test_ms = 20
@@ -136,10 +139,14 @@ num_sample_vis = 5
 # models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
 # models_to_compare = ["MRT-1R-phi", "MRT-1R-phi-bd"]
 # models_to_compare = ["MRT-1R-phi-grad-un-111", "MRT-1R-phi-bd", "MRT-1R-coord"]
-models_to_compare = ["MRT-1R-phi-grad-un-111-small"]
+
 # models_to_compare = ["MRT-1R", "MRT-1R-no-hessian"]
 # test dataset, for benchmarking loss effects on model performance
 
+
+models_to_compare = ["MRT-1R-phi-grad-un-111-small"]
+models_to_compare = ["MRT-1R-phi-grad-un-grad-test"]
+models_to_compare = ["MRT-1R-phi-grad"]
 
 if dataset_name == 'helmholtz':
   # test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
@@ -151,9 +158,9 @@ if dataset_name == 'helmholtz':
   # test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
 elif dataset_name == 'swirl':
-  dataset_dir = f"./data/dataset/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5"
+  # dataset_dir = f"./data/dataset/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5"
   # Swirl
-  # test_dir = f"./data/swirl/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=iso_pad/data"
+  dataset_dir = f"./data/swirl/z=<0,1>_ndist=None_max_dist=6_<30x30>_n=iso_pad"
 test_dir = f"{dataset_dir}/data"
 
 random_seed = 1
@@ -285,8 +292,9 @@ for model_name in models_to_compare:
     # with torch.no_grad():
     cnt = 0
     torch.manual_seed(random_seed)
+    start_num = 0
     # for batch in loader:
-    for i in range(num_sample_vis):
+    for i in range(start_num, start_num+num_sample_vis):
         batch = test_set[i]
         batch.conv_feat = batch.conv_feat.unsqueeze(0)
         batch.conv_feat_fix = batch.conv_feat_fix.unsqueeze(0)
@@ -391,6 +399,8 @@ for model_name in models_to_compare:
 ##################################################################
 
 model_name = "MRT-1R-phi-grad-un-111-small"
+model_name = "MRT-1R-phi-grad-un-grad-test"
+model_name = "MRT-1R-phi-grad"
 num_selected = 2
 
 phix = out_phix_collections[model_name][num_selected]
@@ -425,8 +435,13 @@ num_variables = len(variables_collections.keys())
 
 font_size = 20
 mesh_gen = wm.UnstructuredSquareMesh()
-model_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh{num_selected}.msh"))
-fd_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh{num_selected}.msh"))
+
+if dataset_name == 'helmholtz':
+  model_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh{num_selected}.msh"))
+  fd_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh{num_selected}.msh"))
+elif dataset_name == 'swirl':
+  model_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh.msh"))
+  fd_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh.msh"))
 
 fig, axs = plt.subplots(num_variables, 5, figsize=(40, 8 * num_variables))
 
@@ -462,4 +477,4 @@ for name, (model_val, fd_val) in variables_collections.items():
   plt.colorbar(plt_obj3)
   row += 1
 
-fig.savefig(f"{dataset_name}_output_comparison_{num_selected}.png")
+fig.savefig(f"{dataset_name}_output_comparison_{start_num+num_selected}.png")
