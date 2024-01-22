@@ -170,11 +170,12 @@ class MRTransformer(torch.nn.Module):
         coord_ori = data.mesh_feat[:, :2]
         coord = coord_ori
 
+        model_output = None
         # Recurrent GAT deform
-        for i in range(num_step):
-            coord, hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori)
+        for i in range(self.num_loop):
+            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori)
 
-        return coord, (phix, phiy)
+        return (coord, model_output), (phix, phiy)
 
     def forward(self, data):
         """
@@ -191,11 +192,12 @@ class MRTransformer(torch.nn.Module):
         coord_ori = data.mesh_feat[:, :2]
         coord = coord_ori
 
+        model_output = None
         # Recurrent GAT deform
         for i in range(self.num_loop):
-            coord, hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori)
+            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori)
 
-        return coord, (phix, phiy)
+        return (coord, model_output), (phix, phiy)
 
     def get_attention_scores(self, data):
         conv_feat_in = data.conv_feat
