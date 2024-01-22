@@ -82,7 +82,11 @@ class MeshDataset(Dataset):
             load_analytical=False,
             load_jacobian=False,
             use_cluster=False,
-            r=0.25,
+            use_run_time_cluster=False,
+            r=0.35,
+            M=25,
+            dist_weight=False,
+            add_nei=True,
             ):
         # x feature contains the coordiate related features
         self.x_feature = x_feature
@@ -96,6 +100,8 @@ class MeshDataset(Dataset):
         self.file_dir = file_dir
         file_path = os.path.join(self.file_dir, 'data_*.npy')
         self.file_names = glob.glob(file_path)
+        self.file_names = sorted(
+            self.file_names, key=lambda x: int(x.split('_')[-1].split('.')[0]))
         self.transform = transform
         self.target_transform = target_transform
         # if True, load the params used to generate the data
@@ -104,8 +110,14 @@ class MeshDataset(Dataset):
         self.load_jacobian = load_jacobian
         # if True, use the cluster to sample the neighbors
         self.use_cluster = use_cluster
-        # the radius of the cluster
+        # if True, use the run time cluster to sample the neighbors
+        self.use_run_time_cluster = use_run_time_cluster
+        # params for run time cluster
         self.r = r
+        self.M = M
+        self.dist_weight = dist_weight
+        self.add_nei = add_nei
+        # load phi of the MA solution
 
     def get_x_feature(self, data):
         """
@@ -204,17 +216,21 @@ class MeshDataset(Dataset):
         # advance version
         train_data = MeshData(
             x=self.get_x_feature(data),  # noqa: x here is the coordinate related features
+            bd_mask=torch.from_numpy(data.item().get('bd_mask')).int(),
             conv_feat=self.get_conv_feature(data),
             conv_feat_fix=self.get_conv_feature_fix(data),
             mesh_feat=self.get_mesh_feature(data),
             edge_index=torch.from_numpy(
                 data.item().get('edge_index_bi')).to(torch.int64),
-            edge_index_with_cluster=torch.from_numpy(
-                data.item().get('edge_index_bi')).to(torch.int64),
             y=torch.from_numpy(data.item().get('y')).float(),
             face=torch.from_numpy(
                 data.item().get('face_idxs')).to(torch.long).T if data.item().get('face_idxs') is not None else None,  # noqa: E501
+            phi=torch.from_numpy(
+                data.item().get('phi')).float() if data.item().get('phi') is not None else None,  # noqa: E501
+            grad_phi=torch.from_numpy(
+                data.item().get('grad_phi')).float() if data.item().get('grad_phi') is not None else None,  # noqa: E501
             node_num=num_nodes,
+            poly_mesh=data.item().get('poly_mesh') if data.item().get('poly_mesh') is not None else False,  # noqa: E501
         )
 
         if self.load_analytical:
@@ -225,7 +241,7 @@ class MeshDataset(Dataset):
                 'μ_y': data.item().get('μ_y'),
                 'z': data.item().get('z'),
                 'w': data.item().get('w'),
-                'simple_u': data.item().get('simple_u'),
+                'simple_u': data.item().get('use_iso'),
                 'n_dist': data.item().get('n_dist'),
             }
 
@@ -240,15 +256,18 @@ class MeshDataset(Dataset):
         if self.transform:
             train_data = self.transform(train_data)
         if self.use_cluster:
-            # train_data.edge_index = get_new_edges(train_data, r=self.r)
-            train_data.edge_index_with_cluster = data.item().get('cluster_edges')
-        # print(self.use_cluster, train_data)
+            train_data.edge_index = data.item().get('cluster_edges').to(torch.int64)  # noqa
+        if self.use_run_time_cluster:
+            train_data.edge_index = get_new_edges(
+                num_nodes, train_data.x[:, :2],
+                train_data.edge_index, r=self.r, M=self.M,
+                dist_weight=self.dist_weight, add_nei=self.add_nei)
         return train_data
 
 
 class MeshData(Data):
     """
-    Custom PyTorch Data object designed to handle mesh data features.
+    Custom PyTorch Data object designed to handle mesh data features.P
 
     This class is intended to be used as the base class of data samples
     returned by the MeshDataset.
@@ -260,8 +279,6 @@ class MeshData(Data):
         if key == 'conv_feat_fix':
             return None
         if key == 'node_num':
-            return None
-        if key == 'edge_index_with_cluster':
             return None
         return super().__cat_dim__(key, value, *args, **kwargs)
 

@@ -7,6 +7,7 @@ import torch
 import movement as mv
 import matplotlib.tri as tri
 from torch_geometric.data import DataLoader
+from torch.utils.data import SequentialSampler
 from types import SimpleNamespace
 from io import BytesIO
 
@@ -135,7 +136,7 @@ num_sample_vis = 5
 # models_to_compare = ["MRT-no-udlr", "MRT-no-udlr"]
 # models_to_compare = ["MRT-1R-phi", "MRT-1R-phi-bd"]
 # models_to_compare = ["MRT-1R-phi-grad-un-111", "MRT-1R-phi-bd", "MRT-1R-coord"]
-models_to_compare = ["MRT-1R-phi-grad-test"]
+models_to_compare = ["MRT-1R-phi-grad-un-111-small"]
 # models_to_compare = ["MRT-1R", "MRT-1R-no-hessian"]
 # test dataset, for benchmarking loss effects on model performance
 
@@ -144,7 +145,8 @@ if dataset_name == 'helmholtz':
   # test_dir = f"./data/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
 
   # dataset_dir = f"./data/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=10_aniso_full"
-  dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full"
+  # dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full"
+  dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6"
   # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
@@ -157,14 +159,24 @@ test_dir = f"{dataset_dir}/data"
 random_seed = 1
 
 
+# Collect from dataset
 phi_MA_collections = {}
 phix_MA_collections = {}
 phiy_MA_collections = {}
+phixx_MA_collections = {}
+phixy_MA_collections = {}
+phiyx_MA_collections = {}
+phiyy_MA_collections = {}
+
+# Collect from model
 out_mesh_collections = {}
 out_phix_collections = {}
 out_phiy_collections = {}
 out_phixx_collections = {}
+out_phixy_collections = {}
 out_phiyy_collections = {}
+out_phiyx_collections = {}
+
 out_loss_collections = {}
 out_atten_collections = {}
 for model_name in models_to_compare:
@@ -201,7 +213,7 @@ for model_name in models_to_compare:
     )
     else:
         raise Exception(f"Model {config.model_used} not implemented.")
-    config.mesh_feat.extend(['phi', 'grad_phi'])
+    config.mesh_feat.extend(['grad_u', 'phi', 'grad_phi', 'jacobian'])
     print("mesh feat type ", config.mesh_feat)
     test_set = wm.MeshDataset(
         test_dir,
@@ -215,7 +227,11 @@ for model_name in models_to_compare:
         load_jacobian=True
     )
     print("mesh feat mesh feat ", test_set[0].mesh_feat.shape)
-    loader = DataLoader(test_set, batch_size=1, shuffle=False)
+    loader = DataLoader(test_set, 
+                        # batch_size=1,
+                        sampler=SequentialSampler(test_set)
+    )
+                        # shuffle=False)
 
     epoch = 999
     # TODO: the MRN-Sampling ('hegubzg0') only trained 800 epochs
@@ -250,11 +266,17 @@ for model_name in models_to_compare:
     out_phix_collections[model_name] = []
     out_phiy_collections[model_name] = []
     out_phixx_collections[model_name] = []
+    out_phixy_collections[model_name] = []
     out_phiyy_collections[model_name] = []
+    out_phiyx_collections[model_name] = []
 
     phi_MA_collections[model_name] = []
     phix_MA_collections[model_name] = []
     phiy_MA_collections[model_name] = []
+    phixx_MA_collections[model_name] = []
+    phixy_MA_collections[model_name] = []
+    phiyx_MA_collections[model_name] = []
+    phiyy_MA_collections[model_name] = []
 
     target_mesh = []
     target_face = []
@@ -263,7 +285,12 @@ for model_name in models_to_compare:
     # with torch.no_grad():
     cnt = 0
     torch.manual_seed(random_seed)
-    for batch in loader:
+    # for batch in loader:
+    for i in range(num_sample_vis):
+        batch = test_set[i]
+        batch.conv_feat = batch.conv_feat.unsqueeze(0)
+        batch.conv_feat_fix = batch.conv_feat_fix.unsqueeze(0)
+        # print(batch)
         sample = batch.to(device)
         print("mesh feat shape ", sample.mesh_feat.shape)
         if model_name == 'MRT':
@@ -271,9 +298,16 @@ for model_name in models_to_compare:
         else:
           if 'MRT-1R' in model_name:
             if 'phi' in model_name:
-              phi_MA_collections[model_name].append(sample.mesh_feat[:, 4].detach().cpu().numpy())
-              phix_MA_collections[model_name].append(sample.mesh_feat[:, 5].detach().cpu().numpy())
-              phiy_MA_collections[model_name].append(sample.mesh_feat[:, 6].detach().cpu().numpy())
+
+              # mesh feat: [coord_x, coord_y, u, hessian_norm, grad_u_x, grad_u_y, phi, grad_phi_x, grad_phi_y, hessian_phi(4 elements)]
+              phi_MA_collections[model_name].append(sample.mesh_feat[:, 6].detach().cpu().numpy())
+              phix_MA_collections[model_name].append(sample.mesh_feat[:, 7].detach().cpu().numpy())
+              phiy_MA_collections[model_name].append(sample.mesh_feat[:, 8].detach().cpu().numpy())
+
+              phiyy_MA_collections[model_name].append(sample.mesh_feat[:, 9].detach().cpu().numpy())
+              phixy_MA_collections[model_name].append(sample.mesh_feat[:, 10].detach().cpu().numpy())
+              phiyx_MA_collections[model_name].append(sample.mesh_feat[:, 11].detach().cpu().numpy())
+              phixx_MA_collections[model_name].append(sample.mesh_feat[:, 12].detach().cpu().numpy())
 
               # Mannually normlize for model input
               mesh_val_feat = sample.mesh_feat[:, 2:]  # value feature (no coord)
@@ -285,9 +319,8 @@ for model_name in models_to_compare:
 
               sample.x.requires_grad = True
               sample.mesh_feat.requires_grad = True
-              out, (phix, phiy) = model.move(sample, num_step=1)
+              (out, phi), (phix, phiy) = model.move(sample, num_step=1)
               feat_dim = sample.mesh_feat.shape[-1]
-              # mesh_feat [coord_x, coord_y, u, hessian_norm]
               node_num = sample.mesh_feat.reshape(1, -1, feat_dim).shape[1]
 
               out_phix_collections[model_name].append(phix.detach().cpu().numpy())
@@ -305,19 +338,9 @@ for model_name in models_to_compare:
 
               out_phixx_collections[model_name].append(phixx.detach().cpu().numpy())
               out_phiyy_collections[model_name].append(phiyy.detach().cpu().numpy())
+              out_phixy_collections[model_name].append(phixy.detach().cpu().numpy())
+              out_phiyx_collections[model_name].append(phiyx.detach().cpu().numpy())
 
-
-
-              # # Compute the residual to the equation
-              # grad_seed = torch.ones(out.shape).to(device)
-              # phi_grad = torch.autograd.grad(out, sample.x, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-              # phix = phi_grad[:, 0]
-              # phiy = phi_grad[:, 1]
-
-              # New coord
-              # coord_x = (sample.x[:, 0] + phix).reshape(1, node_num, 1)
-              # coord_y = (sample.x[:, 1] + phiy).reshape(1, node_num, 1)
-              # out = torch.cat([coord_x, coord_y], dim=-1).reshape(-1, 2)
             elif 'MRT-1R-coord' in model_name:
               out, (phix, phiy) = model.move(sample, num_step=1)
             else:
@@ -367,116 +390,76 @@ for model_name in models_to_compare:
 
 ##################################################################
 
-model_name = "MRT-1R-phi-grad-test"
-num_selected = 1
-phix_grad = out_phix_collections[model_name][num_selected]
-phiy_grad = out_phiy_collections[model_name][num_selected]
+model_name = "MRT-1R-phi-grad-un-111-small"
+num_selected = 2
 
+phix = out_phix_collections[model_name][num_selected]
+phiy = out_phiy_collections[model_name][num_selected]
 phixx = out_phixx_collections[model_name][num_selected]
 phiyy = out_phiyy_collections[model_name][num_selected]
+phixy = out_phixy_collections[model_name][num_selected]
+phiyx = out_phiyx_collections[model_name][num_selected]
 
 coord = out_mesh_collections[model_name][num_selected]
-
+fd_coord = target_mesh[num_selected]
 
 phi_sample = phi_MA_collections[model_name][num_selected]
 phix_sample = phix_MA_collections[model_name][num_selected]
 phiy_sample = phiy_MA_collections[model_name][num_selected]
+phixx_sample = phixx_MA_collections[model_name][num_selected]
+phixy_sample = phixy_MA_collections[model_name][num_selected]
+phiyx_sample = phiyx_MA_collections[model_name][num_selected]
+phiyy_sample = phiyy_MA_collections[model_name][num_selected]
 
 import os
 
+variables_collections = {r'$\nabla_x \phi$': (phix, phix_sample),
+                         r'$\nabla_y \phi$': (phiy, phiy_sample),
+                         r'$\nabla_{xx} \phi$': (-phixx, phixx_sample),
+                         r'$\nabla_{xy} \phi$': (phixy, phixy_sample),
+                         r'$\nabla_{yx} \phi$': (phiyx, phiyx_sample),
+                         r'$\nabla_{yy} \phi$': (-phiyy, phiyy_sample),
+                         }
+
+num_variables = len(variables_collections.keys())
+
+font_size = 20
 mesh_gen = wm.UnstructuredSquareMesh()
-model_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", "mesh0.msh"))
+model_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh{num_selected}.msh"))
+fd_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh{num_selected}.msh"))
 
-# Phi grad x
-# model_mesh = fd.UnitSquareMesh(test_ms, test_ms)
-model_mesh.coordinates.dat.data[:] = coord[:]
-det_model_raw = fd.Function(
-    fd.FunctionSpace(model_mesh, "CG", 1))
-det_model_raw.dat.data[:] = phix_grad.reshape(-1)[:]
+fig, axs = plt.subplots(num_variables, 5, figsize=(40, 8 * num_variables))
 
-fig, axs = plt.subplots(1, 3, figsize=(30, 8))
+row = 0
+for name, (model_val, fd_val) in variables_collections.items():
+  # model values
+  model_mesh.coordinates.dat.data[:] = coord[:]
+  mesh_function_space = fd.Function(
+      fd.FunctionSpace(model_mesh, "CG", 1))
+  mesh_function_space.dat.data[:] = model_val.reshape(-1)[:]
+  plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 0])
+  axs[row, 0].set_title(f"{dataset_name} - {name} (torch autograd)", fontsize=font_size)
+  plt.colorbar(plt_obj3)
+  # model output mesh
+  fd.triplot(model_mesh, axes=axs[row, 1])
+  axs[row, 1].set_title(f"{dataset_name} - Model output mesh", fontsize=font_size)
 
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0])
-axs[0].set_title(f"{dataset_name} - Phi grad x (torch autograd)")
-plt.colorbar(plt_obj3)
+  # Sample values from firedrake
+  mesh_function_space.dat.data[:] = fd_val.reshape(-1)[:]
+  plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 2])
+  axs[row, 2].set_title(f"{dataset_name} - {name} (firedrake)", fontsize=font_size)
+  plt.colorbar(plt_obj3)
 
+  # MA output mesh
+  fd_mesh.coordinates.dat.data[:] = fd_coord[:]
+  fd.triplot(fd_mesh, axes=axs[row, 3])
+  axs[row, 3].set_title(f"{dataset_name} - MA output mesh", fontsize=font_size)
 
-det_model_raw.dat.data[:] = phix_sample.reshape(-1)[:]
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[1])
-axs[1].set_title(f"{dataset_name} - Phi grad x (firedrake)")
-plt.colorbar(plt_obj3)
+  # Error map
+  mesh_function_space.dat.data[:] = np.abs(fd_val.reshape(-1)[:] - model_val.reshape(-1)[:])
+  plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 4])
+  axs[row, 4].set_title(f"{dataset_name} - {name} (error L1)", fontsize=font_size)
+  plt.colorbar(plt_obj3)
+  row += 1
 
-fd.triplot(model_mesh, axes=axs[2])
-fig.savefig(f"{dataset_name}_test_grad_x.png")
-
-
-# Phi grad y
-# model_mesh = fd.UnitSquareMesh(test_ms, test_ms)
-model_mesh.coordinates.dat.data[:] = coord[:]
-det_model_raw = fd.Function(
-    fd.FunctionSpace(model_mesh, "CG", 1))
-det_model_raw.dat.data[:] = phiy_grad.reshape(-1)[:]
-
-fig, axs = plt.subplots(1, 3, figsize=(30, 8))
-
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0])
-axs[0].set_title(f"{dataset_name} - Phi grad y (torch grad)")
-plt.colorbar(plt_obj3)
-
-det_model_raw.dat.data[:] = phiy_sample.reshape(-1)[:]
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[1])
-axs[1].set_title(f"{dataset_name} - Phi grad y (firedrake)")
-plt.colorbar(plt_obj3)
-
-fd.triplot(model_mesh, axes=axs[2])
-fig.savefig(f"{dataset_name}_test_grad_y.png")
-
-
-# Phi grad grad x
-# model_mesh = fd.UnitSquareMesh(test_ms, test_ms)
-model_mesh.coordinates.dat.data[:] = coord[:]
-det_model_raw = fd.Function(
-    fd.FunctionSpace(model_mesh, "CG", 1))
-det_model_raw.dat.data[:] = phixx.reshape(-1)[:]
-
-fig, axs = plt.subplots(1, 2, figsize=(20, 8))
-axs[0].set_title(f"{dataset_name} - Phi grad x grad x")
-
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0])
-plt.colorbar(plt_obj3)
-
-fd.triplot(model_mesh, axes=axs[1])
-fig.savefig(f"{dataset_name}_test_grad_xx.png")
-
-# # Phi grad grad x (finite difference)
-# model_mesh = fd.UnitSquareMesh(test_ms, test_ms)
-# model_mesh.coordinates.dat.data[:] = coord[:]
-# det_model_raw = fd.Function(
-#     fd.FunctionSpace(model_mesh, "CG", 1))
-# det_model_raw.dat.data[:] = np.diff(phix_grad, append=[0]).reshape(-1)[:]
-
-# fig, axs = plt.subplots(1, 2, figsize=(20, 8))
-
-# plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0])
-# axs[0].title(f"{dataset_name} - Phi grad x grad x finite difference")
-# plt.colorbar(plt_obj3)
-
-# fd.triplot(model_mesh, axes=axs[1])
-# fig.savefig(f"{dataset_name}_test_grad_xx_finite_difference.png")
-
-
-# Phi grad grad y
-# model_mesh = fd.UnitSquareMesh(test_ms, test_ms)
-model_mesh.coordinates.dat.data[:] = coord[:]
-det_model_raw = fd.Function(
-    fd.FunctionSpace(model_mesh, "CG", 1))
-det_model_raw.dat.data[:] = phiyy.reshape(-1)[:]
-
-fig, axs = plt.subplots(1, 2, figsize=(20, 8))
-
-plt_obj3 = fd.tripcolor(det_model_raw, axes=axs[0])
-axs[0].set_title(f"{dataset_name} - Phi grad y grad y")
-plt.colorbar(plt_obj3)
-
-fd.triplot(model_mesh, axes=axs[1])
-fig.savefig(f"{dataset_name}_test_grad_yy.png")
+fig.savefig(f"{dataset_name}_output_comparison_{num_selected}.png")
