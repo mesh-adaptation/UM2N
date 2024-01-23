@@ -408,6 +408,9 @@ def write_sumo(eval_dir, ds_root):
     ax[1].plot([x for x in range(len(error_model_all))], error_model_all, label='PDE error (Model)')
     ax[1].plot([x for x in range(len(error_og_all))], error_og_all, label='PDE error (uniform)', color='k')
     ax[1].legend()
+
+    fig_title = ds_root.split('/')[-1]
+    fig.suptitle(f'{fig_title}', fontsize=20)
     fig.savefig(os.path.join(summary_save_path, 'error_reduction_sumo.png'))
 
 
@@ -438,6 +441,7 @@ if __name__ == "__main__":
                 './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
                 './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
                 './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
+
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
