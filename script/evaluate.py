@@ -27,9 +27,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 entity = 'mz-team'
 project_name = 'warpmesh'
-# run_id = 'sr7waaso'  # MRT with no mask
-# run_id = 'gl1zpjc5'  # MRN 3-loop
-run_id = '8ndi2teh'  
+# run_id = '8ndi2teh' # semi-supervised phi grad
+# run_id = 'bzlj9vcl' # semi-supervised 111
+# run_id = 'x9woqsnn' # supervised phi grad
 
 epoch = 999
 ds_root = (  # square
@@ -176,6 +176,7 @@ def get_log_og(log_path, idx):
 def get_problem_type(ds_root):
     domain = None
     ds_type = ds_root.split('/')[-2]
+    meshtype = ds_root.split('/')[-3].split('_')[-1]
     problem_list = ds_type.split('_')
     problem_type = problem_list[0]
     if (len(problem_list) == 2):
@@ -183,8 +184,8 @@ def get_problem_type(ds_root):
             domain = 'poly'
     else:
         domain = 'square'
-    print('problem type: ', problem_type, domain)
-    return problem_type, domain
+    print('problem type: ', problem_type, domain, " mesh type ", meshtype)
+    return problem_type, domain, meshtype
 
 
 def benchmark_model(model, dataset, eval_dir, ds_root,
@@ -210,7 +211,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
     # else:
     #     domain = 'square'
     # print('problem type: ', problem_type, domain)
-    problem_type, domain = get_problem_type(ds_root=ds_root)
+    problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
 
     ds_info_df_path = os.path.join(ds_root, 'info.csv')
     df_info_df = pd.read_csv(ds_info_df_path)
@@ -218,8 +219,8 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
     mesh = None
     mesh_fine = None
 
-    log_dir = os.path.join(eval_dir, f'{problem_type}_{domain}', 'log')
-    plot_dir = os.path.join(eval_dir, f'{problem_type}_{domain}', 'plot')
+    log_dir = os.path.join(eval_dir, f'{problem_type}_{domain}_meshtype_{meshtype}', 'log')
+    plot_dir = os.path.join(eval_dir, f'{problem_type}_{domain}_meshtype_{meshtype}', 'plot')
     wm.mkdir_if_not_exist(log_dir)
     wm.mkdir_if_not_exist(plot_dir)
 
@@ -304,11 +305,12 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         fig.savefig(
             os.path.join(plot_dir, f"plot_{idx}.png")
         )
+        plt.close()
 
 
 def write_sumo(eval_dir, problem_setting):
-    problem_type, domain = problem_setting
-    log_dir = os.path.join(eval_dir, f"{problem_type}_{domain}", 'log')
+    problem_type, domain, meshtype = problem_setting
+    log_dir = os.path.join(eval_dir, f"{problem_type}_{domain}_meshtype_{meshtype}", 'log')
     file_path = os.path.join(log_dir, 'log*.csv')
     log_files = glob.glob(file_path)
 
@@ -373,7 +375,8 @@ def write_sumo(eval_dir, problem_setting):
         'dataset_path': ds_root,
     }, index=[0])
     print(f"error_reduction_MA: {sumo_df['error_reduction_MA'][0]}, error_reduction_model: {sumo_df['error_reduction_model'][0]}")
-    sumo_df.to_csv(os.path.join(eval_dir, f"{problem_type}_{domain}", 'sumo.csv'))
+    summary_save_path = os.path.join(eval_dir, f"{problem_type}_{domain}_meshtype_{meshtype}")
+    sumo_df.to_csv(os.path.join(summary_save_path, 'sumo.csv'))
 
     # Visualize the error reduction
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
@@ -385,7 +388,7 @@ def write_sumo(eval_dir, problem_setting):
     ax[1].plot([x for x in range(len(error_model_all))], error_model_all, label='PDE error (Model)')
     ax[1].plot([x for x in range(len(error_og_all))], error_og_all, label='PDE error (uniform)', color='k')
     ax[1].legend()
-    fig.savefig(os.path.join(eval_dir, f"{problem_type}_{domain}", 'error_reduction_sumo.png'))
+    fig.savefig(os.path.join(summary_save_path, 'error_reduction_sumo.png'))
 
 
 
@@ -402,8 +405,8 @@ if __name__ == "__main__":
     model = load_model(config, epoch, eval_dir)
 
     bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
-    problem_type, domain = get_problem_type(ds_root=ds_root)
-    write_sumo(eval_dir, (problem_type, domain))
+    problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
+    write_sumo(eval_dir, (problem_type, domain, meshtype))
 
     exit()
 
