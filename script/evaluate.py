@@ -322,8 +322,14 @@ def write_sumo(eval_dir, problem_setting):
     fail_count = 0
     total_count = 0
 
+    error_MA_all = []
+    error_model_all = []
+    error_og_all = []
+
     error_reduction_MA = 0
     error_reduction_model = 0
+    error_reduction_MA_all = []
+    error_reduction_model_all = []
 
 
     for file_names in log_files:
@@ -335,8 +341,17 @@ def write_sumo(eval_dir, problem_setting):
             error_og += log_df['error_og'][0]
             error_MA += log_df['error_ma'][0]
             error_model += log_df['error_model'][0]
-            error_reduction_MA += log_df['error_reduction_MA']
-            error_reduction_model += log_df['error_reduction_model']
+
+            error_MA_all.append(log_df['error_ma'][0])
+            error_model_all.append(log_df['error_model'][0])
+            error_og_all.append(log_df['error_og'][0])
+
+            error_reduction_MA += log_df['error_reduction_MA'][0]
+            error_reduction_MA_all.append(log_df['error_reduction_MA'][0])
+
+            error_reduction_model += log_df['error_reduction_model'][0]
+            error_reduction_model_all.append(log_df['error_reduction_model'][0])
+
             time_MA += log_df['time_consumption_MA'][0]
             time_model += log_df['time_consumption_model'][0]
         else:
@@ -357,8 +372,21 @@ def write_sumo(eval_dir, problem_setting):
         'total_case': total_count,
         'dataset_path': ds_root,
     }, index=[0])
-    print(f"error_reduction_MA: {sumo_df['error_reduction_MA']}, error_reduction_model: {sumo_df['error_reduction_model']}")
-    sumo_df.to_csv(os.path.join(eval_dir, 'sumo.csv'))
+    print(f"error_reduction_MA: {sumo_df['error_reduction_MA'][0]}, error_reduction_model: {sumo_df['error_reduction_model'][0]}")
+    sumo_df.to_csv(os.path.join(eval_dir, f"{problem_type}_{domain}", 'sumo.csv'))
+
+    # Visualize the error reduction
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].plot([x for x in range(len(error_reduction_MA_all))], error_reduction_MA_all, label='Error reduction (MA)')
+    ax[0].plot([x for x in range(len(error_reduction_model_all))], error_reduction_model_all, label='Error reduction (model)')
+    ax[0].legend()
+
+    ax[1].plot([x for x in range(len(error_MA_all))], error_MA_all, label='PDE error (MA)')
+    ax[1].plot([x for x in range(len(error_model_all))], error_model_all, label='PDE error (Model)')
+    ax[1].plot([x for x in range(len(error_og_all))], error_og_all, label='PDE error (uniform)', color='k')
+    ax[1].legend()
+    fig.savefig(os.path.join(eval_dir, f"{problem_type}_{domain}", 'error_reduction_sumo.png'))
+
 
 
 if __name__ == "__main__":
