@@ -20,14 +20,14 @@ from types import SimpleNamespace
 os.environ['OMP_NUM_THREADS'] = "1"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-entity = 'w-chunyang'
+entity = 'mz-team'
 project_name = 'warpmesh'
 # run_id = 'sr7waaso'  # MRT with no mask
 # run_id = 'gl1zpjc5'  # MRN 3-loop
-run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
+run_id = '8ndi2teh'  # MRN 3-loop, on polymesh
 
-epoch = 599
-ds_root = "/Users/chunyang/projects/WarpMesh/data/dataset/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.045_interval_50"  # noqa
+epoch = 999
+ds_root = "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.045_interval_50"  # noqa
 
 
 def init_dir(config):
@@ -128,6 +128,7 @@ def load_model(config, epoch, experiment_dir):
             transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,  # noqa
             transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,  # noqa
             deform_in_c=config.num_deform_in,
+            deform_out_type=config.deform_out_type,
             num_loop=config.num_deformer_loop,
             device=device,
         )

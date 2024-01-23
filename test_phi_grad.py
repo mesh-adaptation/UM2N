@@ -144,7 +144,7 @@ num_sample_vis = 5
 # test dataset, for benchmarking loss effects on model performance
 
 
-models_to_compare = ["MRT-1R-phi-grad-un-111-small"]
+models_to_compare = ["MRT-1R-phi-grad-un-111"]
 # models_to_compare = ["MRT-1R-phi-grad-un-grad-test"]
 # models_to_compare = ["MRT-1R-phi-grad"]
 
@@ -398,7 +398,7 @@ for model_name in models_to_compare:
 
 ##################################################################
 
-model_name = "MRT-1R-phi-grad-un-111-small"
+model_name = "MRT-1R-phi-grad-un-111"
 # model_name = "MRT-1R-phi-grad-un-grad-test"
 # model_name = "MRT-1R-phi-grad"
 num_selected = 2

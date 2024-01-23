@@ -25,16 +25,22 @@ from types import SimpleNamespace
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-entity = 'w-chunyang'
+entity = 'mz-team'
 project_name = 'warpmesh'
 # run_id = 'sr7waaso'  # MRT with no mask
 # run_id = 'gl1zpjc5'  # MRN 3-loop
-run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
+run_id = '8ndi2teh'  
 
-epoch = 599
+epoch = 999
 ds_root = (  # square
-        '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz/'
-        'z=<0,1>_ndist=None_max_dist=6_<25x25>_n=100_aniso_full')
+        './data/dataset_meshtype_2/helmholtz/'
+        'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
+# ds_root = (  # square
+#         '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz/'
+#         'z=<0,1>_ndist=None_max_dist=6_<25x25>_n=100_aniso_full')
+# ds_root = (  # square
+#         '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz/'
+#         'z=<0,1>_ndist=None_max_dist=6_<25x25>_n=100_aniso_full')
 # ds_root = (  # poly
 #     '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz_poly'
 #     '/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full'
@@ -117,6 +123,7 @@ def load_model(config, epoch, experiment_dir):
     for file in run.files():
         if file.name.endswith(target_file_name):
             model_file = file.download(root=experiment_dir, replace=True)
+            target_file_name = file.name
     assert model_file is not None, "Model file not found"
     model = None
     if (config.model_used == "M2N"):
@@ -132,7 +139,7 @@ def load_model(config, epoch, experiment_dir):
             deform_in_c=config.num_deform_in,
             num_loop=config.num_deformer_loop,
         )
-    elif (config.model_used == "MRT"):
+    elif (config.model_used == "MRT" or config.model_used == "MRTransformer"):
         model = wm.MRTransformer(
             num_transformer_in=config.num_transformer_in,
             num_transformer_out=config.num_transformer_out,
@@ -143,6 +150,7 @@ def load_model(config, epoch, experiment_dir):
             transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,  # noqa
             transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,  # noqa
             deform_in_c=config.num_deform_in,
+            deform_out_type=config.deform_out_type,
             num_loop=config.num_deformer_loop,
             device=device,
         )
@@ -165,6 +173,20 @@ def get_log_og(log_path, idx):
     }
 
 
+def get_problem_type(ds_root):
+    domain = None
+    ds_type = ds_root.split('/')[-2]
+    problem_list = ds_type.split('_')
+    problem_type = problem_list[0]
+    if (len(problem_list) == 2):
+        if (problem_list[-1] == 'poly'):
+            domain = 'poly'
+    else:
+        domain = 'square'
+    print('problem type: ', problem_type, domain)
+    return problem_type, domain
+
+
 def benchmark_model(model, dataset, eval_dir, ds_root,
                     start_idx=0, num_samples=100
                     ):
@@ -178,27 +200,26 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         eval_dir (str): path to the evalution dir a.k.a. data root.
         num_samples (int): number of samples used to do the evaluation.
     """
-    domain = None
-    ds_type = ds_root.split('/')[-2]
-    problem_list = ds_type.split('_')
-    problem_type = problem_list[0]
-    if (len(problem_list) == 2):
-        if (problem_list[-1] == 'poly'):
-            domain = 'poly'
-    else:
-        domain = 'square'
-    print('problem type: ', problem_type, domain)
+    # domain = None
+    # ds_type = ds_root.split('/')[-2]
+    # problem_list = ds_type.split('_')
+    # problem_type = problem_list[0]
+    # if (len(problem_list) == 2):
+    #     if (problem_list[-1] == 'poly'):
+    #         domain = 'poly'
+    # else:
+    #     domain = 'square'
+    # print('problem type: ', problem_type, domain)
+    problem_type, domain = get_problem_type(ds_root=ds_root)
 
     ds_info_df_path = os.path.join(ds_root, 'info.csv')
     df_info_df = pd.read_csv(ds_info_df_path)
     n_grid = None
     mesh = None
     mesh_fine = None
-    if domain == 'square':
-        n_grid = df_info_df['n_grid'][0]
 
-    log_dir = os.path.join(eval_dir, 'log')
-    plot_dir = os.path.join(eval_dir, 'plot')
+    log_dir = os.path.join(eval_dir, f'{problem_type}_{domain}', 'log')
+    plot_dir = os.path.join(eval_dir, f'{problem_type}_{domain}', 'plot')
     wm.mkdir_if_not_exist(log_dir)
     wm.mkdir_if_not_exist(plot_dir)
 
@@ -209,7 +230,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         model.eval()
         with torch.no_grad():
             start = time.perf_counter()
-            out = model(sample, poly_mesh=True if domain == "poly" else False)
+            (out, model_raw_output), (phix, phiy) = model(sample, poly_mesh=True if domain == "poly" else False)
             end = time.perf_counter()
             dur_ms = (end - start) * 1000
         temp_time_consumption = dur_ms
@@ -217,10 +238,18 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         temp_loss = 1000 * torch.nn.L1Loss()(out, sample.y)
         # define mesh & fine mesh for comparison
         if domain == 'square':
-            mesh = fd.UnitSquareMesh(n_grid, n_grid)
-            mesh_MA = fd.UnitSquareMesh(n_grid, n_grid)
-            mesh_fine = fd.UnitSquareMesh(80, 80)
-            mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
+            # mesh = fd.UnitSquareMesh(n_grid, n_grid)
+            # mesh_MA = fd.UnitSquareMesh(n_grid, n_grid)
+            # mesh_fine = fd.UnitSquareMesh(80, 80)
+            # mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
+            mesh = fd.Mesh(
+                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+            mesh_MA = fd.Mesh(
+                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+            mesh_fine = fd.Mesh(
+                os.path.join(ds_root, 'mesh_fine', f'mesh{idx}.msh'))
+            mesh_model = fd.Mesh(
+                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
         elif domain == 'poly':
             mesh = fd.Mesh(
                 os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
@@ -244,6 +273,8 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         log_error_ma = log_og["error_adapt"]
         log_time = log_og["time"]
 
+        error_reduction_MA = (temp_error_og - temp_error_ma) / temp_error_og
+        error_reduction_model = (temp_error_og - temp_error_model) / temp_error_og
         # log file
         log_df = pd.DataFrame({
             'deform_loss': temp_loss.numpy(),
@@ -263,15 +294,21 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
         fig = wm.plot_mesh_compare_benchmark(
             out, sample.y, sample.face,
-            temp_loss, temp_tangled_elem
+            deform_loss=temp_loss, 
+            pde_loss_model=temp_error_model,
+            pde_loss_reduction_model=error_reduction_model,
+            pde_loss_MA=temp_error_ma, 
+            pde_loss_reduction_MA=error_reduction_MA,
+            tangle=temp_tangled_elem
         )
         fig.savefig(
             os.path.join(plot_dir, f"plot_{idx}.png")
         )
 
 
-def write_sumo(eval_dir):
-    log_dir = os.path.join(eval_dir, 'log')
+def write_sumo(eval_dir, problem_setting):
+    problem_type, domain = problem_setting
+    log_dir = os.path.join(eval_dir, f"{problem_type}_{domain}", 'log')
     file_path = os.path.join(log_dir, 'log*.csv')
     log_files = glob.glob(file_path)
 
@@ -285,23 +322,32 @@ def write_sumo(eval_dir):
     fail_count = 0
     total_count = 0
 
+    error_reduction_MA = 0
+    error_reduction_model = 0
+
+
     for file_names in log_files:
         total_count += 1
         log_df = pd.read_csv(file_names)
+        # print(log_df['tangled_element'][0], log_df['tangled_element'][0] == 0)
         if log_df['tangled_element'][0] == 0:
             pass_count += 1
             error_og += log_df['error_og'][0]
             error_MA += log_df['error_ma'][0]
             error_model += log_df['error_model'][0]
+            error_reduction_MA += log_df['error_reduction_MA']
+            error_reduction_model += log_df['error_reduction_model']
             time_MA += log_df['time_consumption_MA'][0]
             time_model += log_df['time_consumption_model'][0]
         else:
             fail_count += 1
             num_tangle += log_df['tangled_element'][0]
-
+    print(f"passed num: {pass_count}, failed num: {fail_count}")
     sumo_df = pd.DataFrame({
-        'error_reduction_MA': (error_og - error_MA) / error_og,
-        'error_reduction_model': (error_og - error_model) / error_og,
+        # 'error_reduction_MA': (error_og - error_MA) / error_og,
+        # 'error_reduction_model': (error_og - error_model) / error_og,'
+        'error_reduction_MA': error_reduction_MA / pass_count,
+        'error_reduction_model': error_reduction_model / pass_count,
         'time_MA': time_MA,
         'time_model': time_model,
         'acceleration_ratio': time_MA / time_model,
@@ -311,6 +357,7 @@ def write_sumo(eval_dir):
         'total_case': total_count,
         'dataset_path': ds_root,
     }, index=[0])
+    print(f"error_reduction_MA: {sumo_df['error_reduction_MA']}, error_reduction_model: {sumo_df['error_reduction_model']}")
     sumo_df.to_csv(os.path.join(eval_dir, 'sumo.csv'))
 
 
@@ -327,7 +374,8 @@ if __name__ == "__main__":
     model = load_model(config, epoch, eval_dir)
 
     bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
-    write_sumo(eval_dir)
+    problem_type, domain = get_problem_type(ds_root=ds_root)
+    write_sumo(eval_dir, (problem_type, domain))
 
     exit()
 
