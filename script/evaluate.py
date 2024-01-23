@@ -71,8 +71,8 @@ def init_dir(config, run_id, epoch):
     eval_dir = os.path.join(project_dir, 'eval')
     now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     experiment_dir = os.path.join(
-        eval_dir, now + '_' + config.model_used + '_'
-        + str(epoch) + '_' + run_id)
+        eval_dir, config.model_used + '_'
+        + str(epoch) + '_' + run_id, now)
     wm.mkdir_if_not_exist(experiment_dir)
     print("\t## Make eval dir done\n")
     return experiment_dir
@@ -192,7 +192,6 @@ def get_problem_type(ds_root):
             domain = 'poly'
     else:
         domain = 'square'
-    print('problem type: ', problem_type, domain, " mesh type ", meshtype)
     return problem_type, domain, meshtype
 
 
@@ -220,6 +219,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
     #     domain = 'square'
     # print('problem type: ', problem_type, domain)
     problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
+    print(f"problem type: {problem_type}, domain: {domain}, meshtype: {meshtype}")
 
     ds_info_df_path = os.path.join(ds_root, 'info.csv')
     df_info_df = pd.read_csv(ds_info_df_path)
@@ -422,35 +422,40 @@ if __name__ == "__main__":
     
 
     epoch = 999
-    # ds_root = (  # square
-    #         './data/dataset_meshtype_2/helmholtz/'
-    #         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
-    # ds_root = (  # poly
-    #         './data/dataset_meshtype_2/helmholtz_poly/'
-    #         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
-
     ds_root = (  # square
-            './data/dataset_meshtype_0/helmholtz/'
-            'z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full')
+            './data/dataset_meshtype_2/helmholtz/'
+            'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
+
+    # ds_root = (  # square
+    #         './data/dataset_meshtype_0/helmholtz/'
+    #         'z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full')
     
     run_ids = ['8ndi2teh', 'x9woqsnn']
+    ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
+                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
+                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
+                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
+                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6',]
+    for run_id in run_ids:
+        for ds_root in ds_roots:
+            problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
+            print(f"Evaluating {run_id} on dataset: {ds_root}")
+            # loginto wandb API
+            api = wandb.Api()
+            run = api.run(f"{entity}/{project_name}/{run_id}")
+            config = SimpleNamespace(**run.config)
 
-    run_id = '8ndi2teh'
+            print("# Evaluation Pipeline Started\n")
+            # init
+            eval_dir = init_dir(config, run_id, epoch)
+            dataset = load_dataset(config, ds_root, tar_folder='data')
+            model = load_model(config, epoch, eval_dir)
 
-    # loginto wandb API
-    api = wandb.Api()
-    run = api.run(f"{entity}/{project_name}/{run_id}")
-    config = SimpleNamespace(**run.config)
+            bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
+            
+            write_sumo(eval_dir, ds_root)
 
-    print("# Evaluation Pipeline Started\n")
-    # init
-    eval_dir = init_dir(config, run_id, epoch)
-    dataset = load_dataset(config, ds_root, tar_folder='data')
-    model = load_model(config, epoch, eval_dir)
-
-    bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
-    problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
-    write_sumo(eval_dir, ds_root)
-
-    exit()
+            exit()
 
