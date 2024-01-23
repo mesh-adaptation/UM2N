@@ -230,8 +230,9 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
     mesh = None
     mesh_fine = None
 
-    log_dir = os.path.join(eval_dir, f'{problem_type}_{domain}_meshtype_{meshtype}', 'log')
-    plot_dir = os.path.join(eval_dir, f'{problem_type}_{domain}_meshtype_{meshtype}', 'plot')
+    ds_name = ds_root.split('/')[-1]
+    log_dir = os.path.join(eval_dir, f'{ds_name}', 'log')
+    plot_dir = os.path.join(eval_dir, f'{ds_name}', 'plot')
     wm.mkdir_if_not_exist(log_dir)
     wm.mkdir_if_not_exist(plot_dir)
 
@@ -424,9 +425,9 @@ if __name__ == "__main__":
     # # run_id = 'x9woqsnn' # supervised phi grad
     run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2
     run_id = 'uka7cidv' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
-    
+    run_id = '81b3gh8y' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
 
-    epoch = 299
+    epoch = 999
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
@@ -437,7 +438,7 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
-    run_ids = ['uka7cidv']
+    run_ids = [run_id]
     ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2']
 
     for run_id in run_ids:
