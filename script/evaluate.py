@@ -25,19 +25,25 @@ from types import SimpleNamespace
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-entity = 'mz-team'
-project_name = 'warpmesh'
-run_id = '8ndi2teh' # semi-supervised phi grad
-# run_id = 'bzlj9vcl' # semi-supervised 111
-# run_id = 'x9woqsnn' # supervised phi grad
+# entity = 'mz-team'
+# project_name = 'warpmesh'
+# run_id = '8ndi2teh' # semi-supervised phi grad
+# # run_id = 'bzlj9vcl' # semi-supervised 111
+# # run_id = 'x9woqsnn' # supervised phi grad
 
-epoch = 999
+# epoch = 999
+# # ds_root = (  # square
+# #         './data/dataset_meshtype_2/helmholtz/'
+# #         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
+# # ds_root = (  # poly
+# #         './data/dataset_meshtype_2/helmholtz_poly/'
+# #         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
+
 # ds_root = (  # square
-#         './data/dataset_meshtype_2/helmholtz/'
-#         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
-ds_root = (  # square
-        './data/dataset_meshtype_2/helmholtz/'
-        'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
+#         './data/dataset_meshtype_0/helmholtz/'
+#         'z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full')
+
+
 # ds_root = (  # square
 #         '/Users/chunyang/projects/WarpMesh/data/dataset/helmholtz/'
 #         'z=<0,1>_ndist=None_max_dist=6_<25x25>_n=100_aniso_full')
@@ -54,7 +60,7 @@ ds_root = (  # square
 # )
 
 
-def init_dir(config):
+def init_dir(config, run_id, epoch):
     """
     Make dir for evaluation. All evaluation files will be stored
     under the dir created.
@@ -175,11 +181,10 @@ def get_log_og(log_path, idx):
         "time": df["time"][0],
     }
 
-
 def get_problem_type(ds_root):
     domain = None
     ds_type = ds_root.split('/')[-2]
-    meshtype = ds_root.split('/')[-3].split('_')[-1]
+    meshtype = int(ds_root.split('/')[-3].split('_')[-1])
     problem_list = ds_type.split('_')
     problem_type = problem_list[0]
     if (len(problem_list) == 2):
@@ -219,6 +224,9 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
     ds_info_df_path = os.path.join(ds_root, 'info.csv')
     df_info_df = pd.read_csv(ds_info_df_path)
     n_grid = None
+    if int(meshtype) == 0:
+        n_grid = int(ds_root.split('/')[-1].split('>')[-2][-2:])
+        print(f"meshtype {meshtype}, n_grid: {n_grid}")
     mesh = None
     mesh_fine = None
 
@@ -242,18 +250,20 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         temp_loss = 1000 * torch.nn.L1Loss()(out, sample.y)
         # define mesh & fine mesh for comparison
         if domain == 'square':
-            # mesh = fd.UnitSquareMesh(n_grid, n_grid)
-            # mesh_MA = fd.UnitSquareMesh(n_grid, n_grid)
-            # mesh_fine = fd.UnitSquareMesh(80, 80)
-            # mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
-            mesh = fd.Mesh(
-                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
-            mesh_MA = fd.Mesh(
-                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
-            mesh_fine = fd.Mesh(
-                os.path.join(ds_root, 'mesh_fine', f'mesh{idx}.msh'))
-            mesh_model = fd.Mesh(
-                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+            if n_grid is None:
+                mesh = fd.Mesh(
+                    os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                mesh_MA = fd.Mesh(
+                    os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                mesh_fine = fd.Mesh(
+                    os.path.join(ds_root, 'mesh_fine', f'mesh{idx}.msh'))
+                mesh_model = fd.Mesh(
+                    os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+            else:
+                mesh = fd.UnitSquareMesh(n_grid, n_grid)
+                mesh_MA = fd.UnitSquareMesh(n_grid, n_grid)
+                mesh_fine = fd.UnitSquareMesh(80, 80)
+                mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
         elif domain == 'poly':
             mesh = fd.Mesh(
                 os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
@@ -272,10 +282,16 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         temp_error_og = compare_res["error_og_mesh"]
         temp_error_ma = compare_res["error_ma_mesh"]
 
-        log_og = get_log_og(os.path.join(ds_root, 'log'), idx)
-        log_error_og = log_og["error_og"]
-        log_error_ma = log_og["error_adapt"]
-        log_time = log_og["time"]
+        if int(meshtype) != 0:
+            log_og = get_log_og(os.path.join(ds_root, 'log'), idx)
+            log_error_og = log_og["error_og"]
+            log_error_ma = log_og["error_adapt"]
+            log_time = log_og["time"]
+        else:
+            # TODO: no corresponding records in old dataset
+            log_error_og = 0.0
+            log_error_ma = 0.0
+            log_time = 0.0
 
         error_reduction_MA = (temp_error_og - temp_error_ma) / temp_error_og
         error_reduction_model = (temp_error_og - temp_error_model) / temp_error_og
@@ -294,7 +310,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
             'time_consumption_MA': log_time,
             'acceration_ratio': log_time / temp_time_consumption,
         }, index=[0])
-        log_df.to_csv(os.path.join(log_dir, f"log{idx}.csv"))
+        log_df.to_csv(os.path.join(log_dir, f"log_{idx:04d}.csv"))
 
         fig = wm.plot_mesh_compare_benchmark(
             out, sample.y, sample.face,
@@ -311,11 +327,12 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         plt.close()
 
 
-def write_sumo(eval_dir, problem_setting):
-    problem_type, domain, meshtype = problem_setting
+def write_sumo(eval_dir, ds_root):
+    problem_type, domain, meshtype = get_problem_type(ds_root)
     log_dir = os.path.join(eval_dir, f"{problem_type}_{domain}_meshtype_{meshtype}", 'log')
     file_path = os.path.join(log_dir, 'log*.csv')
     log_files = glob.glob(file_path)
+    log_files = sorted(log_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
 
     error_MA = 0
     error_model = 0
@@ -396,6 +413,30 @@ def write_sumo(eval_dir, problem_setting):
 
 
 if __name__ == "__main__":
+
+    entity = 'mz-team'
+    project_name = 'warpmesh'
+    run_id = '8ndi2teh' # semi-supervised phi grad
+    # run_id = 'bzlj9vcl' # semi-supervised 111
+    # run_id = 'x9woqsnn' # supervised phi grad
+    
+
+    epoch = 999
+    # ds_root = (  # square
+    #         './data/dataset_meshtype_2/helmholtz/'
+    #         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
+    # ds_root = (  # poly
+    #         './data/dataset_meshtype_2/helmholtz_poly/'
+    #         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
+
+    ds_root = (  # square
+            './data/dataset_meshtype_0/helmholtz/'
+            'z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full')
+    
+    run_ids = ['8ndi2teh', 'x9woqsnn']
+
+    run_id = '8ndi2teh'
+
     # loginto wandb API
     api = wandb.Api()
     run = api.run(f"{entity}/{project_name}/{run_id}")
@@ -403,13 +444,13 @@ if __name__ == "__main__":
 
     print("# Evaluation Pipeline Started\n")
     # init
-    eval_dir = init_dir(config)
+    eval_dir = init_dir(config, run_id, epoch)
     dataset = load_dataset(config, ds_root, tar_folder='data')
     model = load_model(config, epoch, eval_dir)
 
     bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
     problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
-    write_sumo(eval_dir, (problem_type, domain, meshtype))
+    write_sumo(eval_dir, ds_root)
 
     exit()
 
