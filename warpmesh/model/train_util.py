@@ -605,8 +605,8 @@ def train_unsupervised(
             # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
             # Interpolate on new moved mesh
 
-            # hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
-            hessian_norm_ = hessian_norm
+            hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
+            # hessian_norm_ = hessian_norm
 
             # =========================== jacobian related attempts ==================
             # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)
@@ -790,13 +790,13 @@ def evaluate_unsupervised(
 
             # Interpolate on new moved mesh
             monitor = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
-            phixx = phixx.reshape(bs, node_num, 1)
-            phiyx = phiyx.reshape(bs, node_num, 1)
-            monitor = monitor * (1 + phixx) + monitor * phiyx
+            # phixx = phixx.reshape(bs, node_num, 1)
+            # phiyx = phiyx.reshape(bs, node_num, 1)
+            # monitor = monitor * (1 + phixx) + monitor * phiyx
             lhs = monitor * det_hessian
             # print(f"det hessian: {det_hessian.shape} monitor: {monitor.shape}")
 
-            rhs = torch.sum(monitor, dim=(1, 2)) / node_num
+            rhs = torch.sum(hessian_norm, dim=(1, 2)) / node_num
             loss_eq_residual = 1000 * loss_func(lhs, rhs)
 
             if use_convex_loss:
