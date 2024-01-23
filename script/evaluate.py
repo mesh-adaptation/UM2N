@@ -27,11 +27,14 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 entity = 'mz-team'
 project_name = 'warpmesh'
-# run_id = '8ndi2teh' # semi-supervised phi grad
+run_id = '8ndi2teh' # semi-supervised phi grad
 # run_id = 'bzlj9vcl' # semi-supervised 111
 # run_id = 'x9woqsnn' # supervised phi grad
 
 epoch = 999
+# ds_root = (  # square
+#         './data/dataset_meshtype_2/helmholtz/'
+#         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')
 ds_root = (  # square
         './data/dataset_meshtype_2/helmholtz/'
         'z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2')

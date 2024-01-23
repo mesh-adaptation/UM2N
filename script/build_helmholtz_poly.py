@@ -121,7 +121,7 @@ project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", "helmholtz_poly")  # noqa
 problem_specific_dir = os.path.join(
         dataset_dir,
-        "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype{}".format(
+        "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype_{}".format(
             z_min, z_max, n_dist, max_dist,
             lc, n_samples,
             data_type, scheme, mesh_type))
