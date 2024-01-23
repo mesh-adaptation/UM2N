@@ -166,6 +166,12 @@ run = wandb.init(
 # artifact = wandb.Artifact(name=config.experiment_name.replace(':', '_'), type="model")
 
 
+# Freeze deformer
+for name, param in model.named_parameters():
+   if 'deformer' in name:
+      print(f"name: {name} param: {param.shape}")
+      param.requires_grad = False
+
 # Optimizer
 optimizer = torch.optim.Adam(
     model.parameters(), lr=config.learning_rate,
