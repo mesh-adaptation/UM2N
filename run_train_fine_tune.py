@@ -76,7 +76,8 @@ else:
 # Load from checkpoint
 entity = 'mz-team'
 project_name = 'warpmesh'
-run_id = '8ndi2teh'
+# run_id = '8ndi2teh'
+run_id = 'irjq8z0r'
 api = wandb.Api()
 run_loaded = api.run(f"{entity}/{project_name}/{run_id}")
 epoch = 999

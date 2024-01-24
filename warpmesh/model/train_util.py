@@ -546,7 +546,7 @@ def compute_phi_hessian(phix, phiy, out_monitor, bs, data, loss_func):
         # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
         # Interpolate on new moved mesh
 
-        # hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
+        hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
         hessian_norm_ = hessian_norm + out_monitor.reshape(bs, node_num, 1)
 
         # =========================== jacobian related attempts ==================
@@ -724,8 +724,7 @@ def evaluate_unsupervised(
     total_area_loss = 0
     for batch in loader:
         data = batch.to(device)
-        data.x.requires_grad = True
-        data.mesh_feat.requires_grad = True
+
         loss = 0
         deform_loss = 0
         inversion_loss = 0
@@ -733,8 +732,9 @@ def evaluate_unsupervised(
         area_loss = 0
 
         # with torch.no_grad():
+        data.x.requires_grad = True
+        data.mesh_feat.requires_grad = True
         (output_coord, output, out_monitor), (phix, phiy) = model(data)
-        
         loss_eq_residual, loss_convex = compute_phi_hessian(phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
         if not use_convex_loss:

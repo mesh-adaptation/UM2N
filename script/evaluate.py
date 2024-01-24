@@ -433,6 +433,12 @@ if __name__ == "__main__":
     run_id = 'dnolwyeb' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze transformer
     # run_id = 'bxrlm3dl' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, no freeze
     run_id = 'eanjdljm' # fine tune with to monitor on unsupervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze both
+    run_id = 'cbzxfq1o' # semi-supervised from old dataset with to monitor
+
+    run_id = 'irjq8z0r' # supervised from old dataset with to monitor
+
+    run_id = 'b64qp0b3' # supervised from old dataset with to monitor with interpolation
+
     epoch = 999
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
@@ -445,7 +451,11 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
     run_ids = [run_id]
-    ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2']
+    # ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2']
+    ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+                # './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
+                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2']
 
     for run_id in run_ids:
         for ds_root in ds_roots:
