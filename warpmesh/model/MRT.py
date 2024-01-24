@@ -93,7 +93,7 @@ class MRTransformer(torch.nn.Module):
             device=device
         )
 
-    def _transformer_forward(self, batch_size, mesh_feat, x_feat, get_attens=False):
+    def _transformer_forward(self, batch_size, mesh_feat, boundary, get_attens=False):
         """
         Forward pass for MRN.
 
@@ -106,7 +106,7 @@ class MRTransformer(torch.nn.Module):
         # mesh_feat: [num_nodes * batch_size, 4]
         feat_dim = mesh_feat.shape[-1]
         # mesh_feat [coord_x, coord_y, u, hessian_norm]
-        transformer_input = mesh_feat.reshape(batch_size, -1, feat_dim)
+        transformer_input = mesh_feat.view(batch_size, -1, feat_dim)
         node_num = transformer_input.shape[1]
 
         key_padding_mask = None
@@ -128,8 +128,8 @@ class MRTransformer(torch.nn.Module):
                 attention_mask[:, mask, mask] = True
         
         features = self.transformer_encoder(transformer_input, key_padding_mask=key_padding_mask, attention_mask=attention_mask)
-        features = features.reshape(-1, self.num_transformer_out)
-        features = torch.cat([x_feat[:, 2:], features], dim=1)
+        features = features.view(-1, self.num_transformer_out)
+        features = torch.cat([boundary, features], dim=1)
         features = F.selu(self.lin(features))
 
         if not get_attens:
@@ -138,14 +138,12 @@ class MRTransformer(torch.nn.Module):
             atten_scores = self.transformer_encoder.get_attention_scores(x=transformer_input, key_padding_mask=key_padding_mask)
             return features, atten_scores
 
-    def transformer_monitor(self, data):
-        conv_feat_in = data.conv_feat
-        batch_size = conv_feat_in.shape[0]
-        feat_dim = data.x.shape[-1]
-        x_feat = data.x.reshape(-1, feat_dim)
-        edge_idx = data.edge_index
+    def transformer_monitor(self, data, coord_ori, boundary):
+        batch_size = data.conv_feat.shape[0]
 
-        hidden = self._transformer_forward(batch_size, data.mesh_feat[:,:4], x_feat)
+        # [coord_ori_x, coord_ori_y, u, hessian_norm]
+        intput_features = torch.cat([coord_ori, data.mesh_feat[:, 2:4]], dim=-1)
+        hidden = self._transformer_forward(batch_size, intput_features, boundary)
 
         # TODO: more sampling points inspired by neural operator 
         # edge_idx = data.edge_index_with_cluster.reshape(2, -1)
@@ -157,9 +155,9 @@ class MRTransformer(torch.nn.Module):
         # hidden = F.selu(self.lin(hidden))
         # =====================================================================
         
-        return hidden, edge_idx
+        return hidden
 
-    def move(self, data, num_step=1):
+    def move(self, data, coord_ori, num_step=1):
         """
         Move the mesh according to the deformation learned, with given number
             steps.
@@ -176,9 +174,11 @@ class MRTransformer(torch.nn.Module):
         if (data.poly_mesh is not False):
             poly_mesh = True if data.poly_mesh.sum() > 0 else False
 
-        data.mesh_feat.requires_grad = True
-        hidden, edge_idx = self.transformer_monitor(data)
-        coord_ori = data.mesh_feat[:, :2]
+        edge_idx = data.edge_index
+
+        boundary = data.x[:, 2:]
+        hidden = self.transformer_monitor(data, coord_ori, boundary)
+        # coord_ori = data.mesh_feat[:, :2]
         coord = coord_ori
 
         model_output = None
@@ -193,7 +193,7 @@ class MRTransformer(torch.nn.Module):
 
         return (coord, model_output, out_monitor), (phix, phiy)
 
-    def forward(self, data, poly_mesh=False):
+    def forward(self, data, coord_ori, poly_mesh=False):
         """
         Forward pass for MRN.
 
@@ -208,11 +208,12 @@ class MRTransformer(torch.nn.Module):
         if (data.poly_mesh is not False):
             poly_mesh = True if data.poly_mesh.sum() > 0 else False
 
-        data.mesh_feat.requires_grad = True
-        hidden, edge_idx = self.transformer_monitor(data)
-        coord_ori = data.mesh_feat[:, :2]
-        coord = coord_ori
+        edge_idx = data.edge_index
 
+        boundary = data.x[:, 2:].view(-1, 1)
+        hidden = self.transformer_monitor(data, coord_ori, boundary)
+        # coord_ori = data.mesh_feat[:, :2]
+        coord = coord_ori
 
         model_output = None
         # Recurrent GAT deform
@@ -230,7 +231,7 @@ class MRTransformer(torch.nn.Module):
         conv_feat_in = data.conv_feat
         batch_size = batch_size = conv_feat_in.shape[0]
         feat_dim = data.x.shape[-1]
-        x_feat = data.x.reshape(-1, feat_dim)
+        x_feat = data.x.view(-1, feat_dim)
         # coord = x_feat[:, :2]
         # edge_idx = data.edge_index
         _, attentions = self._transformer_forward(batch_size, data.mesh_feat[:,:4], x_feat, get_attens=True)
