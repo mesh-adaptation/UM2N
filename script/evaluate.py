@@ -243,7 +243,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         model.eval()
         with torch.no_grad():
             start = time.perf_counter()
-            (out, model_raw_output), (phix, phiy) = model(sample, poly_mesh=True if domain == "poly" else False)
+            (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, poly_mesh=True if domain == "poly" else False)
             end = time.perf_counter()
             dur_ms = (end - start) * 1000
         temp_time_consumption = dur_ms
@@ -432,6 +432,7 @@ if __name__ == "__main__":
     run_id = '0ejnq1mt' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
     run_id = 'dnolwyeb' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze transformer
     # run_id = 'bxrlm3dl' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, no freeze
+    run_id = 'eanjdljm' # fine tune with to monitor on unsupervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze both
     epoch = 999
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
@@ -443,7 +444,7 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
-    run_ids = ['0ejnq1mt', 'dnolwyeb']
+    run_ids = [run_id]
     ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2']
 
     for run_id in run_ids:

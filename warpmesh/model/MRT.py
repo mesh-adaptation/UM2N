@@ -78,6 +78,12 @@ class MRTransformer(torch.nn.Module):
         # use a linear layer to transform the input feature to hidden
         # state size
         self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
+
+        # Mapping embedding to monitor
+        self.to_monitor_1 = nn.Linear(self.hidden_size, self.hidden_size//8)
+        self.to_monitor_2 = nn.Linear(self.hidden_size//8, self.hidden_size//16)
+        self.to_monitor_3 = nn.Linear(self.hidden_size//16, 1)
+
         self.deformer = RecurrentGATConv(
             coord_size=2,
             hidden_size=self.hidden_size,
@@ -179,8 +185,13 @@ class MRTransformer(torch.nn.Module):
         # Recurrent GAT deform
         for i in range(self.num_loop):
             (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori, bd_mask, poly_mesh)
+        
+        # Map hidden to monitor
+        out_monitor_1 = self.to_monitor_1(hidden)
+        out_monitor_2 = F.selu(self.to_monitor_2(out_monitor_1))
+        out_monitor = F.selu(self.to_monitor_3(out_monitor_2))
 
-        return (coord, model_output), (phix, phiy)
+        return (coord, model_output, out_monitor), (phix, phiy)
 
     def forward(self, data, poly_mesh=False):
         """
@@ -208,8 +219,12 @@ class MRTransformer(torch.nn.Module):
         for i in range(self.num_loop):
             (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori, bd_mask, poly_mesh)
 
+        # Map hidden to monitor
+        out_monitor_1 = self.to_monitor_1(hidden)
+        out_monitor_2 = F.selu(self.to_monitor_2(out_monitor_1))
+        out_monitor = F.selu(self.to_monitor_3(out_monitor_2))
 
-        return (coord, model_output), (phix, phiy)
+        return (coord, model_output, out_monitor), (phix, phiy)
 
     def get_attention_scores(self, data):
         conv_feat_in = data.conv_feat

@@ -508,7 +508,7 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     return torch.stack(u_interpolateds, dim=0)
 
 
-def compute_phi_hessian(phix, phiy, bs, data, loss_func):
+def compute_phi_hessian(phix, phiy, out_monitor, bs, data, loss_func):
     data.mesh_feat.requires_grad = True
     feat_dim = data.mesh_feat.shape[-1]
     # mesh_feat [coord_x, coord_y, u, hessian_norm]
@@ -547,7 +547,7 @@ def compute_phi_hessian(phix, phiy, bs, data, loss_func):
         # Interpolate on new moved mesh
 
         # hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
-        hessian_norm_ = hessian_norm
+        hessian_norm_ = hessian_norm + out_monitor.reshape(bs, node_num, 1)
 
         # =========================== jacobian related attempts ==================
         # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)
@@ -620,8 +620,8 @@ def train_unsupervised(
         data.x.requires_grad = True
         data.mesh_feat.requires_grad = True
 
-        (output_coord, output), (phix, phiy) = model(data)
-        loss_eq_residual, loss_convex = compute_phi_hessian(phix, phiy, bs, data, loss_func=loss_func)
+        (output_coord, output, out_monitor), (phix, phiy) = model(data)
+        loss_eq_residual, loss_convex = compute_phi_hessian(phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
@@ -733,9 +733,9 @@ def evaluate_unsupervised(
         area_loss = 0
 
         # with torch.no_grad():
-        (output_coord, output), (phix, phiy) = model(data)
+        (output_coord, output, out_monitor), (phix, phiy) = model(data)
         
-        loss_eq_residual, loss_convex = compute_phi_hessian(phix, phiy, bs, data, loss_func=loss_func)
+        loss_eq_residual, loss_convex = compute_phi_hessian(phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
@@ -886,7 +886,7 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
                             shuffle=False)
         for data in loader:
             with torch.no_grad():
-                output_data = model(data.to(device))
+                (output_data, _, _), (_,_) = model(data.to(device))
                 out_area = get_face_area(output_data, data.face)
                 in_area = get_face_area(data.x[:, :2], data.face)
                 # restore the sign of the area
@@ -1104,7 +1104,7 @@ def evaluate_repeat(
     }
 
 
-def load_model(model, weight_path):
+def load_model(model, weight_path, strict=False):
     """
     Loads pre-trained weights into a PyTorch model from a given file path.
 
@@ -1116,8 +1116,8 @@ def load_model(model, weight_path):
         torch.nn.Module: The model with loaded weights.
     """
     try:
-        model.load_state_dict(torch.load(weight_path))
+        model.load_state_dict(torch.load(weight_path), strict=strict)
     except RuntimeError:
         state_dict = torch.load(weight_path, map_location=torch.device('cpu'))
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=strict)
     return model

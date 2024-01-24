@@ -89,7 +89,7 @@ for file in run_loaded.files():
         target_file_name = file.name
 assert model_file is not None, "Model file not found"
 model_file_path = os.path.join(model_store_path, target_file_name)
-model = wm.load_model(model, model_file_path)
+model = wm.load_model(model, model_file_path, strict=False)
 print("Model checkpoint loaded.")
 # ===================================================================
 
@@ -170,14 +170,17 @@ run = wandb.init(
 if config.freeze_deformer:
     for name, param in model.named_parameters():
         if 'deformer' in name:
-            print(f"name: {name} param: {param.shape}")
+            print(f"[Freeze] name: {name} param: {param.shape}")
             param.requires_grad = False
 
+# Freeze transformer
 if config.freeze_transformer_monitor:
     for name, param in model.named_parameters():
-        if 'transformer' in name or 'deformer' not in name:
-            print(f"name: {name} param: {param.shape}")
+        if 'transformer' in name or 'lin.' in name:
+            print(f"[Freeze] name: {name} param: {param.shape}")
             param.requires_grad = False
+        elif 'to_monitor' in name:
+            print(f"[no freeze] name: {name}, requires grad: {param.requires_grad}")
 
 # Optimizer
 optimizer = torch.optim.Adam(
