@@ -167,10 +167,17 @@ run = wandb.init(
 
 
 # Freeze deformer
-for name, param in model.named_parameters():
-   if 'deformer' in name:
-      print(f"name: {name} param: {param.shape}")
-      param.requires_grad = False
+if config.freeze_deformer:
+    for name, param in model.named_parameters():
+        if 'deformer' in name:
+            print(f"name: {name} param: {param.shape}")
+            param.requires_grad = False
+
+if config.freeze_transformer_monitor:
+    for name, param in model.named_parameters():
+        if 'transformer' in name or 'deformer' not in name:
+            print(f"name: {name} param: {param.shape}")
+            param.requires_grad = False
 
 # Optimizer
 optimizer = torch.optim.Adam(
