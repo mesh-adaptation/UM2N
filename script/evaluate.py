@@ -335,6 +335,7 @@ def write_sumo(eval_dir, ds_root):
     log_files = glob.glob(file_path)
     log_files = sorted(log_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
 
+    deform_loss = 0
     error_MA = 0
     error_model = 0
     error_og = 0
@@ -361,6 +362,7 @@ def write_sumo(eval_dir, ds_root):
         # print(log_df['tangled_element'][0], log_df['tangled_element'][0] == 0)
         if log_df['tangled_element'][0] == 0:
             pass_count += 1
+            deform_loss += log_df['deform_loss'][0]
             error_og += log_df['error_og'][0]
             error_MA += log_df['error_ma'][0]
             error_model += log_df['error_model'][0]
@@ -386,6 +388,7 @@ def write_sumo(eval_dir, ds_root):
         # 'error_reduction_model': (error_og - error_model) / error_og,'
         'error_reduction_MA': error_reduction_MA / pass_count,
         'error_reduction_model': error_reduction_model / pass_count,
+        'deform_loss': deform_loss / pass_count,
         'time_MA': time_MA,
         'time_model': time_model,
         'acceleration_ratio': time_MA / time_model,
@@ -411,7 +414,7 @@ def write_sumo(eval_dir, ds_root):
     ax[1].legend()
 
     fig_title = ds_root.split('/')[-1]
-    fig.suptitle(f'{fig_title}', fontsize=20)
+    fig.suptitle(f'{fig_title}', fontsize=16)
     fig.savefig(os.path.join(summary_save_path, 'error_reduction_sumo.png'))
 
 
@@ -420,13 +423,14 @@ if __name__ == "__main__":
 
     entity = 'mz-team'
     project_name = 'warpmesh'
-    # run_id = '8ndi2teh' # semi-supervised phi grad
+    run_id = '8ndi2teh' # semi-supervised phi grad
     # # run_id = 'bzlj9vcl' # semi-supervised 111
     # # run_id = 'x9woqsnn' # supervised phi grad
-    run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2
-    run_id = 'uka7cidv' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
-    run_id = '81b3gh8y' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
+    # run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2
+    # run_id = 'uka7cidv' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
+    # run_id = '81b3gh8y' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
     # run_id = '0ejnq1mt' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
+    # run_id = 'dnolwyeb' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze transformer
     epoch = 999
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
