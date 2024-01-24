@@ -22,7 +22,7 @@ def arg_parse():
                         help='scalar coefficient of the swirl (velocity)')
     parser.add_argument('--save_interval', type=int, default=5,
                         help='interval for stroing sample file')
-    parser.add_argument('--lc', type=float, default=4.5e-2,
+    parser.add_argument('--lc', type=float, default=5e-2,
                         help='the length characteristic of the elements in the\
                             mesh (if using unstructured mesh)')
     args_ = parser.parse_args()
@@ -35,7 +35,7 @@ args = arg_parse()
 mesh_type = args.mesh_type
 
 # ====  Parameters ======================
-problem = "swirl"
+problem = "swirl_test"
 
 # simulation time & time steps
 T = 1
@@ -244,6 +244,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     # plt.show()
 
     # ==========================================
+    # function_space_fine = fd.FunctionSpace(mesh_fine, 'CG', 1)
     uh = fd.project(uh, function_space_fine)
     uh_new = fd.project(uh_new, function_space_fine)
 

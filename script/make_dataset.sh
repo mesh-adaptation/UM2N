@@ -4,7 +4,7 @@
 # number of samples for time-indepedent cases
 n_samples_train=400
 # use 2 / 6
-mesh_type=6
+mesh_type=2
 
 # training set build
 rand_seed=63

@@ -8,6 +8,7 @@ import time
 import torch
 import os
 import wandb
+import pprint
 
 import firedrake as fd
 import matplotlib.pyplot as plt
@@ -21,13 +22,16 @@ os.environ['OMP_NUM_THREADS'] = "1"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 entity = 'w-chunyang'
+# entity = 'mz-team'
 project_name = 'warpmesh'
+# run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2
 # run_id = 'sr7waaso'  # MRT with no mask
 # run_id = 'gl1zpjc5'  # MRN 3-loop
-run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
+# run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
+run_id = '55tlmka8'  # MRN 3-loop on type6 mesh
+epoch = 399
 
-epoch = 599
-ds_root = "/Users/chunyang/projects/WarpMesh/data/dataset/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.045_interval_50"  # noqa
+ds_root = "/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6/"  # noqa
 
 
 def init_dir(config):
@@ -153,12 +157,20 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
     mesh_new = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
     mesh_fine = fd.Mesh(os.path.join(ds_root, 'mesh_fine', 'mesh.msh'))
 
+    # fd.triplot(mesh)
+    # fd.triplot(mesh_fine)
+
     evaluator = wm.SwirlEvaluator(
-        mesh, mesh_fine, mesh_new, dataset,
+        mesh, mesh_fine, mesh_new, dataset, model, eval_dir, ds_root,
         sigma=sigma, alpha=alpha, r_0=r_0,
         T=T, n_step=n_step,
     )
-    evaluator.eval_problem()
+
+    evaluator.make_log_dir()
+    evaluator.make_plot_dir()
+    evaluator.make_plot_more_dir()
+
+    eval_res = evaluator.eval_problem()                     # noqa
 
     return
 
@@ -167,15 +179,69 @@ def write_sumo(eval_dir):
     pass
 
 
+dummy_config_raw = {
+    'batch_size': 10,
+    'check_tangle_interval': 10,
+    'conv_feat': ['conv_uh', 'conv_hessian_norm'],
+    'conv_feat_fix': ['conv_uh_fix'],
+    'count_tangle_method': 'inversion',
+    'experiment_name': '2024-01-11-11:56_MRN_area_loss_bi_edge_poly',
+    'inversion_loss_scaler': 10000000000.0,
+    'is_normalise': True,
+    'lc_test': [0.045, 0.04],
+    'lc_train': [0.055, 0.05],
+    'learning_rate': 5e-05,
+    'mesh_feat': ['coord', 'u', 'hessian_norm'],
+    'model_used': 'MRN',
+    'multi_scale_check_interval': 50,
+    'num_deform_in': 3,
+    'num_deformer_loop': 3,
+    'num_epochs': 1500,
+    'num_gfe_in': 2,
+    'num_lfe_in': 4,
+    'out_path': '/content/drive/MyDrive/warpmesh/out',
+    'print_interval': 1,
+    'project': 'warpmesh',
+    'save_interval': 20,
+    'train_boundary_scheme': 'full',
+    'train_data_set_type': 'aniso',
+    'use_area_loss': True,
+    'use_inversion_diff_loss': False,
+    'use_inversion_loss': False,
+    'use_jacob': False,
+    'weight_decay': 0.1,
+    'x_feat': ['coord', 'bd_mask']
+}
+
+
+dummy_config = SimpleNamespace(**dummy_config_raw)
+
+
+def get_local_model(config):
+    model_path = "/Users/chunyang/projects/WarpMesh/temp/model_599.pth"
+    model = wm.MRN(
+        gfe_in_c=config.num_gfe_in,
+        lfe_in_c=config.num_lfe_in,
+        deform_in_c=config.num_deform_in,
+        num_loop=config.num_deformer_loop,
+    )
+    model = wm.load_model(model, model_path)
+    return model
+
+
 if __name__ == "__main__":
     print("Evaluation Script for 2D Ring Problem \n")
     api = wandb.Api()
     run = api.run(f"{entity}/{project_name}/{run_id}")
     config = SimpleNamespace(**run.config)
+    # config = dummy_config
     eval_dir = init_dir(config)
     dataset = load_dataset(config, ds_root, tar_folder='data')
     model = load_model(config, epoch, eval_dir)
+    # model = get_local_model(config)
 
     bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
+
     write_sumo(eval_dir)
+
     exit()

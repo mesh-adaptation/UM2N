@@ -300,7 +300,7 @@ class SwirlSolver():
                     self.mesh.coordinates.dat.data[:] = self.adapt_coord
                     self.project_u_()
                     self.solve_u(self.t)
-                    function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)
+                    function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)  # noqa
                     self.uh_new = fd.Function(function_space_new).project(self.u_cur)  # noqa
 
                     # error measuring
@@ -320,9 +320,9 @@ class SwirlSolver():
 
                     # retrive info from original mesh and save data
                     function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-                    function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
+                    function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)  # noqa
                     uh_fine = fd.Function(function_space_fine)
-                    uh_fine.project(self.u_fine)
+                    uh_fine.project(self.u_cur_fine)
 
                     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
                     uh_grad = fd.interpolate(
@@ -381,13 +381,18 @@ class SwirlSolver():
         self.mesh.coordinates.dat.data[:] = self.init_coord
         self.project_u_()
         self.solve_u(self.t)
-        u_og_2_fine = fd.project(self.u_cur, function_space_fine)
+        function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+        u_og = fd.Function(function_space).project(self.u_cur)
+        u_og_2_fine = fd.project(u_og, function_space_fine)
 
         # solve on coarse adapt mesh
         self.mesh.coordinates.dat.data[:] = self.adapt_coord
+        self.mesh.coordinates.dat.data[:] = self.adapt_coord
         self.project_u_()
         self.solve_u(self.t)
-        u_adapt_2_fine = fd.project(self.u_cur, function_space_fine)
+        function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)
+        u_adapt = fd.Function(function_space_new).project(self.u_cur)
+        u_adapt_2_fine = fd.project(u_adapt, function_space_fine)
 
         # error calculation
         error_og = fd.errornorm(
