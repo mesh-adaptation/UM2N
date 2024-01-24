@@ -329,8 +329,8 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
 
 def write_sumo(eval_dir, ds_root):
-    problem_type, domain, meshtype = get_problem_type(ds_root)
-    log_dir = os.path.join(eval_dir, f"{problem_type}_{domain}_meshtype_{meshtype}", 'log')
+    ds_name = ds_root.split('/')[-1]
+    log_dir = os.path.join(eval_dir, f"{ds_name}", 'log')
     file_path = os.path.join(log_dir, 'log*.csv')
     log_files = glob.glob(file_path)
     log_files = sorted(log_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
@@ -396,7 +396,7 @@ def write_sumo(eval_dir, ds_root):
         'dataset_path': ds_root,
     }, index=[0])
     print(f"error_reduction_MA: {sumo_df['error_reduction_MA'][0]}, error_reduction_model: {sumo_df['error_reduction_model'][0]}")
-    summary_save_path = os.path.join(eval_dir, f"{problem_type}_{domain}_meshtype_{meshtype}")
+    summary_save_path = os.path.join(eval_dir, f"{ds_name}")
     sumo_df.to_csv(os.path.join(summary_save_path, 'sumo.csv'))
 
     # Visualize the error reduction
@@ -426,7 +426,7 @@ if __name__ == "__main__":
     run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2
     run_id = 'uka7cidv' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
     run_id = '81b3gh8y' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
-
+    # run_id = '0ejnq1mt' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
     epoch = 999
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
