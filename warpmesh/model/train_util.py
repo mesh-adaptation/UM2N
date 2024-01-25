@@ -527,8 +527,8 @@ def compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, d
         # original_mesh_x = data.mesh_feat[:, 0].view(bs, node_num, 1)
         # original_mesh_y = data.mesh_feat[:, 1].view(bs, node_num, 1)
 
-        moved_x = phix.view(bs, node_num, 1) + coord_ori_x
-        moved_y = phiy.view(bs, node_num, 1) + coord_ori_y
+        moved_x = phix.view(bs, node_num, 1) + coord_ori_x.view(bs, node_num, 1)
+        moved_y = phiy.view(bs, node_num, 1) + coord_ori_y.view(bs, node_num, 1)
 
         # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
         # Interpolate on new moved mesh
