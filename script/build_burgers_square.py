@@ -300,7 +300,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
                      function_space_fine,
                      uh_fine, dur,
                      nu, gauss_list,
-                     t,
+                     t, idx,
                      error_og_list=[],
                      error_adapt_list=[],
                      ):
@@ -336,7 +336,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
         nu=nu,
         gauss_list=gauss_list,
         dur=dur,
-        t=t,
+        t=t, idx=idx,
     )
 
     mesh_processor.save_taining_data(
@@ -435,7 +435,7 @@ if __name__ == "__main__":
             # Generate Random solution field
             gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
             solver = wm.BurgersSolver(
-                mesh, mesh_fine, mesh_new, gauss_list=gaussian_list, nu=nu,
+                mesh, mesh_fine, mesh_new, gauss_list=gaussian_list, nu=nu, idx=idx
             )
             solver.solve_problem(sample_from_loop)
             print()

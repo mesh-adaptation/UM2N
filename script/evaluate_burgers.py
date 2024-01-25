@@ -27,7 +27,7 @@ project_name = 'warpmesh'
 run_id = '55tlmka8'  # MRN 3-loop on type6 mesh
 epoch = 1499
 
-ds_root = "/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.05_n=5_iso_pad_meshtype_6/"  # noqa
+ds_root = "/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/burgers/lc=0.05_n=5_iso_pad_meshtype_2/"  # noqa
 
 
 def get_sample_param_of_nu_generalization_by_idx_train(idx_in):

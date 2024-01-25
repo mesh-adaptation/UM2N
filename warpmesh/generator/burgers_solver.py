@@ -22,7 +22,7 @@ class BurgersSolver():
     """
 
     # def __init__(self, mesh, rand_generator, **kwargs):
-    def __init__(self, mesh, mesh_fine, mesh_new, **kwargs):
+    def __init__(self, mesh, mesh_fine, mesh_new, idx, **kwargs):
         """
         Initialise the solver.
         kwargs:
@@ -33,6 +33,8 @@ class BurgersSolver():
         self.mesh = mesh
         self.mesh_fine = mesh_fine
         self.mesh_new = mesh_new
+
+        self.idx = idx
 
         self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
         self.init_coord_fine = self.mesh_fine.coordinates.vector().array().reshape(-1, 2) # noqa
@@ -278,6 +280,7 @@ class BurgersSolver():
                 error_og_list=self.error_og_list,
                 dur=dur_ms,
                 t=t,
+                idx=self.idx,
             )
 
             # step forward in time

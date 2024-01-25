@@ -105,6 +105,7 @@ class MeshProcessor():
             swirl_params=None,  # used in swirl test case for init ring gen
             dur=None,
             t=None,
+            idx=None,
     ):
         self.use_4_edge = use_4_edge
         self.num_boundary = num_boundary
@@ -113,6 +114,7 @@ class MeshProcessor():
         self.mesh = original_mesh
         self.optimal_mesh = optimal_mesh
         self.t = t
+        self.idx = idx
         # the optimal mesh function space
         self.function_space = function_space
         self.feature = feature
@@ -313,7 +315,8 @@ class MeshProcessor():
             "duration": self.dur,
             "poly_mesh": self.poly_mesh,
             "swirl_params": self.swirl_params,
-            "t": self.t,
+            "t": self.t,      # time step when solving burgers eq.
+            "idx": self.idx,  # index number for picking params for burgers tracer.  # noqa
         }
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)
