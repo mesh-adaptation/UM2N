@@ -294,7 +294,7 @@ class SwirlEvaluator():
                 # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
                 num_tangle = wm.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
                 if (num_tangle > 0):  # has tangled elems:
-                    res["tangled_element"] = -1
+                    res["tangled_element"] = num_tangle
                     res["error_model"] = -1
                 else:  # mesh is valid, perform evaluation: 1.
                     res["tangled_element"] = num_tangle
