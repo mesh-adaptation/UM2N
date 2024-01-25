@@ -534,7 +534,7 @@ def compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, d
         # Interpolate on new moved mesh
 
         hessian_norm_ = interpolate(hessian_norm, coord_ori_x, coord_ori_y, moved_x, moved_y)
-        hessian_norm_ = hessian_norm + out_monitor.view(bs, node_num, 1)
+        enhanced_hessian_norm = hessian_norm_ + out_monitor.view(bs, node_num, 1)
 
         # =========================== jacobian related attempts ==================
         # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)
@@ -553,7 +553,7 @@ def compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, d
         # monitor = monitor_grad(alpha, jac_xi_1, jac_xi_2) /1000
         # =========================== 
 
-        lhs = hessian_norm_ * det_hessian
+        lhs = enhanced_hessian_norm * det_hessian
         rhs = torch.sum(hessian_norm, dim=(1, 2)) / node_num
         rhs = rhs.unsqueeze(-1).repeat(1, node_num).unsqueeze(-1)
         loss_eq_residual = 1000 * loss_func(lhs, rhs)
