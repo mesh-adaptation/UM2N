@@ -4,18 +4,14 @@
 # import packages
 import datetime
 import glob
-import time
 import torch
 import os
 import wandb
-import pprint
 
 import firedrake as fd
-import matplotlib.pyplot as plt
 import pandas as pd
 import warpmesh as wm
 
-from torch_geometric.loader import DataLoader
 from types import SimpleNamespace
 
 os.environ['OMP_NUM_THREADS'] = "1"
@@ -24,12 +20,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 entity = 'w-chunyang'
 # entity = 'mz-team'
 project_name = 'warpmesh'
-# run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2
+# run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2  # noqa
 # run_id = 'sr7waaso'  # MRT with no mask
 # run_id = 'gl1zpjc5'  # MRN 3-loop
 # run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
 run_id = '55tlmka8'  # MRN 3-loop on type6 mesh
-epoch = 399
+epoch = 1499
 
 ds_root = "/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6/"  # noqa
 
@@ -142,9 +138,7 @@ def load_model(config, epoch, experiment_dir):
     return model
 
 
-def benchmark_model(model, dataset, eval_dir, ds_root,
-                    start_idx=0, num_samples=100
-                    ):
+def benchmark_model(model, dataset, eval_dir, ds_root):
     # Readin params for a specific swirl problem
     info_df = pd.read_csv(os.path.join(ds_root, 'info.csv'))
     sigma = info_df["sigma"][0]
@@ -176,57 +170,47 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
 
 def write_sumo(eval_dir):
-    pass
+    log_dir = os.path.join(eval_dir, 'log')
+    file_path = os.path.join(log_dir, 'log*.csv')
+    log_files = glob.glob(file_path)
 
+    error_MA = 0
+    error_model = 0
+    error_og = 0
+    time_MA = 0
+    num_tangle = 0
+    time_model = 0
+    pass_count = 0
+    fail_count = 0
+    total_count = 0
 
-dummy_config_raw = {
-    'batch_size': 10,
-    'check_tangle_interval': 10,
-    'conv_feat': ['conv_uh', 'conv_hessian_norm'],
-    'conv_feat_fix': ['conv_uh_fix'],
-    'count_tangle_method': 'inversion',
-    'experiment_name': '2024-01-11-11:56_MRN_area_loss_bi_edge_poly',
-    'inversion_loss_scaler': 10000000000.0,
-    'is_normalise': True,
-    'lc_test': [0.045, 0.04],
-    'lc_train': [0.055, 0.05],
-    'learning_rate': 5e-05,
-    'mesh_feat': ['coord', 'u', 'hessian_norm'],
-    'model_used': 'MRN',
-    'multi_scale_check_interval': 50,
-    'num_deform_in': 3,
-    'num_deformer_loop': 3,
-    'num_epochs': 1500,
-    'num_gfe_in': 2,
-    'num_lfe_in': 4,
-    'out_path': '/content/drive/MyDrive/warpmesh/out',
-    'print_interval': 1,
-    'project': 'warpmesh',
-    'save_interval': 20,
-    'train_boundary_scheme': 'full',
-    'train_data_set_type': 'aniso',
-    'use_area_loss': True,
-    'use_inversion_diff_loss': False,
-    'use_inversion_loss': False,
-    'use_jacob': False,
-    'weight_decay': 0.1,
-    'x_feat': ['coord', 'bd_mask']
-}
+    for file_names in log_files:
+        total_count += 1
+        log_df = pd.read_csv(file_names)
+        if log_df['tangled_element'][0] == 0:
+            pass_count += 1
+            error_og += log_df['error_og'][0]
+            error_MA += log_df['error_ma'][0]
+            error_model += log_df['error_model'][0]
+            time_MA += log_df['time_consumption_MA'][0]
+            time_model += log_df['time_consumption_model'][0]
+        else:
+            fail_count += 1
+            num_tangle += log_df['tangled_element'][0]
 
-
-dummy_config = SimpleNamespace(**dummy_config_raw)
-
-
-def get_local_model(config):
-    model_path = "/Users/chunyang/projects/WarpMesh/temp/model_599.pth"
-    model = wm.MRN(
-        gfe_in_c=config.num_gfe_in,
-        lfe_in_c=config.num_lfe_in,
-        deform_in_c=config.num_deform_in,
-        num_loop=config.num_deformer_loop,
-    )
-    model = wm.load_model(model, model_path)
-    return model
+    sumo_df = pd.DataFrame({
+        'error_reduction_MA': (error_og - error_MA) / error_og,
+        'error_reduction_model': (error_og - error_model) / error_og,
+        'time_MA': time_MA,
+        'time_model': time_model,
+        'acceleration_ratio': time_MA / time_model,
+        'tangle_total': num_tangle,
+        'TEpM(tangled Elements per Mesh)': num_tangle / total_count,
+        'failed_case': fail_count,
+        'total_case': total_count,
+        'dataset_path': ds_root,
+    }, index=[0])
+    sumo_df.to_csv(os.path.join(eval_dir, 'sumo.csv'))
 
 
 if __name__ == "__main__":
@@ -234,11 +218,9 @@ if __name__ == "__main__":
     api = wandb.Api()
     run = api.run(f"{entity}/{project_name}/{run_id}")
     config = SimpleNamespace(**run.config)
-    # config = dummy_config
     eval_dir = init_dir(config)
     dataset = load_dataset(config, ds_root, tar_folder='data')
     model = load_model(config, epoch, eval_dir)
-    # model = get_local_model(config)
 
     bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
 
