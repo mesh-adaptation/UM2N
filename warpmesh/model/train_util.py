@@ -303,60 +303,58 @@ class TangleCounter(MessagePassing):
 
 
 
-def count_dataset_tangle(dataset, model, device, method="inversion"):
-    """
-    Computes the average number of tangles in a dataset.
+# def count_dataset_tangle(dataset, model, device, method="inversion"):
+#     """
+#     Computes the average number of tangles in a dataset.
 
-    Args:
-        dataset (Dataset): The PyTorch Geometric dataset.
-        model (torch.nn.Module): The PyTorch model.
-        device (torch.device): The device to run the computation.
+#     Args:
+#         dataset (Dataset): The PyTorch Geometric dataset.
+#         model (torch.nn.Module): The PyTorch model.
+#         device (torch.device): The device to run the computation.
 
-    Returns:
-        float: The average number of tangles in the dataset.
-    """
-    model.eval()
-    num_tangle = 0
-    if (method == "inversion"):
-        loader = DataLoader(dataset=dataset, batch_size=1,
-                            shuffle=False)
-        for data in loader:
+#     Returns:
+#         float: The average number of tangles in the dataset.
+#     """
+#     model.eval()
+#     num_tangle = 0
+#     if (method == "inversion"):
+#         loader = DataLoader(dataset=dataset, batch_size=1,
+#                             shuffle=False)
+#         for data in loader:
 
-            data.x.requires_grad = True
+#             (output_coord, model_raw_output, out_monitor), (phix, phiy) = model(data.to(device))
 
-            (output_coord, model_raw_output, out_monitor), (phix, phiy) = model(data.to(device))
+#             # Compute the new mesh coord given model output phi
+#             bs = 1
+#             feat_dim = data.mesh_feat.shape[-1]
+#             # mesh_feat [coord_x, coord_y, u, hessian_norm]
+#             node_num = data.mesh_feat.view(bs, -1, feat_dim).shape[1]
 
-            # Compute the new mesh coord given model output phi
-            bs = 1
-            feat_dim = data.mesh_feat.shape[-1]
-            # mesh_feat [coord_x, coord_y, u, hessian_norm]
-            node_num = data.mesh_feat.view(bs, -1, feat_dim).shape[1]
+#             out_area = get_face_area(output_coord, data.face)
+#             in_area = get_face_area(data.x[:, :2], data.face)
+#             # restore the sign of the area
+#             out_area = torch.sign(in_area) * out_area
+#             # mask for negative area
+#             neg_mask = out_area < 0
+#             neg_area = out_area[neg_mask]
+#             # calculate the loss, we want it normalized by the batch size
+#             # and loss should be positive, so we are using -1 here.
+#             num_tangle += len(neg_area)
+#         return num_tangle / len(dataset)
 
-            out_area = get_face_area(output_coord, data.face)
-            in_area = get_face_area(data.x[:, :2], data.face)
-            # restore the sign of the area
-            out_area = torch.sign(in_area) * out_area
-            # mask for negative area
-            neg_mask = out_area < 0
-            neg_area = out_area[neg_mask]
-            # calculate the loss, we want it normalized by the batch size
-            # and loss should be positive, so we are using -1 here.
-            num_tangle += len(neg_area)
-        return num_tangle / len(dataset)
-
-    # deprecated, do not use this option unless you know what you are doing
-    elif (method == "msg"):
-        for i in range(len(dataset)):
-            data = dataset[i].to(device)
-            with torch.no_grad():
-                output_data = model(data)
-                input_edge = data.edge_index
-                mesh = data.x[:, :2]
-                mesh_new = output_data
-                Counter = TangleCounter()
-                num_tangle += Counter(mesh, mesh_new, input_edge).item()
-        num_tangle = num_tangle / len(dataset)
-        return num_tangle
+#     # deprecated, do not use this option unless you know what you are doing
+#     elif (method == "msg"):
+#         for i in range(len(dataset)):
+#             data = dataset[i].to(device)
+#             with torch.no_grad():
+#                 output_data = model(data)
+#                 input_edge = data.edge_index
+#                 mesh = data.x[:, :2]
+#                 mesh_new = output_data
+#                 Counter = TangleCounter()
+#                 num_tangle += Counter(mesh, mesh_new, input_edge).item()
+#         num_tangle = num_tangle / len(dataset)
+#         return num_tangle
 
 
 

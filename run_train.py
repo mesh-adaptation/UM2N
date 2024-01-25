@@ -21,9 +21,12 @@ import wandb
 # from google.colab import userdata
 import argparse
 from argparse import Namespace
+import numpy as np
 
-# random_seed = 666
-# torch.manual_seed(random_seed)
+random_seed = 666
+
+torch.manual_seed(random_seed)
+np.random.seed(random_seed)
 
 
 parser = argparse.ArgumentParser(
