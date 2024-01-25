@@ -104,6 +104,7 @@ class MeshProcessor():
             gauss_list=None,    # used in burgers equation bumps generation
             swirl_params=None,  # used in swirl test case for init ring gen
             dur=None,
+            t=None,
     ):
         self.use_4_edge = use_4_edge
         self.num_boundary = num_boundary
@@ -111,6 +112,7 @@ class MeshProcessor():
         self.dist_params = dist_params
         self.mesh = original_mesh
         self.optimal_mesh = optimal_mesh
+        self.t = t
         # the optimal mesh function space
         self.function_space = function_space
         self.feature = feature
@@ -311,6 +313,7 @@ class MeshProcessor():
             "duration": self.dur,
             "poly_mesh": self.poly_mesh,
             "swirl_params": self.swirl_params,
+            "t": self.t,
         }
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)
