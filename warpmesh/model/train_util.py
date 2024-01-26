@@ -455,6 +455,43 @@ def train(
 
     return res
 
+def interpolate(u, x, y):
+    """
+    u: b*n*n
+    x: b*1
+    y: b*1
+    """
+
+    n = u.shape[-1]
+    grid_x = np.linspace(0, 1, n)
+    grid_y = np.linspace(0, 1, n)
+    grid = torch.tensor(np.array(np.meshgrid(grid_x, grid_y)), dtype=torch.float).reshape(1, 2, -1).permute(0, 2, 1).to(u.device)
+    d = -torch.norm(grid.repeat(x.shape[0], 1, 1) - torch.cat((x, y), dim=-1).unsqueeze(1).repeat(1, n*n, 1), dim=-1) * n
+    normalize = nn.Softmax(dim=-1)
+    weight = normalize(d)  
+    interpolated = torch.sum(u.reshape(-1, n**2) * weight, dim=-1).unsqueeze(-1)
+
+    return interpolated # b*1
+
+
+def interpolate_tri(u, ori_x, ori_y, x, y):
+    """
+    u: b*n
+    ori_x: b*n*1
+    ori_y: b*n*1
+    x: b*n*1
+    y: b*n*1
+    """
+    n = u.shape[-1]
+    grid = torch.cat((ori_x, ori_y), dim=-1)
+    d = -torch.norm(grid - torch.cat((x, y), dim=-1), dim=-1) * np.sqrt(n)
+    normalize = nn.Softmax(dim=-1)
+    weight = normalize(d)  
+    # weight = softmax(d, dim=-1)  
+    interpolated = torch.sum(u * weight, dim=-1).unsqueeze(-1)
+
+    return interpolated # b*1
+
 
 def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     """
@@ -534,7 +571,7 @@ def compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, d
         # Interpolate on new moved mesh
 
         hessian_norm_ = interpolate(hessian_norm, coord_ori_x, coord_ori_y, moved_x, moved_y)
-        enhanced_hessian_norm = hessian_norm_ + out_monitor.view(bs, node_num, 1)
+        enhanced_hessian_norm = hessian_norm_ #+ out_monitor.view(bs, node_num, 1)
 
         # =========================== jacobian related attempts ==================
         # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)

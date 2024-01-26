@@ -81,6 +81,9 @@ run_id = 'fhmqq8eg' # supervised phi grad test
 run_id = 's6qrcn54' # unsupervised 1 1 1, large unsupervised
 
 
+run_id = 'kuz2edst' # refactor the gradient
+
+
 run_id_collections = {"MRT":['mfn1hnrg'],
 
                       "MRT-no-udlr":['2b0ouh5p'],
@@ -97,6 +100,7 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R-phi-grad-un-111-large": ['2f4florr'],
                       "MRT-1R-phi-grad-test": ['fhmqq8eg'],
                       "MRT-1R-phi-grad-un-grad-test": ['s6qrcn54'],
+                      "MRT-1R-phi-grad-un-grad-test-new": ['kuz2edst'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
@@ -144,7 +148,8 @@ num_sample_vis = 5
 # test dataset, for benchmarking loss effects on model performance
 
 
-models_to_compare = ["MRT-1R-phi-grad-un-111"]
+models_to_compare = ["MRT-1R-phi-grad-un-111-small"]
+models_to_compare = ["MRT-1R-phi-grad-un-grad-test-new"]
 # models_to_compare = ["MRT-1R-phi-grad-un-grad-test"]
 # models_to_compare = ["MRT-1R-phi-grad"]
 
@@ -220,7 +225,8 @@ for model_name in models_to_compare:
     )
     else:
         raise Exception(f"Model {config.model_used} not implemented.")
-    config.mesh_feat.extend(['grad_u', 'phi', 'grad_phi', 'jacobian'])
+    # config.mesh_feat.extend(['grad_u', 'phi', 'grad_phi', 'jacobian'])
+    config.mesh_feat.extend(['phi', 'grad_phi', 'jacobian'])
     print("mesh feat type ", config.mesh_feat)
     test_set = wm.MeshDataset(
         test_dir,
@@ -324,10 +330,15 @@ for model_name in models_to_compare:
               max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
               sample.mesh_feat[:, 2:] = sample.mesh_feat[:, 2:] / max_abs_val
 
+              coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
+              coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
 
-              sample.x.requires_grad = True
-              sample.mesh_feat.requires_grad = True
-              (out, phi), (phix, phiy) = model.move(sample, num_step=1)
+              coord_ori_x.requires_grad = True
+              coord_ori_y.requires_grad = True
+
+              coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+
+              (out, phi, out_monitor), (phix, phiy) = model.move(sample, coord_ori, num_step=1)
               feat_dim = sample.mesh_feat.shape[-1]
               node_num = sample.mesh_feat.reshape(1, -1, feat_dim).shape[1]
 
@@ -335,14 +346,11 @@ for model_name in models_to_compare:
               out_phiy_collections[model_name].append(phiy.detach().cpu().numpy())
               
               hessian_seed = torch.ones(phix.shape).to(device)
-              phix_grad = torch.autograd.grad(phix, sample.mesh_feat, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-              phiy_grad = torch.autograd.grad(phiy, sample.mesh_feat, grad_outputs=hessian_seed, retain_graph=False, create_graph=False, allow_unused=True)[0]
+              phixx = torch.autograd.grad(phix, coord_ori_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phixy = torch.autograd.grad(phix, coord_ori_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phiyx = torch.autograd.grad(phiy, coord_ori_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phiyy = torch.autograd.grad(phiy, coord_ori_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
 
-              # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
-              phixx = phix_grad[:, 0]
-              phixy = phix_grad[:, 1]
-              phiyx = phiy_grad[:, 0]
-              phiyy = phiy_grad[:, 1]
 
               out_phixx_collections[model_name].append(phixx.detach().cpu().numpy())
               out_phiyy_collections[model_name].append(phiyy.detach().cpu().numpy())
@@ -360,13 +368,13 @@ for model_name in models_to_compare:
           else:
             out = model.move(sample, num_step=5)
         print(out.shape)
-        if 'MRT' in model_name:
-            attentions = model.get_attention_scores(sample)
+        # if 'MRT' in model_name:
+        #     attentions = model.get_attention_scores(sample)
         deform_loss = loss_func(out, sample.y)*1000
         print(f"{model_name} {cnt} deform loss: {deform_loss}, mesh vertices: {out.shape}")
         out_mesh_collections[model_name].append(out.detach().cpu().numpy())
         out_loss_collections[model_name].append(deform_loss)
-        out_atten_collections[model_name].append(attentions)
+        # out_atten_collections[model_name].append(attentions)
         target_mesh.append(sample.y.detach().cpu().numpy())
         target_face.append(sample.face.detach().cpu().numpy())
         target_hessian_norm.append(sample.mesh_feat[:,-1].detach().cpu().numpy())
@@ -398,9 +406,10 @@ for model_name in models_to_compare:
 
 ##################################################################
 
-model_name = "MRT-1R-phi-grad-un-111"
+# model_name = "MRT-1R-phi-grad-un-111-small"
 # model_name = "MRT-1R-phi-grad-un-grad-test"
 # model_name = "MRT-1R-phi-grad"
+model_name = "MRT-1R-phi-grad-un-grad-test-new"
 num_selected = 2
 
 phix = out_phix_collections[model_name][num_selected]
@@ -477,4 +486,4 @@ for name, (model_val, fd_val) in variables_collections.items():
   plt.colorbar(plt_obj3)
   row += 1
 
-fig.savefig(f"{dataset_name}_output_comparison_{start_num+num_selected}.png")
+fig.savefig(f"{dataset_name}_output_comparison_{start_num+num_selected}_new.png")
