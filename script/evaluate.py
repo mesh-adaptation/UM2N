@@ -243,7 +243,16 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         model.eval()
         with torch.no_grad():
             start = time.perf_counter()
-            (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, poly_mesh=True if domain == "poly" else False)
+
+            mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
+            mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
+            mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
+            coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
+            coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
+            coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+
+            (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query, poly_mesh=True if domain == "poly" else False)
             end = time.perf_counter()
             dur_ms = (end - start) * 1000
         temp_time_consumption = dur_ms
@@ -439,7 +448,9 @@ if __name__ == "__main__":
 
     run_id = 'b64qp0b3' # supervised from old dataset with to monitor with interpolation
 
-    epoch = 999
+    run_id = 'yn3aaiwi' # mesh query semi 111
+
+    epoch = 799
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
@@ -451,11 +462,11 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
     run_ids = [run_id]
-    # ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2']
-    ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-                # './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2']
+    ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
+    # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+    #             # './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
+    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2']
 
     for run_id in run_ids:
         for ds_root in ds_roots:

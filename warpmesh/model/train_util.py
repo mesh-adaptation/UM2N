@@ -531,7 +531,7 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     return torch.stack(u_interpolateds, dim=0)
 
 
-def compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, data, loss_func):
+def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func):
     feat_dim = data.mesh_feat.shape[-1]
     # mesh_feat [coord_x, coord_y, u, hessian_norm]
     node_num = data.mesh_feat.view(bs, -1, feat_dim).shape[1]
@@ -542,10 +542,10 @@ def compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, d
     if phix is not None and phiy is not None:
         # print(f"phix: {phix.shape}, phiy: {phiy.shape}")
         hessian_seed = torch.ones(phix.shape).to(device)
-        phixx = torch.autograd.grad(phix, coord_ori_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-        phixy = torch.autograd.grad(phix, coord_ori_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-        phiyx = torch.autograd.grad(phiy, coord_ori_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-        phiyy = torch.autograd.grad(phiy, coord_ori_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phixx = torch.autograd.grad(phix, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phixy = torch.autograd.grad(phix, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phiyx = torch.autograd.grad(phiy, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phiyy = torch.autograd.grad(phiy, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
 
         # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
         # phixx = phix_grad[:, 0]
@@ -564,13 +564,13 @@ def compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, d
         # original_mesh_x = data.mesh_feat[:, 0].view(bs, node_num, 1)
         # original_mesh_y = data.mesh_feat[:, 1].view(bs, node_num, 1)
 
-        moved_x = phix.view(bs, node_num, 1) + coord_ori_x.view(bs, node_num, 1)
-        moved_y = phiy.view(bs, node_num, 1) + coord_ori_y.view(bs, node_num, 1)
+        moved_x = phix.view(bs, node_num, 1) + mesh_query_x.view(bs, node_num, 1)
+        moved_y = phiy.view(bs, node_num, 1) + mesh_query_y.view(bs, node_num, 1)
 
         # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
         # Interpolate on new moved mesh
 
-        hessian_norm_ = interpolate(hessian_norm, coord_ori_x, coord_ori_y, moved_x, moved_y)
+        hessian_norm_ = interpolate(hessian_norm, mesh_query_x, mesh_query_y, moved_x, moved_y)
         enhanced_hessian_norm = hessian_norm_ #+ out_monitor.view(bs, node_num, 1)
 
         # =========================== jacobian related attempts ==================
@@ -642,6 +642,13 @@ def train_unsupervised(
         optimizer.zero_grad()
         data = batch.to(device)
 
+        # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+        mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
+        mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
+        mesh_query_x.requires_grad = True
+        mesh_query_y.requires_grad = True
+        mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
         coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
         coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
 
@@ -650,8 +657,8 @@ def train_unsupervised(
 
         coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-        (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori)
-        loss_eq_residual, loss_convex = compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
+        (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori, mesh_query)
+        loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
@@ -763,6 +770,13 @@ def evaluate_unsupervised(
 
         # with torch.no_grad():
 
+        # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+        mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
+        mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
+        mesh_query_x.requires_grad = True
+        mesh_query_y.requires_grad = True
+        mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
         coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
         coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
 
@@ -771,8 +785,8 @@ def evaluate_unsupervised(
 
         coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-        (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori)
-        loss_eq_residual, loss_convex = compute_phi_hessian(coord_ori_x, coord_ori_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
+        (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori, mesh_query)
+        loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)

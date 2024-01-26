@@ -83,6 +83,8 @@ run_id = 's6qrcn54' # unsupervised 1 1 1, large unsupervised
 
 run_id = 'kuz2edst' # refactor the gradient
 
+run_id = 'yn3aaiwi' # mesh query semi 111
+
 
 run_id_collections = {"MRT":['mfn1hnrg'],
 
@@ -101,6 +103,7 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R-phi-grad-test": ['fhmqq8eg'],
                       "MRT-1R-phi-grad-un-grad-test": ['s6qrcn54'],
                       "MRT-1R-phi-grad-un-grad-test-new": ['kuz2edst'],
+                      "MRT-1R-phi-grad-un-grad-test-query": ['kuz2edst'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
@@ -150,6 +153,8 @@ num_sample_vis = 5
 
 models_to_compare = ["MRT-1R-phi-grad-un-111-small"]
 models_to_compare = ["MRT-1R-phi-grad-un-grad-test-new"]
+
+models_to_compare = ["MRT-1R-phi-grad-un-grad-test-query"]
 # models_to_compare = ["MRT-1R-phi-grad-un-grad-test"]
 # models_to_compare = ["MRT-1R-phi-grad"]
 
@@ -158,7 +163,8 @@ if dataset_name == 'helmholtz':
 
   # dataset_dir = f"./data/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=10_aniso_full"
   # dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full"
-  dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6"
+  # dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6"
+  dataset_dir = f"./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"
   # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
@@ -330,6 +336,14 @@ for model_name in models_to_compare:
               max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
               sample.mesh_feat[:, 2:] = sample.mesh_feat[:, 2:] / max_abs_val
 
+
+              # Create mesh query for deformer, seperate from the original mesh as feature for encoder
+              mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
+              mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
+              mesh_query_x.requires_grad = True
+              mesh_query_y.requires_grad = True
+              mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
               coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
               coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
 
@@ -338,7 +352,7 @@ for model_name in models_to_compare:
 
               coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-              (out, phi, out_monitor), (phix, phiy) = model.move(sample, coord_ori, num_step=1)
+              (out, phi, out_monitor), (phix, phiy) = model.move(sample, coord_ori, mesh_query, num_step=1)
               feat_dim = sample.mesh_feat.shape[-1]
               node_num = sample.mesh_feat.reshape(1, -1, feat_dim).shape[1]
 
@@ -346,10 +360,10 @@ for model_name in models_to_compare:
               out_phiy_collections[model_name].append(phiy.detach().cpu().numpy())
               
               hessian_seed = torch.ones(phix.shape).to(device)
-              phixx = torch.autograd.grad(phix, coord_ori_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-              phixy = torch.autograd.grad(phix, coord_ori_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-              phiyx = torch.autograd.grad(phiy, coord_ori_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-              phiyy = torch.autograd.grad(phiy, coord_ori_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phixx = torch.autograd.grad(phix, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phixy = torch.autograd.grad(phix, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phiyx = torch.autograd.grad(phiy, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phiyy = torch.autograd.grad(phiy, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
 
 
               out_phixx_collections[model_name].append(phixx.detach().cpu().numpy())
@@ -410,6 +424,7 @@ for model_name in models_to_compare:
 # model_name = "MRT-1R-phi-grad-un-grad-test"
 # model_name = "MRT-1R-phi-grad"
 model_name = "MRT-1R-phi-grad-un-grad-test-new"
+model_name = "MRT-1R-phi-grad-un-grad-test-query"
 num_selected = 2
 
 phix = out_phix_collections[model_name][num_selected]
@@ -486,4 +501,4 @@ for name, (model_val, fd_val) in variables_collections.items():
   plt.colorbar(plt_obj3)
   row += 1
 
-fig.savefig(f"{dataset_name}_output_comparison_{start_num+num_selected}_new.png")
+fig.savefig(f"{dataset_name}_output_comparison_{start_num+num_selected}_new_query.png")

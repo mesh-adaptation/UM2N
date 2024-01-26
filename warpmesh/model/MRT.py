@@ -157,7 +157,7 @@ class MRTransformer(torch.nn.Module):
         
         return hidden
 
-    def move(self, data, coord_ori, num_step=1):
+    def move(self, data, coord_ori, mesh_query, num_step=1):
         """
         Move the mesh according to the deformation learned, with given number
             steps.
@@ -178,13 +178,12 @@ class MRTransformer(torch.nn.Module):
 
         boundary = data.x[:, 2:]
         hidden = self.transformer_monitor(data, coord_ori, boundary)
-        # coord_ori = data.mesh_feat[:, :2]
-        coord = coord_ori
+        coord = mesh_query
 
         model_output = None
         # Recurrent GAT deform
         for i in range(self.num_loop):
-            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori, bd_mask, poly_mesh)
+            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, mesh_query, bd_mask, poly_mesh)
         
         # Map hidden to monitor
         out_monitor_1 = self.to_monitor_1(hidden)
@@ -193,7 +192,7 @@ class MRTransformer(torch.nn.Module):
 
         return (coord, model_output, out_monitor), (phix, phiy)
 
-    def forward(self, data, coord_ori, poly_mesh=False):
+    def forward(self, data, coord_ori, mesh_query, poly_mesh=False):
         """
         Forward pass for MRN.
 
@@ -212,13 +211,12 @@ class MRTransformer(torch.nn.Module):
 
         boundary = data.x[:, 2:].view(-1, 1)
         hidden = self.transformer_monitor(data, coord_ori, boundary)
-        # coord_ori = data.mesh_feat[:, :2]
-        coord = coord_ori
+        coord = mesh_query
 
         model_output = None
         # Recurrent GAT deform
         for i in range(self.num_loop):
-            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, coord_ori, bd_mask, poly_mesh)
+            (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, mesh_query, bd_mask, poly_mesh)
 
         # Map hidden to monitor
         out_monitor_1 = self.to_monitor_1(hidden)
