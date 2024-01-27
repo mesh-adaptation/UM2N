@@ -86,6 +86,8 @@ run_id = 'kuz2edst' # refactor the gradient
 run_id = 'yn3aaiwi' # mesh query semi 111
 run_id = 'pk66tmjj' # mesh query semi 111 50 smaples
 
+run_id = '0l8ujpdr' # mesh query semi 111, old dataset
+
 
 run_id_collections = {"MRT":['mfn1hnrg'],
 
@@ -104,7 +106,7 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R-phi-grad-test": ['fhmqq8eg'],
                       "MRT-1R-phi-grad-un-grad-test": ['s6qrcn54'],
                       "MRT-1R-phi-grad-un-grad-test-new": ['kuz2edst'],
-                      "MRT-1R-phi-grad-un-grad-test-query": ['pk66tmjj'],
+                      "MRT-1R-phi-grad-un-grad-test-query": ['0l8ujpdr'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],

@@ -23,8 +23,8 @@ import warpmesh as wm
 from torch_geometric.loader import DataLoader
 from types import SimpleNamespace
 
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device('cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cpu')
 
 # entity = 'mz-team'
 # project_name = 'warpmesh'
@@ -408,7 +408,7 @@ def write_sumo(eval_dir, ds_root):
         'total_case': total_count,
         'dataset_path': ds_root,
     }, index=[0])
-    print(f"[summary] error_reduction_MA: {sumo_df['error_reduction_MA'][0]}, error_reduction_model: {sumo_df['error_reduction_model'][0]}, deform loss: {sumo_df['deform loss'][0]}")
+    print(f"[summary] error_reduction_MA: {sumo_df['error_reduction_MA'][0]}, error_reduction_model: {sumo_df['error_reduction_model'][0]}, deform loss: {sumo_df['deform_loss'][0]}")
     print(" ")
     summary_save_path = os.path.join(eval_dir, f"{ds_name}")
     sumo_df.to_csv(os.path.join(summary_save_path, 'sumo.csv'))
@@ -469,7 +469,8 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
-    run_ids = [run_id]
+    # run_ids = [run_id]
+    run_ids = ['0l8ujpdr', 'hmgwx4ju']
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
                 './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
