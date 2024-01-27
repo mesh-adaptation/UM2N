@@ -22,7 +22,7 @@ def arg_parse():
                         help='scalar coefficient of the swirl (velocity)')
     parser.add_argument('--save_interval', type=int, default=5,
                         help='interval for stroing sample file')
-    parser.add_argument('--lc', type=float, default=4.5e-2,
+    parser.add_argument('--lc', type=float, default=5e-2,
                         help='the length characteristic of the elements in the\
                             mesh (if using unstructured mesh)')
     args_ = parser.parse_args()
@@ -215,19 +215,19 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     fd.trisurf(uh_new, axes=ax3)
 
     # Plot the mesh
-    ax4 = fig.add_subplot(2, 3, 4, projection='3d')
-    ax4.set_title('Hessian Norm')
-    fd.trisurf(hessian_norm, axes=ax4)
+    ax4 = fig.add_subplot(2, 3, 4)
+    ax4.set_title('Original Mesh ')
+    fd.triplot(mesh_og, axes=ax4)
 
     ax5 = fig.add_subplot(2, 3, 5)
-    ax5.set_title('Original Mesh')
-    fd.tripcolor(
-        uh, cmap='coolwarm', axes=ax5)
-    fd.triplot(mesh_og, axes=ax5)
+    ax5.set_title('Optimal Mesh')
+    # fd.tripcolor(
+    #     uh, cmap='coolwarm', axes=ax5)
+    fd.triplot(mesh_new, axes=ax5)
 
     # plot mesh with function evaluated on it
     ax6 = fig.add_subplot(2, 3, 6)
-    ax6.set_title('Adapted Mesh')
+    ax6.set_title('Solution Projected on Optimal Mesh')
     fd.tripcolor(
         uh_new, cmap='coolwarm', axes=ax6)
     fd.triplot(mesh_new, axes=ax6)
@@ -244,6 +244,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     # plt.show()
 
     # ==========================================
+    # function_space_fine = fd.FunctionSpace(mesh_fine, 'CG', 1)
     uh = fd.project(uh, function_space_fine)
     uh_new = fd.project(uh_new, function_space_fine)
 

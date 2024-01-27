@@ -17,16 +17,136 @@ from types import SimpleNamespace
 os.environ['OMP_NUM_THREADS'] = "1"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-entity = 'mz-team'
+entity = 'w-chunyang'
+# entity = 'mz-team'
 project_name = 'warpmesh'
 # run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2  # noqa
 # run_id = 'sr7waaso'  # MRT with no mask
 # run_id = 'gl1zpjc5'  # MRN 3-loop
+# run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
+run_id = '55tlmka8'  # MRN 3-loop on type6 mesh
+epoch = 1499
 
-run_id = '8ndi2teh'  # MRN 3-loop, on polymesh
+ds_root = "/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/burgers/lc=0.05_n=5_iso_pad_meshtype_2/"  # noqa
 
-epoch = 999
-ds_root = "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.045_interval_50"  # noqa
+
+def get_sample_param_of_nu_generalization_by_idx_train(idx_in):
+    gauss_list_ = []
+    if idx_in == 1:
+        param_ = {
+            "cx": 0.225,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.0001
+    elif idx_in == 2:
+        param_ = {
+            "cx": 0.225,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.001
+    elif idx_in == 3:
+        param_ = {
+            "cx": 0.225,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.002
+    elif idx_in == 4:
+        shift_ = 0.15
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.0001
+    elif idx_in == 5:
+        shift_ = 0.15
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.001
+    elif idx_in == 6:
+        shift_ = 0.15
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.002
+    elif idx_in == 7:
+        shift_ = 0.2
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.0001
+    elif idx_in == 8:
+        shift_ = 0.2
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.001
+    elif idx_in == 9:
+        shift_ = 0.2
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.002
+    return gauss_list_, nu_
 
 
 def init_dir(config):
@@ -40,7 +160,7 @@ def init_dir(config):
     eval_dir = os.path.join(project_dir, 'eval')
     now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     experiment_dir = os.path.join(
-        eval_dir, 'swirl' + '_' + now + '_' + config.model_used + '_'
+        eval_dir, 'burgers' + '_' + now + '_' + config.model_used + '_'
         + str(epoch) + '_' + run_id)
     wm.mkdir_if_not_exist(experiment_dir)
     print("\t## Make eval dir done\n")
@@ -127,7 +247,6 @@ def load_model(config, epoch, experiment_dir):
             transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,  # noqa
             transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,  # noqa
             deform_in_c=config.num_deform_in,
-            deform_out_type=config.deform_out_type,
             num_loop=config.num_deformer_loop,
             device=device,
         )
@@ -138,38 +257,30 @@ def load_model(config, epoch, experiment_dir):
     return model
 
 
-def benchmark_model(model, dataset, eval_dir, ds_root):
-    # Readin params for a specific swirl problem
-    info_df = pd.read_csv(os.path.join(ds_root, 'info.csv'))
-    sigma = info_df["sigma"][0]
-    alpha = info_df["alpha"][0]
-    r_0 = info_df["r_0"][0]
-    T = info_df["T"][0]
-    n_step = info_df["n_step"][0]
+def benchmark_model(model, dataset, eval_dir, ds_root, case_idxs):
+    # Select params to generate burgers bump
+    for idx in case_idxs:
+        gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
+        mesh = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
+        mesh_new = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
+        mesh_fine = fd.Mesh(os.path.join(ds_root, 'mesh_fine', 'mesh.msh'))
 
-    mesh = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
-    mesh_new = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
-    mesh_fine = fd.Mesh(os.path.join(ds_root, 'mesh_fine', 'mesh.msh'))
+        evaluator = wm.BurgersEvaluator(
+            mesh, mesh_fine, mesh_new,
+            dataset, model, eval_dir, ds_root, idx,
+            gauss_list=gaussian_list, nu=nu
+        )
 
-    # fd.triplot(mesh)
-    # fd.triplot(mesh_fine)
+        evaluator.make_log_dir()
+        evaluator.make_plot_dir()
+        evaluator.make_plot_more_dir()
 
-    evaluator = wm.SwirlEvaluator(
-        mesh, mesh_fine, mesh_new, dataset, model, eval_dir, ds_root,
-        sigma=sigma, alpha=alpha, r_0=r_0,
-        T=T, n_step=n_step,
-    )
-
-    evaluator.make_log_dir()
-    evaluator.make_plot_dir()
-    evaluator.make_plot_more_dir()
-
-    eval_res = evaluator.eval_problem()                     # noqa
+        eval_res = evaluator.eval_problem()                     # noqa
 
     return
 
 
-def write_sumo(eval_dir):
+def write_sumo(eval_dir, case_idxs):
     log_dir = os.path.join(eval_dir, 'log')
     file_path = os.path.join(log_dir, 'log*.csv')
     log_files = glob.glob(file_path)
@@ -208,13 +319,20 @@ def write_sumo(eval_dir):
         'TEpM(tangled Elements per Mesh)': num_tangle / total_count,
         'failed_case': fail_count,
         'total_case': total_count,
+        'case_idxs': [case_idxs],
         'dataset_path': ds_root,
     }, index=[0])
     sumo_df.to_csv(os.path.join(eval_dir, 'sumo.csv'))
 
 
 if __name__ == "__main__":
-    print("Evaluation Script for 2D Ring Problem \n")
+    print("Evaluation Script for Burgers PDE \n")
+    # a list containing a series of number between 1-9
+    # controling which cases are to be evaluated.
+    # usually between 1-5
+    # (the maximum number should be 'n_case' set in 'build_burgers_square.py')
+
+    case_idxs = [2]
     api = wandb.Api()
     run = api.run(f"{entity}/{project_name}/{run_id}")
     config = SimpleNamespace(**run.config)
@@ -222,8 +340,8 @@ if __name__ == "__main__":
     dataset = load_dataset(config, ds_root, tar_folder='data')
     model = load_model(config, epoch, eval_dir)
 
-    bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
+    bench_res = benchmark_model(model, dataset, eval_dir, ds_root, case_idxs)
 
-    write_sumo(eval_dir)
+    write_sumo(eval_dir, case_idxs)
 
     exit()
