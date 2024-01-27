@@ -228,6 +228,8 @@ class BurgersEvaluator():
 
                 # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
                 num_tangle = wm.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
+                if isinstance(num_tangle, torch.Tensor):
+                    num_tangle = num_tangle.item()
                 if (num_tangle > 0):  # has tangled elems:
                     res["tangled_element"] = num_tangle
                     res["error_model"] = -1
@@ -244,7 +246,7 @@ class BurgersEvaluator():
                 )["time"]
 
                 # metric calculation
-                res["deform_loss"] = 1000 * torch.nn.L1Loss()(out, sample.y)
+                res["deform_loss"] = 1000 * torch.nn.L1Loss()(out, sample.y).item()
                 res["time_consumption_model"] = dur_ms
 
                 res["acceration_ratio"] = res["time_consumption_MA"] / res["time_consumption_model"]     # noqa

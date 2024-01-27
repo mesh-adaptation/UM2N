@@ -60,6 +60,124 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #     '/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full'
 # )
 
+def get_sample_param_of_nu_generalization_by_idx_train(idx_in):
+    gauss_list_ = []
+    if idx_in == 1:
+        param_ = {
+            "cx": 0.225,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.0001
+    elif idx_in == 2:
+        param_ = {
+            "cx": 0.225,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.001
+    elif idx_in == 3:
+        param_ = {
+            "cx": 0.225,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.002
+    elif idx_in == 4:
+        shift_ = 0.15
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.0001
+    elif idx_in == 5:
+        shift_ = 0.15
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.001
+    elif idx_in == 6:
+        shift_ = 0.15
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.002
+    elif idx_in == 7:
+        shift_ = 0.2
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.0001
+    elif idx_in == 8:
+        shift_ = 0.2
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.001
+    elif idx_in == 9:
+        shift_ = 0.2
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 + shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.3,
+            "cy": 0.5 - shift_,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        param_ = {
+            "cx": 0.15,
+            "cy": 0.5,
+            "w": 0.01}
+        gauss_list_.append(param_)
+        nu_ = 0.002
+    return gauss_list_, nu_
+
 
 def init_dir(config, run_id, epoch, ds_root):
     """
@@ -366,8 +484,27 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         evaluator.make_plot_more_dir()
 
         eval_res = evaluator.eval_problem()                     # noqa
+
     elif problem_type == 'burgers':
-        pass
+        # Select params to generate burgers bump
+        case_idxs = [5]
+        for idx in case_idxs:
+            gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
+            mesh = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
+            mesh_new = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
+            mesh_fine = fd.Mesh(os.path.join(ds_root, 'mesh_fine', 'mesh.msh'))
+
+            evaluator = wm.BurgersEvaluator(
+                mesh, mesh_fine, mesh_new,
+                dataset, model, eval_dir, ds_root, idx,
+                gauss_list=gaussian_list, nu=nu
+            )
+
+            evaluator.make_log_dir()
+            evaluator.make_plot_dir()
+            evaluator.make_plot_more_dir()
+
+            eval_res = evaluator.eval_problem()                     # noqa
 
         
 
@@ -504,7 +641,8 @@ if __name__ == "__main__":
 
     # run_ids = [run_id]
     # run_ids = ['0l8ujpdr', 'hmgwx4ju']
-    run_ids = ['hmgwx4ju']
+    # run_ids = ['hmgwx4ju']
+    run_ids = ['0l8ujpdr']
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
     #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
