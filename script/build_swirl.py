@@ -215,19 +215,19 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     fd.trisurf(uh_new, axes=ax3)
 
     # Plot the mesh
-    ax4 = fig.add_subplot(2, 3, 4, projection='3d')
-    ax4.set_title('Hessian Norm')
-    fd.trisurf(hessian_norm, axes=ax4)
+    ax4 = fig.add_subplot(2, 3, 4)
+    ax4.set_title('Original Mesh ')
+    fd.triplot(mesh_og, axes=ax4)
 
     ax5 = fig.add_subplot(2, 3, 5)
-    ax5.set_title('Original Mesh')
-    fd.tripcolor(
-        uh, cmap='coolwarm', axes=ax5)
-    fd.triplot(mesh_og, axes=ax5)
+    ax5.set_title('Optimal Mesh')
+    # fd.tripcolor(
+    #     uh, cmap='coolwarm', axes=ax5)
+    fd.triplot(mesh_new, axes=ax5)
 
     # plot mesh with function evaluated on it
     ax6 = fig.add_subplot(2, 3, 6)
-    ax6.set_title('Adapted Mesh')
+    ax6.set_title('Solution Projected on Optimal Mesh')
     fd.tripcolor(
         uh_new, cmap='coolwarm', axes=ax6)
     fd.triplot(mesh_new, axes=ax6)
