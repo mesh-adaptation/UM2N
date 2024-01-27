@@ -260,7 +260,16 @@ class SwirlEvaluator():
                 self.model.eval()
                 with torch.no_grad():
                     start = time.perf_counter()
-                    out = self.model(sample)
+
+                    mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
+                    mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
+                    mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
+                    coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
+                    coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
+                    coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+                    
+                    (out, model_raw_output, out_monitor), (phix, phiy) = self.model(sample, coord_ori, mesh_query)
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1000
 
@@ -319,13 +328,18 @@ class SwirlEvaluator():
 
                 # save file
                 df = pd.DataFrame(res, index=[0])
-                df.to_csv(os.path.join(self.log_path, f"log{idx}.csv"))
+                df.to_csv(os.path.join(self.log_path, f"log_{idx:04d}.csv"))
                 # plot compare mesh
                 plot_fig = wm.plot_mesh_compare_benchmark(
-                    out.detach().cpu().numpy(), sample.y,
-                    sample.face, res["deform_loss"], res["tangled_element"]
+                    out.detach().cpu().numpy(), sample.y, sample.face, 
+                    deform_loss=res["deform_loss"],
+                    pde_loss_model=res["error_model"],
+                    pde_loss_reduction_model=res["error_reduction_model"],
+                    pde_loss_MA=res["error_ma"],
+                    pde_loss_reduction_MA=res["error_reduction_MA"],
+                    tangle=res["tangled_element"]
                 )
-                plot_fig.savefig(os.path.join(self.plot_path, f"plot_{idx}.png"))  # noqa
+                plot_fig.savefig(os.path.join(self.plot_path, f"plot_{idx:04d}.png"))  # noqa
 
                 # more detailed plot - 3d plot and 2d plot with mesh
                 fig = plt.figure(figsize=(8, 8))
@@ -372,12 +386,14 @@ class SwirlEvaluator():
                     self.plot_res()
                     plt.show()
                 idx += 1
+                plt.close()
 
             # time stepping and prep for next solving iter
             self.t += self.dt
             step += 1
             self.u_fine.assign(self.u_cur_fine)
             self.u_fine_buffer.assign(self.u_cur_fine)
+        
         return
 
     def vis_evaluate(self, sample):

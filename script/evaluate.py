@@ -61,7 +61,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # )
 
 
-def init_dir(config, run_id, epoch):
+def init_dir(config, run_id, epoch, ds_root):
     """
     Make dir for evaluation. All evaluation files will be stored
     under the dir created.
@@ -71,9 +71,10 @@ def init_dir(config, run_id, epoch):
         os.path.dirname(os.path.abspath(__file__)))
     eval_dir = os.path.join(project_dir, 'eval')
     now = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    ds_name = ds_root.split('/')[-1]
     experiment_dir = os.path.join(
         eval_dir, config.model_used + '_'
-        + str(epoch) + '_' + run_id, now)
+        + str(epoch) + '_' + run_id, f"{ds_name}", now)
     wm.mkdir_if_not_exist(experiment_dir)
     print("\t## Make eval dir done\n")
     return experiment_dir
@@ -222,46 +223,61 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
     problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
     print(f"problem type: {problem_type}, domain: {domain}, meshtype: {meshtype}")
 
-    ds_info_df_path = os.path.join(ds_root, 'info.csv')
-    df_info_df = pd.read_csv(ds_info_df_path)
-    n_grid = None
-    if int(meshtype) == 0:
-        n_grid = int(ds_root.split('/')[-1].split('>')[-2][-2:])
-        print(f"meshtype {meshtype}, n_grid: {n_grid}")
-    mesh = None
-    mesh_fine = None
+    if problem_type == 'helmholtz':
 
-    ds_name = ds_root.split('/')[-1]
-    log_dir = os.path.join(eval_dir, f'{ds_name}', 'log')
-    plot_dir = os.path.join(eval_dir, f'{ds_name}', 'plot')
-    wm.mkdir_if_not_exist(log_dir)
-    wm.mkdir_if_not_exist(plot_dir)
+        ds_info_df_path = os.path.join(ds_root, 'info.csv')
+        df_info_df = pd.read_csv(ds_info_df_path)
+        n_grid = None
+        if int(meshtype) == 0:
+            n_grid = int(ds_root.split('/')[-1].split('>')[-2][-2:])
+            print(f"meshtype {meshtype}, n_grid: {n_grid}")
+        mesh = None
+        mesh_fine = None
 
-    for idx in range(start_idx, start_idx + num_samples):
-        # model inference stage
-        sample = next(iter(
-            DataLoader([dataset[idx]], batch_size=1, shuffle=False)))
-        model.eval()
-        with torch.no_grad():
-            start = time.perf_counter()
+        log_dir = os.path.join(eval_dir, 'log')
+        plot_dir = os.path.join(eval_dir, 'plot')
+        wm.mkdir_if_not_exist(log_dir)
+        wm.mkdir_if_not_exist(plot_dir)
 
-            mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
-            mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
-            mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+        for idx in range(start_idx, start_idx + num_samples):
+            # model inference stage
+            sample = next(iter(
+                DataLoader([dataset[idx]], batch_size=1, shuffle=False)))
+            model.eval()
+            with torch.no_grad():
+                start = time.perf_counter()
 
-            coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
-            coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
-            coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+                mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
+                mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
+                mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
 
-            (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query, poly_mesh=True if domain == "poly" else False)
-            end = time.perf_counter()
-            dur_ms = (end - start) * 1000
-        temp_time_consumption = dur_ms
-        temp_tangled_elem = wm.get_sample_tangle(out, sample.y, sample.face)
-        temp_loss = 1000 * torch.nn.L1Loss()(out, sample.y)
-        # define mesh & fine mesh for comparison
-        if domain == 'square':
-            if n_grid is None:
+                coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
+                coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
+                coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+
+                (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query, poly_mesh=True if domain == "poly" else False)
+                end = time.perf_counter()
+                dur_ms = (end - start) * 1000
+            temp_time_consumption = dur_ms
+            temp_tangled_elem = wm.get_sample_tangle(out, sample.y, sample.face)
+            temp_loss = 1000 * torch.nn.L1Loss()(out, sample.y)
+            # define mesh & fine mesh for comparison
+            if domain == 'square':
+                if n_grid is None:
+                    mesh = fd.Mesh(
+                        os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                    mesh_MA = fd.Mesh(
+                        os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                    mesh_fine = fd.Mesh(
+                        os.path.join(ds_root, 'mesh_fine', f'mesh{idx}.msh'))
+                    mesh_model = fd.Mesh(
+                        os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                else:
+                    mesh = fd.UnitSquareMesh(n_grid, n_grid)
+                    mesh_MA = fd.UnitSquareMesh(n_grid, n_grid)
+                    mesh_fine = fd.UnitSquareMesh(80, 80)
+                    mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
+            elif domain == 'poly':
                 mesh = fd.Mesh(
                     os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
                 mesh_MA = fd.Mesh(
@@ -270,77 +286,92 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
                     os.path.join(ds_root, 'mesh_fine', f'mesh{idx}.msh'))
                 mesh_model = fd.Mesh(
                     os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+            mesh_model.coordinates.dat.data[:] = out.detach().cpu().numpy()
+
+            compare_res = wm.compare_error(
+                sample, mesh, mesh_fine, mesh_model, mesh_MA, temp_tangled_elem,
+                problem_type=problem_type)
+            temp_error_model = compare_res["error_model_mesh"]
+            temp_error_og = compare_res["error_og_mesh"]
+            temp_error_ma = compare_res["error_ma_mesh"]
+
+            if int(meshtype) != 0:
+                log_og = get_log_og(os.path.join(ds_root, 'log'), idx)
+                log_error_og = log_og["error_og"]
+                log_error_ma = log_og["error_adapt"]
+                log_time = log_og["time"]
             else:
-                mesh = fd.UnitSquareMesh(n_grid, n_grid)
-                mesh_MA = fd.UnitSquareMesh(n_grid, n_grid)
-                mesh_fine = fd.UnitSquareMesh(80, 80)
-                mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
-        elif domain == 'poly':
-            mesh = fd.Mesh(
-                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
-            mesh_MA = fd.Mesh(
-                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
-            mesh_fine = fd.Mesh(
-                os.path.join(ds_root, 'mesh_fine', f'mesh{idx}.msh'))
-            mesh_model = fd.Mesh(
-                os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
-        mesh_model.coordinates.dat.data[:] = out.detach().cpu().numpy()
+                # TODO: no corresponding records in old dataset
+                log_error_og = 0.0
+                log_error_ma = 0.0
+                log_time = 0.0
+            
+            error_reduction_MA = (temp_error_og - temp_error_ma) / temp_error_og
+            error_reduction_model = (temp_error_og - temp_error_model) / temp_error_og
+            # log file
+            log_df = pd.DataFrame({
+                'deform_loss': temp_loss.numpy(),
+                'tangled_element': temp_tangled_elem,
+                'error_og': temp_error_og,
+                'error_model': temp_error_model,
+                'error_ma': temp_error_ma,
+                'error_log_og': log_error_og,
+                'error_log_ma': log_error_ma,
+                'error_reduction_MA': (temp_error_og - temp_error_ma) / temp_error_og, # noqa
+                'error_reduction_model': (temp_error_og - temp_error_model) / temp_error_og, # noqa
+                'time_consumption_model': temp_time_consumption,
+                'time_consumption_MA': log_time,
+                'acceration_ratio': log_time / temp_time_consumption,
+            }, index=[0])
+            log_df.to_csv(os.path.join(log_dir, f"log_{idx:04d}.csv"))
 
-        compare_res = wm.compare_error(
-            sample, mesh, mesh_fine, mesh_model, mesh_MA, temp_tangled_elem,
-            problem_type=problem_type)
-        temp_error_model = compare_res["error_model_mesh"]
-        temp_error_og = compare_res["error_og_mesh"]
-        temp_error_ma = compare_res["error_ma_mesh"]
+            fig = wm.plot_mesh_compare_benchmark(
+                out, sample.y, sample.face,
+                deform_loss=temp_loss, 
+                pde_loss_model=temp_error_model,
+                pde_loss_reduction_model=error_reduction_model,
+                pde_loss_MA=temp_error_ma, 
+                pde_loss_reduction_MA=error_reduction_MA,
+                tangle=temp_tangled_elem
+            )
+            fig.savefig(
+                os.path.join(plot_dir, f"plot_{idx:04d}.png")
+            )
+            plt.close()
+    
+    elif problem_type == 'swirl':
+        # Readin params for a specific swirl problem
+        info_df = pd.read_csv(os.path.join(ds_root, 'info.csv'))
+        sigma = info_df["sigma"][0]
+        alpha = info_df["alpha"][0]
+        r_0 = info_df["r_0"][0]
+        T = info_df["T"][0]
+        n_step = info_df["n_step"][0]
 
-        if int(meshtype) != 0:
-            log_og = get_log_og(os.path.join(ds_root, 'log'), idx)
-            log_error_og = log_og["error_og"]
-            log_error_ma = log_og["error_adapt"]
-            log_time = log_og["time"]
-        else:
-            # TODO: no corresponding records in old dataset
-            log_error_og = 0.0
-            log_error_ma = 0.0
-            log_time = 0.0
+        mesh = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
+        mesh_new = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
+        mesh_fine = fd.Mesh(os.path.join(ds_root, 'mesh_fine', 'mesh.msh'))
 
-        error_reduction_MA = (temp_error_og - temp_error_ma) / temp_error_og
-        error_reduction_model = (temp_error_og - temp_error_model) / temp_error_og
-        # log file
-        log_df = pd.DataFrame({
-            'deform_loss': temp_loss.numpy(),
-            'tangled_element': temp_tangled_elem,
-            'error_og': temp_error_og,
-            'error_model': temp_error_model,
-            'error_ma': temp_error_ma,
-            'error_log_og': log_error_og,
-            'error_log_ma': log_error_ma,
-            'error_reduction_MA': (temp_error_og - temp_error_ma) / temp_error_og, # noqa
-            'error_reduction_model': (temp_error_og - temp_error_model) / temp_error_og, # noqa
-            'time_consumption_model': temp_time_consumption,
-            'time_consumption_MA': log_time,
-            'acceration_ratio': log_time / temp_time_consumption,
-        }, index=[0])
-        log_df.to_csv(os.path.join(log_dir, f"log_{idx:04d}.csv"))
+        # fd.triplot(mesh)
+        # fd.triplot(mesh_fine)
 
-        fig = wm.plot_mesh_compare_benchmark(
-            out, sample.y, sample.face,
-            deform_loss=temp_loss, 
-            pde_loss_model=temp_error_model,
-            pde_loss_reduction_model=error_reduction_model,
-            pde_loss_MA=temp_error_ma, 
-            pde_loss_reduction_MA=error_reduction_MA,
-            tangle=temp_tangled_elem
+        evaluator = wm.SwirlEvaluator(
+            mesh, mesh_fine, mesh_new, dataset, model, eval_dir, ds_root,
+            sigma=sigma, alpha=alpha, r_0=r_0,
+            T=T, n_step=n_step,
         )
-        fig.savefig(
-            os.path.join(plot_dir, f"plot_{idx}.png")
-        )
-        plt.close()
+
+        evaluator.make_log_dir()
+        evaluator.make_plot_dir()
+        evaluator.make_plot_more_dir()
+
+        eval_res = evaluator.eval_problem()                     # noqa
+
+        
 
 
 def write_sumo(eval_dir, ds_root):
-    ds_name = ds_root.split('/')[-1]
-    log_dir = os.path.join(eval_dir, f"{ds_name}", 'log')
+    log_dir = os.path.join(eval_dir, 'log')
     file_path = os.path.join(log_dir, 'log*.csv')
     log_files = glob.glob(file_path)
     log_files = sorted(log_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
@@ -410,7 +441,7 @@ def write_sumo(eval_dir, ds_root):
     }, index=[0])
     print(f"[summary] error_reduction_MA: {sumo_df['error_reduction_MA'][0]}, error_reduction_model: {sumo_df['error_reduction_model'][0]}, deform loss: {sumo_df['deform_loss'][0]}")
     print(" ")
-    summary_save_path = os.path.join(eval_dir, f"{ds_name}")
+    summary_save_path = os.path.join(eval_dir)
     sumo_df.to_csv(os.path.join(summary_save_path, 'sumo.csv'))
 
     # Visualize the error reduction
@@ -470,13 +501,16 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
     # run_ids = [run_id]
-    run_ids = ['0l8ujpdr', 'hmgwx4ju']
+    # run_ids = ['0l8ujpdr', 'hmgwx4ju']
+    run_ids = ['hmgwx4ju']
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
+    # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
+    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
+    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
+                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
 
     for run_id in run_ids:
         for ds_root in ds_roots:
@@ -489,7 +523,7 @@ if __name__ == "__main__":
 
             print("# Evaluation Pipeline Started\n")
             # init
-            eval_dir = init_dir(config, run_id, epoch)
+            eval_dir = init_dir(config, run_id, epoch, ds_root)
             dataset = load_dataset(config, ds_root, tar_folder='data')
             model = load_model(config, epoch, eval_dir)
 
