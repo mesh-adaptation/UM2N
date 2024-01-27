@@ -7,7 +7,36 @@ import matplotlib.pyplot as plt             # noqa
 import os                                   # noqa
 import random                               # noqa
 import time                                 # noqa
+import torch                                # noqa
 import warpmesh as wm                       # noqa
+
+import pandas as pd                         # noqa
+
+from pprint import pprint                   # noqa
+from torch_geometric.loader import DataLoader
+
+
+def get_log_og(log_path, idx):
+    """
+    Read log file from dataset log dir and return value in it
+    """
+    df = pd.read_csv(os.path.join(log_path, f"log{idx}.csv"))
+    return {
+        "error_og": df["error_og"][0],
+        "error_adapt": df["error_adapt"][0],
+        "time": df["time"][0],
+    }
+
+
+def get_first_entry(dataset, target_idx):
+    for i in range(len(dataset)):
+        raw_data_path = dataset.file_names[i]
+        raw_data = np.load(raw_data_path, allow_pickle=True).item()
+        # pprint(raw_data)
+        # print(raw_data.get('idx'))
+        # print(raw_data.get('t'))
+        if raw_data.get('idx') == target_idx:
+            return i
 
 
 class BurgersEvaluator():
@@ -151,64 +180,179 @@ class BurgersEvaluator():
         """
         Solves the Burgers equation.
         """
-        idx_start = 60 * (self.idx - 1)
+        idx_start = get_first_entry(self.dataset, self.idx)
+        print("idx_start: ", idx_start)
         i = 0
         t = 0.0
         self.step = 0
         self.best_error_iter = 0
+        res = {
+            "deform_loss": None,                    # 1. nodal position loss
+            "tangled_element": None,                # 2. tangled elements on a mesh  # noqa
+            "error_og": None,                       # 3. PDE error on original uniform mesh  # noqa
+            "error_model": None,                    # 4. PDE error on model generated mesh   # noqa
+            "error_ma": None,                       # 5. PDE error on MA generated mesh      # noqa
+            "error_reduction_MA": None,             # 6. PDE error reduced by using MA mesh  # noqa
+            "error_reduction_model": None,          # 7. PDE error reduced by using model mesh  # noqa
+            "time_consumption_model": None,         # 8. time consumed generating mesh inferenced by the model  # noqa
+            "time_consumption_MA": None,            # 9. time consumed generating mesh by Monge-Ampere method  # noqa
+            "acceration_ratio": None,               # 10. time_consumption_ma / time_consumption_model  # noqa
+        }
         while t < self.T - 0.5*self.dt:
-            # get sample for item
+            # get model raw file:
             cur_step = idx_start + i
-            sample = self.dataset[cur_step]
-            print("cur_step: ", cur_step)
+            raw_data_path = self.dataset.file_names[cur_step]
+            raw_data = np.load(raw_data_path, allow_pickle=True).item()
+            # get sample for item
             self.error_adapt_list = []
             self.error_og_list = []
-            mesh_new = self.mesh_new
-
             print("step: {}, t: {}".format(self.step, t))
             # solve on fine mesh
             fd.solve(self.F_fine == 0, self.u_fine)
+            # PDE error measuring
+            print("cur_step: ", cur_step)
+            print("compare:", t, raw_data.get('t'), raw_data.get('idx'), self.idx)
+            if ((abs(t - raw_data.get('t')) < 1e-5) and
+                    raw_data.get('idx') == self.idx):
+                print("in here", t, raw_data.get('t'), raw_data.get('idx'))
+                sample = next(iter(
+                        DataLoader([self.dataset[cur_step]],
+                                   batch_size=1,
+                                   shuffle=False)))
+                self.model.eval()
+                with torch.no_grad():
+                    start = time.perf_counter()
+                    out = self.model(sample)
+                    end = time.perf_counter()
+                    dur_ms = (end - start) * 1000
 
-            self.adapt_coord = sample.y
-            mesh_new.coordinates.dat.data[:] = self.adapt_coord
+                # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
+                num_tangle = wm.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
+                if (num_tangle > 0):  # has tangled elems:
+                    res["tangled_element"] = num_tangle
+                    res["error_model"] = -1
+                else:  # mesh is valid, perform evaluation: 1.
+                    res["tangled_element"] = num_tangle
+                    # perform PDE error analysis on model generated mesh
+                    self.adapt_coord = out.detach().cpu().numpy()
+                    _, error_model = self.get_error()
+                    res["error_model"] = error_model
 
-            # calculate solution on original mesh
-            self.mesh.coordinates.dat.data[:] = self.init_coord
-            self.project_u_()
-            fd.solve(self.F == 0, self.u)
-            function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-            uh_0 = fd.Function(function_space)
-            uh_0.project(self.u[0])
+                # get time_MA by reading log file
+                res["time_consumption_MA"] = get_log_og(
+                    os.path.join(self.ds_root, 'log'), (cur_step+1)
+                )["time"]
 
-            # calculate solution on adapted mesh
-            self.mesh.coordinates.dat.data[:] = self.adapt_coord
-            self.project_u_()
-            fd.solve(self.F == 0, self.u)
-            function_space_new = fd.FunctionSpace(mesh_new, "CG", 1)
-            function_space_vec_new = fd.VectorFunctionSpace(
-                mesh_new, "CG", 1)
-            uh_new = fd.Function(function_space_vec_new)
-            uh_new.project(self.u)
-            uh_new_0 = fd.Function(function_space_new)
-            uh_new_0.project(uh_new[0])
+                # metric calculation
+                res["deform_loss"] = 1000 * torch.nn.L1Loss()(out, sample.y)
+                res["time_consumption_model"] = dur_ms
 
-            error_og, error_adapt = self.get_error()
-            print(
-                "error_og: {}, error_adapt: {}".format(error_og, error_adapt))
+                res["acceration_ratio"] = res["time_consumption_MA"] / res["time_consumption_model"]     # noqa
 
-            # put coords back to original position (for u sampling)
-            self.mesh.coordinates.dat.data[:] = self.init_coord
+                # solution calculation
+                mesh_new = self.mesh_new
+                self.adapt_coord = sample.y
+                mesh_new.coordinates.dat.data[:] = self.adapt_coord
+                # calculate solution on original mesh
+                self.mesh.coordinates.dat.data[:] = self.init_coord
+                self.project_u_()
+                fd.solve(self.F == 0, self.u)
+                function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+                uh_0 = fd.Function(function_space)
+                uh_0.project(self.u[0])
 
+                # calculate solution on adapted mesh
+                self.mesh.coordinates.dat.data[:] = self.adapt_coord
+                self.project_u_()
+                fd.solve(self.F == 0, self.u)
+                function_space_new = fd.FunctionSpace(mesh_new, "CG", 1)
+                function_space_vec_new = fd.VectorFunctionSpace(
+                    mesh_new, "CG", 1)
+                uh_new = fd.Function(function_space_vec_new)
+                uh_new.project(self.u)
+                uh_new_0 = fd.Function(function_space_new)
+                uh_new_0.project(uh_new[0])
+
+                error_og, error_adapt = self.get_error()
+                print(
+                    "error_og: {}, error_adapt: {}".format(error_og, error_adapt))  # noqa
+
+                res["error_og"] = error_og
+                res["error_ma"] = error_adapt
+                res["error_reduction_MA"] = (res["error_og"] - res["error_ma"]) / res["error_og"]        # noqa
+                res["error_reduction_model"] = (res["error_og"] - res["error_model"]) / res["error_og"]  # noqa
+
+                # save file
+                df = pd.DataFrame(res, index=[0])
+                df.to_csv(os.path.join(self.log_path, f"log{self.idx}_{cur_step}.csv"))  # noqa
+
+                # plot compare mesh
+                compare_plot = wm.plot_mesh_compare_benchmark(
+                    out.detach().cpu().numpy(), sample.y,
+                    sample.face, res["deform_loss"], res["tangled_element"],
+                )
+                compare_plot.savefig(os.path.join(self.plot_path, f"plot_{self.idx}_{cur_step}.png"))  # noqa
+                # put coords back to original position (for u sampling)
+                self.mesh.coordinates.dat.data[:] = self.init_coord
+
+                # 3D plot of model solution
+                # more detailed plot - 3d plot and 2d plot with mesh
+                fig = plt.figure(figsize=(8, 8))
+
+                # 3D plot of MA solution                    TODO
+                ax1 = fig.add_subplot(2, 2, 1, projection='3d')
+                ax1.set_title('MA Solution (3D)')
+                fd.trisurf(uh_new_0, axes=ax1)
+                if (num_tangle == 0):
+                    # solve on coarse adapt mesh
+                    function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)  # noqa
+                    self.mesh.coordinates.dat.data[:] = out.detach().cpu().numpy()  # noqa
+                    function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+                    self.project_u_()
+                    fd.solve(self.F == 0, self.u)
+                    u_adapt_coarse_0 = fd.Function(function_space)
+                    u_adapt_coarse_0.project(self.u[0])
+                    # old
+                    # self.adapt_coord = out.detach().cpu().numpy()
+                    # self.mesh.coordinates.dat.data[:] = self.adapt_coord
+                    # self.mesh_new.coordinates.dat.data[:] = self.adapt_coord
+                    # self.project_u_()
+                    # self.solve_u(self.t)
+                    # function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)  # noqa
+                    # uh_model = fd.Function(function_space_new).project(self.u_cur)  # noqa
+                    ax2 = fig.add_subplot(2, 2, 2, projection='3d')
+                    ax2.set_title('Model Solution (3D)')
+                    fd.trisurf(u_adapt_coarse_0, axes=ax2)
+
+                    # 2d plot and mesh for Model            TODO
+                    ax4 = fig.add_subplot(2, 2, 4)
+                    ax4.set_title('Soultion on Model mesh')
+                    fd.tripcolor(
+                        u_adapt_coarse_0, cmap='coolwarm', axes=ax4)
+                    self.mesh_new.coordinates.dat.data[:] = out.detach().cpu().numpy()  # noqa
+                    fd.triplot(self.mesh_new, axes=ax4)
+
+                # 2d plot and mesh for MA
+                ax3 = fig.add_subplot(2, 2, 3)
+                ax3.set_title('Soultion on MA mesh')
+                fd.tripcolor(
+                    uh_new_0, cmap='coolwarm', axes=ax3)
+                self.mesh_new.coordinates.dat.data[:] = sample.y
+                fd.triplot(self.mesh_new, axes=ax3)
+
+                fig.savefig(os.path.join(self.plot_more_path, f"plot_{self.idx}_{cur_step}.png"))  # noqa
+
+                i += 1
             # step forward in time
             self.u_fine_.assign(self.u_fine)
             # self.u_fine_buffer.project(self.u)
             self.u_fine_buffer.assign(self.u_fine)
-            fd.triplot(self.u_fine)
-            plt.show()
+            # fd.triplot(self.u_fine)
+            # plt.show()
             # self.u_.assign(self.u)
             t += self.dt
             self.step += 1
-            i += 1
+
         return
 
     def get_error(self):

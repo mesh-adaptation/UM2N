@@ -35,7 +35,7 @@ args = arg_parse()
 mesh_type = args.mesh_type
 
 # ====  Parameters ======================
-problem = "swirl_test"
+problem = "swirl"
 
 # simulation time & time steps
 T = 1

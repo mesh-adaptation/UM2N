@@ -265,9 +265,6 @@ def benchmark_model(model, dataset, eval_dir, ds_root, case_idxs):
         mesh_new = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
         mesh_fine = fd.Mesh(os.path.join(ds_root, 'mesh_fine', 'mesh.msh'))
 
-        # fd.triplot(mesh)
-        # fd.triplot(mesh_fine)
-
         evaluator = wm.BurgersEvaluator(
             mesh, mesh_fine, mesh_new,
             dataset, model, eval_dir, ds_root, idx,
@@ -280,10 +277,10 @@ def benchmark_model(model, dataset, eval_dir, ds_root, case_idxs):
 
         eval_res = evaluator.eval_problem()                     # noqa
 
-        return
+    return
 
 
-def write_sumo(eval_dir):
+def write_sumo(eval_dir, case_idxs):
     log_dir = os.path.join(eval_dir, 'log')
     file_path = os.path.join(log_dir, 'log*.csv')
     log_files = glob.glob(file_path)
@@ -322,6 +319,7 @@ def write_sumo(eval_dir):
         'TEpM(tangled Elements per Mesh)': num_tangle / total_count,
         'failed_case': fail_count,
         'total_case': total_count,
+        'case_idxs': [case_idxs],
         'dataset_path': ds_root,
     }, index=[0])
     sumo_df.to_csv(os.path.join(eval_dir, 'sumo.csv'))
@@ -344,6 +342,6 @@ if __name__ == "__main__":
 
     bench_res = benchmark_model(model, dataset, eval_dir, ds_root, case_idxs)
 
-    write_sumo(eval_dir)
+    write_sumo(eval_dir, case_idxs)
 
     exit()
