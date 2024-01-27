@@ -23,7 +23,8 @@ import warpmesh as wm
 from torch_geometric.loader import DataLoader
 from types import SimpleNamespace
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
 
 # entity = 'mz-team'
 # project_name = 'warpmesh'
@@ -448,9 +449,14 @@ if __name__ == "__main__":
 
     run_id = 'b64qp0b3' # supervised from old dataset with to monitor with interpolation
 
-    run_id = 'yn3aaiwi' # mesh query semi 111
+    # run_id = 'yn3aaiwi' # mesh query semi 111
+    run_id = 'pk66tmjj' # mesh query semi 111 50 smaples
 
-    epoch = 799
+    # run_id = '1cf7cu3d' # mesh query purely supervised
+
+    run_id = '0l8ujpdr' # mesh query semi 111, old dataset
+
+    epoch = 699
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',

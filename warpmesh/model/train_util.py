@@ -937,11 +937,18 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
                             shuffle=False)
         for data in loader:
             with torch.no_grad():
+                # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+                mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
+                mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
+                mesh_query_x.requires_grad = True
+                mesh_query_y.requires_grad = True
+                mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
                 coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
                 coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
                 coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-                (output_data, _, _), (_,_) = model(data.to(device), coord_ori.to(device))
+                (output_data, _, _), (_,_) = model(data.to(device), coord_ori.to(device), mesh_query.to(device))
                 out_area = get_face_area(output_data, data.face)
                 in_area = get_face_area(data.x[:, :2], data.face)
                 # restore the sign of the area

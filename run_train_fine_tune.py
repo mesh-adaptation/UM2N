@@ -102,7 +102,8 @@ print("Model checkpoint loaded.")
 data_root = config.data_root
 
 # data set for training
-data_paths = [f"{config.data_root}z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2"]
+# data_paths = [f"{config.data_root}z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2"]
+data_paths = [f"./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2"]
 ###############################################################
 
 
