@@ -17,17 +17,16 @@ from types import SimpleNamespace
 os.environ['OMP_NUM_THREADS'] = "1"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-entity = 'w-chunyang'
-# entity = 'mz-team'
+entity = 'mz-team'
 project_name = 'warpmesh'
 # run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2  # noqa
 # run_id = 'sr7waaso'  # MRT with no mask
 # run_id = 'gl1zpjc5'  # MRN 3-loop
-# run_id = '3wv8mgyt'  # MRN 3-loop, on polymesh
-run_id = '55tlmka8'  # MRN 3-loop on type6 mesh
-epoch = 1499
 
-ds_root = "/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6/"  # noqa
+run_id = '8ndi2teh'  # MRN 3-loop, on polymesh
+
+epoch = 999
+ds_root = "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.045_interval_50"  # noqa
 
 
 def init_dir(config):
@@ -128,6 +127,7 @@ def load_model(config, epoch, experiment_dir):
             transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,  # noqa
             transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,  # noqa
             deform_in_c=config.num_deform_in,
+            deform_out_type=config.deform_out_type,
             num_loop=config.num_deformer_loop,
             device=device,
         )

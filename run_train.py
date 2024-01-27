@@ -21,9 +21,12 @@ import wandb
 # from google.colab import userdata
 import argparse
 from argparse import Namespace
+import numpy as np
 
-# random_seed = 666
-# torch.manual_seed(random_seed)
+random_seed = 666
+
+torch.manual_seed(random_seed)
+np.random.seed(random_seed)
 
 
 parser = argparse.ArgumentParser(
@@ -216,47 +219,47 @@ test_loader = DataLoader(test_set, batch_size=config.batch_size)
 # val_loader = DataLoader(val_set, batch_size=batch_size)
 
 # for testing on multiple mesh scale, datasets and batch loader:
-iso_pad_sets = [MeshDataset(
-    os.path.join(data_path, "data"),
-    transform=normalise if config.is_normalise else None,
-    x_feature=config.x_feat,
-    mesh_feature=config.mesh_feat,
-    conv_feature=config.conv_feat,
-    conv_feature_fix=config.conv_feat_fix,
-    load_jacobian=config.use_jacob,
-    use_cluster=config.use_cluster,
-    r=config.cluster_r,
-) for data_path in data_paths_iso_pad]
+# iso_pad_sets = [MeshDataset(
+#     os.path.join(data_path, "data"),
+#     transform=normalise if config.is_normalise else None,
+#     x_feature=config.x_feat,
+#     mesh_feature=config.mesh_feat,
+#     conv_feature=config.conv_feat,
+#     conv_feature_fix=config.conv_feat_fix,
+#     load_jacobian=config.use_jacob,
+#     use_cluster=config.use_cluster,
+#     r=config.cluster_r,
+# ) for data_path in data_paths_iso_pad]
 
-iso_pad_loaders = [DataLoader(test_set_i, batch_size=config.batch_size) for test_set_i in iso_pad_sets]
+# iso_pad_loaders = [DataLoader(test_set_i, batch_size=config.batch_size) for test_set_i in iso_pad_sets]
 
-iso_full_sets = [MeshDataset(
-    os.path.join(data_path, "data"),
-    transform=normalise if config.is_normalise else None,
-    x_feature=config.x_feat,
-    mesh_feature=config.mesh_feat,
-    conv_feature=config.conv_feat,
-    conv_feature_fix=config.conv_feat_fix,
-    load_jacobian=config.use_jacob,
-    use_cluster=config.use_cluster,
-    r=config.cluster_r,
-) for data_path in data_paths_iso_full]
+# iso_full_sets = [MeshDataset(
+#     os.path.join(data_path, "data"),
+#     transform=normalise if config.is_normalise else None,
+#     x_feature=config.x_feat,
+#     mesh_feature=config.mesh_feat,
+#     conv_feature=config.conv_feat,
+#     conv_feature_fix=config.conv_feat_fix,
+#     load_jacobian=config.use_jacob,
+#     use_cluster=config.use_cluster,
+#     r=config.cluster_r,
+# ) for data_path in data_paths_iso_full]
 
-iso_full_loaders = [DataLoader(test_set_i, batch_size=config.batch_size) for test_set_i in iso_full_sets]
+# iso_full_loaders = [DataLoader(test_set_i, batch_size=config.batch_size) for test_set_i in iso_full_sets]
 
-aniso_pad_sets = [MeshDataset(
-    os.path.join(data_path, "data"),
-    transform=normalise if config.is_normalise else None,
-    x_feature=config.x_feat,
-    mesh_feature=config.mesh_feat,
-    conv_feature=config.conv_feat,
-    conv_feature_fix=config.conv_feat_fix,
-    load_jacobian=config.use_jacob,
-    use_cluster=config.use_cluster,
-    r=config.cluster_r,
-) for data_path in data_paths_aniso_pad]
+# aniso_pad_sets = [MeshDataset(
+#     os.path.join(data_path, "data"),
+#     transform=normalise if config.is_normalise else None,
+#     x_feature=config.x_feat,
+#     mesh_feature=config.mesh_feat,
+#     conv_feature=config.conv_feat,
+#     conv_feature_fix=config.conv_feat_fix,
+#     load_jacobian=config.use_jacob,
+#     use_cluster=config.use_cluster,
+#     r=config.cluster_r,
+# ) for data_path in data_paths_aniso_pad]
 
-aniso_pad_loaders = [DataLoader(test_set_i, batch_size=config.batch_size) for test_set_i in aniso_pad_sets]
+# aniso_pad_loaders = [DataLoader(test_set_i, batch_size=config.batch_size) for test_set_i in aniso_pad_sets]
 
 aniso_full_sets = [MeshDataset(
     os.path.join(data_path, "data"),

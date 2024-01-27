@@ -59,11 +59,6 @@ class RecurrentGATConv(MessagePassing):
     def forward(self, coord, hidden_state, edge_index, coord_ori, bd_mask, poly_mesh):
         self.bd_mask = bd_mask.squeeze().bool()
         self.poly_mesh = poly_mesh
-        # if self.output_dim == 2:
-        #     # find boundary
-        #     self.find_boundary(coord)
-        # data.mesh_feat.requires_grad = True
-        # coord_ori = data.mesh_feat[:, :2]
         
         # Recurrent GAT
         in_feat = torch.cat((coord, hidden_state), dim=1)

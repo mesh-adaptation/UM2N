@@ -303,72 +303,58 @@ class TangleCounter(MessagePassing):
 
 
 
-def count_dataset_tangle(dataset, model, device, method="inversion"):
-    """
-    Computes the average number of tangles in a dataset.
+# def count_dataset_tangle(dataset, model, device, method="inversion"):
+#     """
+#     Computes the average number of tangles in a dataset.
 
-    Args:
-        dataset (Dataset): The PyTorch Geometric dataset.
-        model (torch.nn.Module): The PyTorch model.
-        device (torch.device): The device to run the computation.
+#     Args:
+#         dataset (Dataset): The PyTorch Geometric dataset.
+#         model (torch.nn.Module): The PyTorch model.
+#         device (torch.device): The device to run the computation.
 
-    Returns:
-        float: The average number of tangles in the dataset.
-    """
-    model.eval()
-    num_tangle = 0
-    if (method == "inversion"):
-        loader = DataLoader(dataset=dataset, batch_size=1,
-                            shuffle=False)
-        for data in loader:
+#     Returns:
+#         float: The average number of tangles in the dataset.
+#     """
+#     model.eval()
+#     num_tangle = 0
+#     if (method == "inversion"):
+#         loader = DataLoader(dataset=dataset, batch_size=1,
+#                             shuffle=False)
+#         for data in loader:
 
-            data.x.requires_grad = True
+#             (output_coord, model_raw_output, out_monitor), (phix, phiy) = model(data.to(device))
 
-            output_coord, (phix, phiy) = model(data.to(device))
+#             # Compute the new mesh coord given model output phi
+#             bs = 1
+#             feat_dim = data.mesh_feat.shape[-1]
+#             # mesh_feat [coord_x, coord_y, u, hessian_norm]
+#             node_num = data.mesh_feat.view(bs, -1, feat_dim).shape[1]
 
-            # Compute the new mesh coord given model output phi
-            bs = 1
-            feat_dim = data.mesh_feat.shape[-1]
-            # mesh_feat [coord_x, coord_y, u, hessian_norm]
-            node_num = data.mesh_feat.reshape(bs, -1, feat_dim).shape[1]
+#             out_area = get_face_area(output_coord, data.face)
+#             in_area = get_face_area(data.x[:, :2], data.face)
+#             # restore the sign of the area
+#             out_area = torch.sign(in_area) * out_area
+#             # mask for negative area
+#             neg_mask = out_area < 0
+#             neg_area = out_area[neg_mask]
+#             # calculate the loss, we want it normalized by the batch size
+#             # and loss should be positive, so we are using -1 here.
+#             num_tangle += len(neg_area)
+#         return num_tangle / len(dataset)
 
-            # Compute the residual to the equation
-            # grad_seed = torch.ones(output_data.shape).to(device)
-            # phi_grad = torch.autograd.grad(output_data, data.x, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-            # phix = phi_grad[:, 0]
-            # phiy = phi_grad[:, 1]
-
-            # # New coord
-            # coord_x = (data.x[:, 0] + phix).reshape(bs, node_num, 1)
-            # coord_y = (data.x[:, 1] + phiy).reshape(bs, node_num, 1)
-            # output_coord = torch.cat([coord_x, coord_y], dim=-1).reshape(-1, 2)
-
-
-            out_area = get_face_area(output_coord, data.face)
-            in_area = get_face_area(data.x[:, :2], data.face)
-            # restore the sign of the area
-            out_area = torch.sign(in_area) * out_area
-            # mask for negative area
-            neg_mask = out_area < 0
-            neg_area = out_area[neg_mask]
-            # calculate the loss, we want it normalized by the batch size
-            # and loss should be positive, so we are using -1 here.
-            num_tangle += len(neg_area)
-        return num_tangle / len(dataset)
-
-    # deprecated, do not use this option unless you know what you are doing
-    elif (method == "msg"):
-        for i in range(len(dataset)):
-            data = dataset[i].to(device)
-            with torch.no_grad():
-                output_data = model(data)
-                input_edge = data.edge_index
-                mesh = data.x[:, :2]
-                mesh_new = output_data
-                Counter = TangleCounter()
-                num_tangle += Counter(mesh, mesh_new, input_edge).item()
-        num_tangle = num_tangle / len(dataset)
-        return num_tangle
+#     # deprecated, do not use this option unless you know what you are doing
+#     elif (method == "msg"):
+#         for i in range(len(dataset)):
+#             data = dataset[i].to(device)
+#             with torch.no_grad():
+#                 output_data = model(data)
+#                 input_edge = data.edge_index
+#                 mesh = data.x[:, :2]
+#                 mesh_new = output_data
+#                 Counter = TangleCounter()
+#                 num_tangle += Counter(mesh, mesh_new, input_edge).item()
+#         num_tangle = num_tangle / len(dataset)
+#         return num_tangle
 
 
 
@@ -469,11 +455,42 @@ def train(
 
     return res
 
-def compute_phi_grad():
-    pass
+def interpolate(u, x, y):
+    """
+    u: b*n*n
+    x: b*1
+    y: b*1
+    """
 
-def compute_phi_hessian():
-    pass
+    n = u.shape[-1]
+    grid_x = np.linspace(0, 1, n)
+    grid_y = np.linspace(0, 1, n)
+    grid = torch.tensor(np.array(np.meshgrid(grid_x, grid_y)), dtype=torch.float).reshape(1, 2, -1).permute(0, 2, 1).to(u.device)
+    d = -torch.norm(grid.repeat(x.shape[0], 1, 1) - torch.cat((x, y), dim=-1).unsqueeze(1).repeat(1, n*n, 1), dim=-1) * n
+    normalize = nn.Softmax(dim=-1)
+    weight = normalize(d)  
+    interpolated = torch.sum(u.reshape(-1, n**2) * weight, dim=-1).unsqueeze(-1)
+
+    return interpolated # b*1
+
+
+def interpolate_tri(u, ori_x, ori_y, x, y):
+    """
+    u: b*n
+    ori_x: b*n*1
+    ori_y: b*n*1
+    x: b*n*1
+    y: b*n*1
+    """
+    n = u.shape[-1]
+    grid = torch.cat((ori_x, ori_y), dim=-1)
+    d = -torch.norm(grid - torch.cat((x, y), dim=-1), dim=-1) * np.sqrt(n)
+    normalize = nn.Softmax(dim=-1)
+    weight = normalize(d)  
+    # weight = softmax(d, dim=-1)  
+    interpolated = torch.sum(u * weight, dim=-1).unsqueeze(-1)
+
+    return interpolated # b*1
 
 
 def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
@@ -514,6 +531,78 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     return torch.stack(u_interpolateds, dim=0)
 
 
+def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func):
+    feat_dim = data.mesh_feat.shape[-1]
+    # mesh_feat [coord_x, coord_y, u, hessian_norm]
+    node_num = data.mesh_feat.view(bs, -1, feat_dim).shape[1]
+    # equation residual loss
+    loss_eq_residual = torch.tensor(0.0)
+    # Convex loss
+    loss_convex = torch.tensor(0.0)
+    if phix is not None and phiy is not None:
+        # print(f"phix: {phix.shape}, phiy: {phiy.shape}")
+        hessian_seed = torch.ones(phix.shape).to(device)
+        phixx = torch.autograd.grad(phix, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phixy = torch.autograd.grad(phix, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phiyx = torch.autograd.grad(phiy, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        phiyy = torch.autograd.grad(phiy, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+
+        # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
+        # phixx = phix_grad[:, 0]
+        # phixy = phix_grad[:, 1]
+        # phiyx = phiy_grad[:, 0]
+        # phiyy = phiy_grad[:, 1]
+        # print(f"phixx grad: {torch.sum(phixx)}, phixy grad: {torch.sum(phixy)}, phiyx grad: {torch.sum(phiyx)}, phiyy grad: {torch.sum(phiyy)}")
+        det_hessian = (phixx + 1) * (phiyy + 1) - phixy * phiyx
+        det_hessian = det_hessian.view(bs, node_num, 1)
+
+        jacobian_x = data.mesh_feat[:, 4].view(bs, node_num, 1)
+        jacobian_y = data.mesh_feat[:, 5].view(bs, node_num, 1)
+
+        hessian_norm = data.mesh_feat[:, 3].view(bs, node_num, 1)
+        # solution = data.mesh_feat[:, 1].resahpe(bs, node_num, 1)
+        # original_mesh_x = data.mesh_feat[:, 0].view(bs, node_num, 1)
+        # original_mesh_y = data.mesh_feat[:, 1].view(bs, node_num, 1)
+
+        moved_x = phix.view(bs, node_num, 1) + mesh_query_x.view(bs, node_num, 1)
+        moved_y = phiy.view(bs, node_num, 1) + mesh_query_y.view(bs, node_num, 1)
+
+        # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
+        # Interpolate on new moved mesh
+
+        hessian_norm_ = interpolate(hessian_norm, mesh_query_x, mesh_query_y, moved_x, moved_y)
+        enhanced_hessian_norm = hessian_norm_ #+ out_monitor.view(bs, node_num, 1)
+
+        # =========================== jacobian related attempts ==================
+        # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)
+        # jac_y = interpolate(jacobian_y, original_mesh_x, original_mesh_y, moved_x, moved_y)
+        # # alpha = torch.sum(torch.sqrt(torch.abs(jac_x)**2 + torch.abs(jac_y)**2), dim=(-1, -2)) / node_num**2
+        # alpha = 1.0
+
+        # phixx = phixx.reshape(bs, node_num, 1)
+        # phiyx = phiyx.reshape(bs, node_num, 1)
+        # phiyy = phiyy.reshape(bs, node_num, 1)
+        # phixy = phixy.reshape(bs, node_num, 1)
+
+        # jac_xi_1 = jac_x * (1 + phixx) + jac_y * phiyx
+        # jac_xi_2 = jac_x * phixy + jac_y * (1 + phiyy)
+        # print(torch.sum(jac_xi_1), torch.sum(jac_xi_2))
+        # monitor = monitor_grad(alpha, jac_xi_1, jac_xi_2) /1000
+        # =========================== 
+
+        lhs = enhanced_hessian_norm * det_hessian
+        rhs = torch.sum(hessian_norm, dim=(1, 2)) / node_num
+        rhs = rhs.unsqueeze(-1).repeat(1, node_num).unsqueeze(-1)
+        loss_eq_residual = 1000 * loss_func(lhs, rhs)
+        # print(torch.sum(hessian_norm_ - hessian_norm), hessian_norm_.shape, det_hessian.shape, lhs.shape, rhs.shape)
+        # print(f"diff between interpolation jac x {torch.sum(jacobian_x - jac_x)} alpha: {alpha} monitor: {torch.sum(monitor)} det_hessian {torch.sum(det_hessian)} lhs {torch.sum(lhs)} rhs {torch.sum(rhs)}")
+
+        # Convex loss
+        # if use_convex_loss:
+        loss_convex = torch.mean(torch.min(torch.tensor(0).type_as(phixx).to(device), 1 + phixx)**2 + torch.min(torch.tensor(0).type_as(phiyy).to(device), 1 + phiyy)**2)
+        return loss_eq_residual, loss_convex, 
+    
+
 def train_unsupervised(
         loader, model, optimizer, device, loss_func,
         use_jacob=False,
@@ -552,89 +641,27 @@ def train_unsupervised(
     for batch in loader:
         optimizer.zero_grad()
         data = batch.to(device)
-        data.x.requires_grad = True
-        data.mesh_feat.requires_grad = True
 
-        (output_coord, output), (phix, phiy) = model(data)
+        # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+        mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
+        mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
+        mesh_query_x.requires_grad = True
+        mesh_query_y.requires_grad = True
+        mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
 
-        feat_dim = data.mesh_feat.shape[-1]
-        # mesh_feat [coord_x, coord_y, u, hessian_norm]
-        node_num = data.mesh_feat.reshape(bs, -1, feat_dim).shape[1]
+        coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
+        coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
 
-        # # Compute the residual to the equation
-        # grad_seed = torch.ones(out.shape).to(device)
-        # phi_grad = torch.autograd.grad(out, data.x, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-        # phix = phi_grad[:, 0]
-        # phiy = phi_grad[:, 1]
+        coord_ori_x.requires_grad = True
+        coord_ori_y.requires_grad = True
 
-        # # New coord
-        # coord_x = (data.x[:, 0] + phix).reshape(bs, node_num, 1)
-        # coord_y = (data.x[:, 1] + phiy).reshape(bs, node_num, 1)
-        # output_coord = torch.cat([coord_x, coord_y], dim=-1).reshape(-1, 2)
-        # print(output_coord.shape, data.x[:, 0].shape, phix.shape)
+        coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-        loss_eq_residual = torch.tensor(0.0)
-        # Convex loss
-        loss_convex = torch.tensor(0.0)
-        if phix is not None and phiy is not None:
-            # print(f"phix: {phix.shape}, phiy: {phiy.shape}")
-            hessian_seed = torch.ones(phix.shape).to(device)
-            phix_grad = torch.autograd.grad(phix, data.mesh_feat, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-            phiy_grad = torch.autograd.grad(phiy, data.mesh_feat, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori, mesh_query)
+        loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
-            # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
-            phixx = phix_grad[:, 0]
-            phixy = phix_grad[:, 1]
-            phiyx = phiy_grad[:, 0]
-            phiyy = phiy_grad[:, 1]
-            # print(f"phixx grad: {torch.sum(phixx)}, phixy grad: {torch.sum(phixy)}, phiyx grad: {torch.sum(phiyx)}, phiyy grad: {torch.sum(phiyy)}")
-            det_hessian = (phixx + 1) * (phiyy + 1) - phixy * phiyx
-            det_hessian = det_hessian.reshape(bs, node_num, 1)
-
-            jacobian_x = data.mesh_feat[:, 4].reshape(bs, node_num, 1)
-            jacobian_y = data.mesh_feat[:, 5].reshape(bs, node_num, 1)
-
-            hessian_norm = data.mesh_feat[:, 3].reshape(bs, node_num, 1)
-            # solution = data.mesh_feat[:, 1].resahpe(bs, node_num, 1)
-            original_mesh_x = data.mesh_feat[:, 0].reshape(bs, node_num, 1)
-            original_mesh_y = data.mesh_feat[:, 1].reshape(bs, node_num, 1)
-
-            moved_x = phix.reshape(bs, node_num, 1) + original_mesh_x
-            moved_y = phiy.reshape(bs, node_num, 1) + original_mesh_y
-
-            # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
-            # Interpolate on new moved mesh
-
-            # hessian_norm_ = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
-            hessian_norm_ = hessian_norm
-
-            # =========================== jacobian related attempts ==================
-            # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)
-            # jac_y = interpolate(jacobian_y, original_mesh_x, original_mesh_y, moved_x, moved_y)
-            # # alpha = torch.sum(torch.sqrt(torch.abs(jac_x)**2 + torch.abs(jac_y)**2), dim=(-1, -2)) / node_num**2
-            # alpha = 1.0
-
-            # phixx = phixx.reshape(bs, node_num, 1)
-            # phiyx = phiyx.reshape(bs, node_num, 1)
-            # phiyy = phiyy.reshape(bs, node_num, 1)
-            # phixy = phixy.reshape(bs, node_num, 1)
-
-            # jac_xi_1 = jac_x * (1 + phixx) + jac_y * phiyx
-            # jac_xi_2 = jac_x * phixy + jac_y * (1 + phiyy)
-            # print(torch.sum(jac_xi_1), torch.sum(jac_xi_2))
-            # monitor = monitor_grad(alpha, jac_xi_1, jac_xi_2) /1000
-            # =========================== 
-
-            lhs = hessian_norm_ * det_hessian
-            rhs = torch.sum(hessian_norm, dim=(1, 2)) / node_num
-            rhs = rhs.unsqueeze(-1).repeat(1, node_num).unsqueeze(-1)
-            loss_eq_residual = 1000 * loss_func(lhs, rhs)
-            # print(torch.sum(hessian_norm_ - hessian_norm), hessian_norm_.shape, det_hessian.shape, lhs.shape, rhs.shape)
-            # print(f"diff between interpolation jac x {torch.sum(jacobian_x - jac_x)} alpha: {alpha} monitor: {torch.sum(monitor)} det_hessian {torch.sum(det_hessian)} lhs {torch.sum(lhs)} rhs {torch.sum(rhs)}")
-
-            # Convex loss
-            if use_convex_loss:
-                loss_convex = torch.mean(torch.min(torch.tensor(0).type_as(phixx).to(device), 1 + phixx)**2 + torch.min(torch.tensor(0).type_as(phiyy).to(device), 1 + phiyy)**2)
+        if not use_convex_loss:
+            loss_convex = torch.tensor(0.0)
 
         loss = 0
         inversion_loss = 0
@@ -734,8 +761,7 @@ def evaluate_unsupervised(
     total_area_loss = 0
     for batch in loader:
         data = batch.to(device)
-        data.x.requires_grad = True
-        data.mesh_feat.requires_grad = True
+
         loss = 0
         deform_loss = 0
         inversion_loss = 0
@@ -743,64 +769,27 @@ def evaluate_unsupervised(
         area_loss = 0
 
         # with torch.no_grad():
-        (output_coord, output), (phix, phiy) = model(data)
 
-        feat_dim = data.mesh_feat.shape[-1]
-        # mesh_feat [coord_x, coord_y, u, hessian_norm]
-        node_num = data.mesh_feat.reshape(bs, -1, feat_dim).shape[1]
+        # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+        mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
+        mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
+        mesh_query_x.requires_grad = True
+        mesh_query_y.requires_grad = True
+        mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
 
-        # # Compute the residual to the equation
-        # grad_seed = torch.ones(out.shape).to(device)
-        # phi_grad = torch.autograd.grad(out, data.x, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-        # phix = phi_grad[:, 0]
-        # phiy = phi_grad[:, 1]
+        coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
+        coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
 
-        # # New coord
-        # coord_x = (data.x[:, 0] + phix).reshape(bs, node_num, 1)
-        # coord_y = (data.x[:, 1] + phiy).reshape(bs, node_num, 1)
-        # output_coord = torch.cat([coord_x, coord_y], dim=-1).reshape(-1, 2)
-        # print(output_coord.shape, data.x[:, 0].shape, phix.shape)
+        coord_ori_x.requires_grad = True
+        coord_ori_y.requires_grad = True
 
-        loss_eq_residual = torch.tensor(0.0)
+        coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-        # Convex loss
-        loss_convex = torch.tensor(0.0)
-        if phix is not None and phiy is not None:
-            # print(f"phix: {phix.shape}, phiy: {phiy.shape}")
-            hessian_seed = torch.ones(phix.shape).to(device)
-            phix_grad = torch.autograd.grad(phix, data.mesh_feat, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-            phiy_grad = torch.autograd.grad(phiy, data.mesh_feat, grad_outputs=hessian_seed, retain_graph=False, create_graph=False, allow_unused=True)[0]
+        (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori, mesh_query)
+        loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
-            # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
-            phixx = phix_grad[:, 0]
-            phixy = phix_grad[:, 1]
-            phiyx = phiy_grad[:, 0]
-            phiyy = phiy_grad[:, 1]
-            # print(f"phixx grad: {phixx.shape}, phixy grad: {phixy.shape}, phiyx grad: {phiyx.shape}, phiyy grad: {phiyy.shape}")
-            det_hessian = (phixx + 1) * (phiyy + 1) - phixy * phiyx
-            det_hessian = det_hessian.reshape(bs, node_num, 1)
-            
-            hessian_norm = data.mesh_feat[:, -1].reshape(bs, node_num, 1)
-            # solution = data.mesh_feat[:, -2].resahpe(bs, node_num, 1)
-            original_mesh_x = data.mesh_feat[:, 0].reshape(bs, node_num, 1)
-            original_mesh_y = data.mesh_feat[:, 1].reshape(bs, node_num, 1)
-
-            moved_x = phix.reshape(bs, node_num, 1) + original_mesh_x
-            moved_y = phiy.reshape(bs, node_num, 1) + original_mesh_y
-
-            # Interpolate on new moved mesh
-            monitor = interpolate(hessian_norm, original_mesh_x, original_mesh_y, moved_x, moved_y)
-            phixx = phixx.reshape(bs, node_num, 1)
-            phiyx = phiyx.reshape(bs, node_num, 1)
-            monitor = monitor * (1 + phixx) + monitor * phiyx
-            lhs = monitor * det_hessian
-            # print(f"det hessian: {det_hessian.shape} monitor: {monitor.shape}")
-
-            rhs = torch.sum(monitor, dim=(1, 2)) / node_num
-            loss_eq_residual = 1000 * loss_func(lhs, rhs)
-
-            if use_convex_loss:
-                loss_convex = torch.mean(torch.min(torch.tensor(0).type_as(phixx).to(device), 1 + phixx)**2 + torch.min(torch.tensor(0).type_as(phiyy).to(device), 1 + phiyy)**2)
+        if not use_convex_loss:
+            loss_convex = torch.tensor(0.0)
 
         deform_loss =  1000 * (
             loss_func(output_coord, data.y) if not use_jacob else
@@ -948,7 +937,18 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
                             shuffle=False)
         for data in loader:
             with torch.no_grad():
-                output_data = model(data.to(device))
+                # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+                mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
+                mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
+                mesh_query_x.requires_grad = True
+                mesh_query_y.requires_grad = True
+                mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
+                coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
+                coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
+                coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+
+                (output_data, _, _), (_,_) = model(data.to(device), coord_ori.to(device), mesh_query.to(device))
                 out_area = get_face_area(output_data, data.face)
                 in_area = get_face_area(data.x[:, :2], data.face)
                 # restore the sign of the area
@@ -1166,7 +1166,7 @@ def evaluate_repeat(
     }
 
 
-def load_model(model, weight_path):
+def load_model(model, weight_path, strict=False):
     """
     Loads pre-trained weights into a PyTorch model from a given file path.
 
@@ -1178,8 +1178,8 @@ def load_model(model, weight_path):
         torch.nn.Module: The model with loaded weights.
     """
     try:
-        model.load_state_dict(torch.load(weight_path))
+        model.load_state_dict(torch.load(weight_path), strict=strict)
     except RuntimeError:
         state_dict = torch.load(weight_path, map_location=torch.device('cpu'))
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=strict)
     return model

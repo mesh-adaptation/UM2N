@@ -91,12 +91,18 @@ def plot_mesh_compare(coord_out, coord_target, face):
     return fig
 
 
-def plot_mesh_compare_benchmark(coord_out, coord_target, face, loss, tangle):
+def plot_mesh_compare_benchmark(coord_out, coord_target, face, 
+                                deform_loss, 
+                                pde_loss_model,
+                                pde_loss_reduction_model,
+                                pde_loss_MA,
+                                pde_loss_reduction_MA,
+                                tangle):
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
     ax[0], _ = plot_mesh(coord_out, face, ax=ax[0])
-    ax[0].set_title(f"Output | Loss: {loss:.2f} | Tangle: {tangle:.2f}")
+    ax[0].set_title(f"Output | Deform Loss: {deform_loss:.2f} | PDE Loss (model): {pde_loss_model:.5f} ({pde_loss_reduction_model*100:.2f}$\%$) |Tangle: {tangle:.2f}")
     ax[1], _ = plot_mesh(coord_target, face, ax=ax[1])
-    ax[1].set_title("Target")
+    ax[1].set_title(f"Target | PDE Loss (MA): {pde_loss_MA:.5f} ({pde_loss_reduction_MA*100:.2f}$\%$)")
     return fig
 
 
