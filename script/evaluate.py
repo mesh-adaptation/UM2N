@@ -456,7 +456,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
                 os.path.join(plot_dir, f"plot_{idx:04d}.png")
             )
             plt.close()
-    
+
     elif problem_type == 'swirl':
 
         n_grid = None

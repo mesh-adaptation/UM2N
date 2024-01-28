@@ -25,6 +25,9 @@ def arg_parse():
     parser.add_argument('--lc', type=float, default=5e-2,
                         help='the length characteristic of the elements in the\
                             mesh (if using unstructured mesh)')
+    parser.add_argument('--n_grid', type=int, default=20,
+                        help='number of grids in a mesh (only appliable when\
+                                mesh_type is 0)')
     args_ = parser.parse_args()
     print(args_)
     return args_
@@ -44,6 +47,7 @@ dt = T / n_step
 
 # mesh setup
 lc = args.lc
+n_grid = args.n_grid
 
 # parameters for domain scale
 scale_x = 1
@@ -82,7 +86,7 @@ project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)  # noqa
 problem_specific_dir = os.path.join(
         dataset_dir,
-        f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_lc_{lc}_interval_{save_interval}_meshtype_{mesh_type}")  # noqa
+        f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_lc_{lc}_ngrid_{n_grid}_interval_{save_interval}_meshtype_{mesh_type}")  # noqa
 
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
@@ -273,18 +277,25 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
 # ====  Data Generation Scripts ======================
 if __name__ == "__main__":
     print("In build_dataset.py")
-
-    mesh_gen = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
-    mesh = mesh_gen.get_mesh(
-        res=lc,
-        file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
-    mesh_new = mesh_gen.get_mesh(
-        res=lc,
-        file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
-    mesh_gen_fine = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
-    mesh_fine = mesh_gen_fine.get_mesh(
-        res=1e-2,
-        file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh"))
+    mesh = None
+    mesh_fine = None
+    mesh_new = None
+    if (mesh_type != 0):
+        mesh_gen = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
+        mesh = mesh_gen.get_mesh(
+            res=lc,
+            file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
+        mesh_new = mesh_gen.get_mesh(
+            res=lc,
+            file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
+        mesh_gen_fine = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
+        mesh_fine = mesh_gen_fine.get_mesh(
+            res=1e-2,
+            file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh"))
+    else:
+        mesh = fd.UnitSquareMesh(n_grid, n_grid)
+        mesh_new = fd.UnitSquareMesh(n_grid, n_grid)
+        mesh_fine = fd.UnitSquareMesh(100, 100)
 
     # solver defination
     swril_solver = wm.SwirlSolver(

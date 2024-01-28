@@ -3,7 +3,7 @@
 
 # number of samples for time-indepedent cases
 n_samples_train=100
-# use 2 / 6
+# use 2 / 6 / 0
 mesh_type=2
 
 # training set build
@@ -53,9 +53,9 @@ lcs=(0.05 0.028)
 
 # burgers square
 
-python ./script/build_burgers_square.py --lc=0.05 --n_case=5 --mesh_type=$mesh_type
+# python ./script/build_burgers_square.py --lc=0.05 --n_case=5 --mesh_type=$mesh_type
 # python ./script/build_burgers_square.py --lc=0.045  --n_case=5 --mesh_type=$mesh_type
-python ./script/build_burgers_square.py --lc=0.028  --n_case=5 --mesh_type=$mesh_type
+# python ./script/build_burgers_square.py --lc=0.028  --n_case=5 --mesh_type=$mesh_type
 
 
 # swirl test case square
@@ -68,4 +68,14 @@ python ./script/build_burgers_square.py --lc=0.028  --n_case=5 --mesh_type=$mesh
 # python ./script/build_swirl.py --lc=0.045 --alpha=1 --mesh_type=$mesh_type
 # python ./script/build_swirl.py --lc=0.04--alpha=1.5 --mesh_type=$mesh_type
 # python ./script/build_swirl.py --lc=0.04 --alpha=1 --mesh_type=$mesh_type
+
+# Swirl test case square - uniform square mesh
+# python ./script/build_swirl.py --n_grid=15 --alpha=1.5 --mesh_type=0
+# python ./script/build_swirl.py --n_grid=20 --alpha=1.5 --mesh_type=0
+# python ./script/build_swirl.py --n_grid=35 --alpha=1.5 --mesh_type=0
+
+# Burgers test case sqare - uniform square mesh
+python ./script/build_burgers_square.py --n_grid=15 --n_case=5 --mesh_type=0
+python ./script/build_burgers_square.py --n_grid=20 --n_case=5 --mesh_type=0
+python ./script/build_burgers_square.py --n_grid=35 --n_case=5 --mesh_type=0
 

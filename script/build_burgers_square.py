@@ -33,6 +33,9 @@ def arg_parse():
                         help='scheme used to generate the dataset (pad/full))')
     parser.add_argument('--n_case', type=int, default=5,
                         help='number of simulation cases')
+    parser.add_argument('--n_grid', type=int, default=20,
+                        help='number of grids in a uniform mesh\
+                            only applied when mesh_type is 0')
     parser.add_argument('--rand_seed', type=int, default=63,
                         help='number of samples generated')
     args_ = parser.parse_args()
@@ -63,6 +66,7 @@ scale_y = 1
 max_dist = args.max_dist
 n_dist = args.n_dist
 lc = args.lc
+n_grid = args.n_grid
 
 # parameters for anisotropic data - distribution height scaler
 z_min = 0
@@ -115,8 +119,8 @@ dataset_dir = os.path.join(
     project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)
 problem_specific_dir = os.path.join(
         dataset_dir,
-        "lc={}_n={}_{}_{}_meshtype_{}".format(
-            lc, n_case,
+        "lc={}_ngrid_{}_n={}_{}_{}_meshtype_{}".format(
+            lc, n_grid, n_case,
             data_type, scheme, mesh_type))
 
 
@@ -418,20 +422,28 @@ if __name__ == "__main__":
     for idx in range(1, n_case + 1):
         try:
             print(f"Case {idx} building ...")
-            unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(scale=scale_x, mesh_type=mesh_type)  # noqa
-            mesh = unstructure_square_mesh_gen.get_mesh(
-                res=lc, file_path=os.path.join(
-                    problem_mesh_dir, "mesh.msh"
+            mesh = None
+            mesh_new = None
+            mesh_fine = None
+            if (mesh_type != 0):
+                unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(scale=scale_x, mesh_type=mesh_type)  # noqa
+                mesh = unstructure_square_mesh_gen.get_mesh(
+                    res=lc, file_path=os.path.join(
+                        problem_mesh_dir, "mesh.msh"
+                    )
                 )
-            )
-            mesh_new = fd.Mesh(os.path.join(
-                    problem_mesh_dir, "mesh.msh"
-                ))
-            mesh_fine = unstructure_square_mesh_gen.get_mesh(
-                res=1e-2, file_path=os.path.join(
-                    problem_mesh_fine_dir, "mesh.msh"
+                mesh_new = fd.Mesh(os.path.join(
+                        problem_mesh_dir, "mesh.msh"
+                    ))
+                mesh_fine = unstructure_square_mesh_gen.get_mesh(
+                    res=1e-2, file_path=os.path.join(
+                        problem_mesh_fine_dir, "mesh.msh"
+                    )
                 )
-            )
+            else:
+                mesh = fd.UnitSquareMesh(n_grid, n_grid)
+                mesh_new = fd.UnitSquareMesh(n_grid, n_grid)
+                mesh_fine = fd.UnitSquareMesh(100, 100)
             # Generate Random solution field
             gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
             solver = wm.BurgersSolver(
