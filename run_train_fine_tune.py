@@ -80,7 +80,7 @@ else:
 entity = 'mz-team'
 project_name = 'warpmesh'
 # run_id = '8ndi2teh'
-run_id = 'irjq8z0r'
+run_id = '0l8ujpdr'
 api = wandb.Api()
 run_loaded = api.run(f"{entity}/{project_name}/{run_id}")
 epoch = 999
@@ -103,7 +103,9 @@ data_root = config.data_root
 
 # data set for training
 # data_paths = [f"{config.data_root}z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2"]
-data_paths = [f"./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2"]
+# data_paths = [f"./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2"]
+data_paths = [f"{config.data_root}"]
+print(data_paths)
 ###############################################################
 
 
@@ -115,7 +117,7 @@ print(data_paths)
 
 # Load datasets
 train_sets = [MeshDataset(
-    os.path.join(data_path, "train"),
+    os.path.join(data_path, "data"),
     transform=normalise if config.is_normalise else None,
     x_feature=config.x_feat,
     mesh_feature=config.mesh_feat,
@@ -126,38 +128,38 @@ train_sets = [MeshDataset(
     r=config.cluster_r,
 ) for data_path in data_paths]
 
-test_sets = [MeshDataset(
-    os.path.join(data_path, "test"),
-    transform=normalise if config.is_normalise else None,
-    x_feature=config.x_feat,
-    mesh_feature=config.mesh_feat,
-    conv_feature=config.conv_feat,
-    conv_feature_fix=config.conv_feat_fix,
-    load_jacobian=config.use_jacob,
-    use_cluster=config.use_cluster,
-    r=config.cluster_r,
-) for data_path in data_paths]
+# test_sets = [MeshDataset(
+#     os.path.join(data_path, "test"),
+#     transform=normalise if config.is_normalise else None,
+#     x_feature=config.x_feat,
+#     mesh_feature=config.mesh_feat,
+#     conv_feature=config.conv_feat,
+#     conv_feature_fix=config.conv_feat_fix,
+#     load_jacobian=config.use_jacob,
+#     use_cluster=config.use_cluster,
+#     r=config.cluster_r,
+# ) for data_path in data_paths]
 
-val_sets = [MeshDataset(
-    os.path.join(data_path, "val"),
-    transform=normalise if config.is_normalise else None,
-    x_feature=config.x_feat,
-    mesh_feature=config.mesh_feat,
-    conv_feature=config.conv_feat,
-    conv_feature_fix=config.conv_feat_fix,
-    load_jacobian=config.use_jacob,
-    use_cluster=config.use_cluster,
-    r=config.cluster_r,
-) for data_path in data_paths]
+# val_sets = [MeshDataset(
+#     os.path.join(data_path, "val"),
+#     transform=normalise if config.is_normalise else None,
+#     x_feature=config.x_feat,
+#     mesh_feature=config.mesh_feat,
+#     conv_feature=config.conv_feat,
+#     conv_feature_fix=config.conv_feat_fix,
+#     load_jacobian=config.use_jacob,
+#     use_cluster=config.use_cluster,
+#     r=config.cluster_r,
+# ) for data_path in data_paths]
 
 # for training, datasets preperation
 train_set = AggreateDataset(train_sets)
-test_set = AggreateDataset(test_sets)
+# test_set = AggreateDataset(test_sets)
 # val_set = AggreateDataset(val_sets)
 
 # Loading and Batching
 train_loader = DataLoader(train_set, batch_size=config.batch_size)
-test_loader = DataLoader(test_set, batch_size=config.batch_size)
+# test_loader = DataLoader(test_set, batch_size=config.batch_size)
 # val_loader = DataLoader(val_set, batch_size=batch_size)
 
 # =============================================== Run training ===============================
@@ -226,17 +228,17 @@ for epoch in range(config.num_epochs + 1):
                      weight_eq_residual_loss=config.weight_eq_residual_loss,
                      scaler=300,
                      )
-  test_loss = evaluate_func(test_loader, model, device, loss_func=loss_func,
-                       use_area_loss=config.use_area_loss,
-                       use_convex_loss=config.use_convex_loss,
-                       weight_area_loss=config.weight_area_loss,
-                       weight_deform_loss=config.weight_deform_loss,
-                       weight_eq_residual_loss=config.weight_eq_residual_loss,
-                       scaler=300,
-                       )
+#   test_loss = evaluate_func(test_loader, model, device, loss_func=loss_func,
+#                        use_area_loss=config.use_area_loss,
+#                        use_convex_loss=config.use_convex_loss,
+#                        weight_area_loss=config.weight_area_loss,
+#                        weight_deform_loss=config.weight_deform_loss,
+#                        weight_eq_residual_loss=config.weight_eq_residual_loss,
+#                        scaler=300,
+#                        )
   wandb.log({
       "Deform Loss/Train": train_loss["deform_loss"],
-      "Deform Loss/Test":test_loss["deform_loss"],
+    #   "Deform Loss/Test":test_loss["deform_loss"],
   }, step=epoch)
 #   wandb.log({
 #       "Boundary Loss/Train": train_loss["boundary_loss"],
@@ -244,23 +246,23 @@ for epoch in range(config.num_epochs + 1):
 #   }, step=epoch)
   wandb.log({
         "Equation residual/Train": train_loss["equation_residual"],
-        "Equation residual/Test":test_loss["equation_residual"],
+        # "Equation residual/Test":test_loss["equation_residual"],
   }, step=epoch)
   print(f"Epoch: {epoch}")
   if (config.use_convex_loss):
       wandb.log({
         "Convex loss/Train": train_loss["convex_loss"],
-        "Convex loss/Test":test_loss["convex_loss"],
+        # "Convex loss/Test":test_loss["convex_loss"],
       }, step=epoch)
   if (config.use_inversion_loss):
       wandb.log({
           "Inversion Loss/Train": train_loss["inversion_loss"],
-          "Inversion Loss/Test":test_loss["inversion_loss"],
+        #   "Inversion Loss/Test":test_loss["inversion_loss"],
       }, step=epoch)
   if (config.use_area_loss):
       wandb.log({
           "Area Loss/Train": train_loss["area_loss"],
-          "Area Loss/Test":test_loss["area_loss"],
+        #   "Area Loss/Test":test_loss["area_loss"],
       }, step=epoch)
 
 #   if (epoch) % config.check_tangle_interval == 0:

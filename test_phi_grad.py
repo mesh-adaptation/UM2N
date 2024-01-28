@@ -355,7 +355,8 @@ for model_name in models_to_compare:
 
               coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-              (out, phi, out_monitor), (phix, phiy) = model.move(sample, coord_ori, mesh_query, num_step=1)
+              # (out, phi, out_monitor), (phix, phiy) = model.move(sample, coord_ori, mesh_query, num_step=1)
+              (out, phi, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query)
               feat_dim = sample.mesh_feat.shape[-1]
               node_num = sample.mesh_feat.reshape(1, -1, feat_dim).shape[1]
 

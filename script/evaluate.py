@@ -23,8 +23,8 @@ import warpmesh as wm
 from torch_geometric.loader import DataLoader
 from types import SimpleNamespace
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# device = torch.device('cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
 
 # entity = 'mz-team'
 # project_name = 'warpmesh'
@@ -458,6 +458,14 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
             plt.close()
     
     elif problem_type == 'swirl':
+
+        n_grid = None
+        if int(meshtype) == 0:
+            n_grid = int(ds_root.split('/')[-1].split('>')[-2][-2:])
+            print(f"meshtype {meshtype}, n_grid: {n_grid}")
+        mesh = None
+        mesh_fine = None
+
         # Readin params for a specific swirl problem
         info_df = pd.read_csv(os.path.join(ds_root, 'info.csv'))
         sigma = info_df["sigma"][0]
@@ -466,9 +474,14 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         T = info_df["T"][0]
         n_step = info_df["n_step"][0]
 
-        mesh = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
-        mesh_new = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
-        mesh_fine = fd.Mesh(os.path.join(ds_root, 'mesh_fine', 'mesh.msh'))
+        if n_grid is None:
+            mesh = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
+            mesh_new = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
+            mesh_fine = fd.Mesh(os.path.join(ds_root, 'mesh_fine', 'mesh.msh'))
+        else:
+            mesh = fd.UnitSquareMesh(n_grid, n_grid)
+            mesh_new = fd.UnitSquareMesh(n_grid, n_grid)
+            mesh_fine = fd.UnitSquareMesh(80, 80)
 
         # fd.triplot(mesh)
         # fd.triplot(mesh_fine)
@@ -625,10 +638,14 @@ if __name__ == "__main__":
 
     # run_id = '1cf7cu3d' # mesh query purely supervised
 
-    # run_id = '0l8ujpdr' # mesh query semi 111, old dataset
+    run_id = '0l8ujpdr' # mesh query semi 111, old dataset
     run_id = 'hmgwx4ju' # mesh query semi 011 (purely supervised), old dataset
+    run_id = 'tlvacka0' # 1 0 0, pure unsupervised fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
+    run_id = '989eagtl' # 1 1 1, semi unsupervised fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
+    run_id = 'cbey3q32' # 1 1 1, semi unsupervised fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6', freeze transformer
 
-    epoch = 999
+    run_id = 'boe36e11' # 0 1 1, pure supervised fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
+    epoch = 699
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
@@ -641,8 +658,9 @@ if __name__ == "__main__":
 
     # run_ids = [run_id]
     # run_ids = ['0l8ujpdr', 'hmgwx4ju']
-    # run_ids = ['hmgwx4ju']
-    run_ids = ['0l8ujpdr']
+    # run_ids = ['0l8ujpdr']
+    run_ids = [run_id]
+    # run_ids = [run_id]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
     #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
@@ -651,8 +669,7 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
     #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
-    ds_roots = [
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
+    ds_roots = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
 
     for run_id in run_ids:
         for ds_root in ds_roots:
