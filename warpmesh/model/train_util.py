@@ -531,7 +531,47 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     return torch.stack(u_interpolateds, dim=0)
 
 
-# def generate_samples(bs, )
+def _generate_samples(num_meshes, num_samples_per_mesh, coords, solution, monitor, device='cuda'):
+    meshes = torch.tensor(np.random.uniform(0, 1, (num_meshes, num_samples_per_mesh, 2)), dtype=torch.float).to(device)
+    solution_input = solution.repeat(num_meshes, 1, 1)
+    monitor_input = monitor.repeat(num_meshes, 1, 1)
+    coords_x = coords[: ,: ,0].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    coords_y = coords[: ,: ,1].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    new_meshes_x = meshes[:, :, 0].unsqueeze(-1)
+    new_meshes_y = meshes[:, :, 1].unsqueeze(-1)
+
+    solutions = interpolate(solution_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
+    monitors = interpolate(monitor_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
+
+    return meshes, solutions, monitors
+
+
+def generate_samples(bs, num_samples_per_mesh, data, num_meshes=5, device="cuda"):
+    # num_meshes = 5
+    # num_nodes = coord_ori.shape[-2] // bs
+    samples_q = data.mesh_feat[:, :4].view(bs, -1, 4)
+    meshes_collection = []
+    solutions_collection = []
+    monitors_collection = []
+    for b in range(bs):
+        coords = data.mesh_feat[:, :2].view(bs, -1, 2)[b, :, :].view(1, -1, 2)
+        solution = data.mesh_feat[:, 2].view(bs, -1, 1)[b, :, :].view(1, -1, 1)
+        monitor = data.mesh_feat[:, 3].view(bs, -1, 1)[b, :, :].view(1, -1, 1)
+        meshes, solutions, monitors = _generate_samples(num_meshes=num_meshes, num_samples_per_mesh=num_samples_per_mesh, coords=coords, solution=solution, monitor=monitor, device=device)
+        # print(f"output meshes: {meshes.shape} solutions: {solutions.shape} monitor: {monitors.shape}")
+        # merge the addtional sampled attributes (mesh, solution, monitor) to a large graph within one sample
+        meshes_collection.append(torch.cat([coords.view(-1, 2), meshes.view(-1, 2)], dim=0)) 
+        solutions_collection.append(torch.cat([solution.view(-1, 1), solutions.view(-1, 1)], dim=0))
+        monitors_collection.append(torch.cat([monitor.view(-1, 1), monitors.view(-1, 1)], dim=0))
+    
+    # merge all enhanced sampled samples along the batch size dimension
+    meshes_input = torch.stack(meshes_collection, dim=0)
+    solutions_input = torch.stack(solutions_collection, dim=0)
+    monitors_input = torch.stack(monitors_collection, dim=0)
+    # merge all batched sampled attributes along feature dim for transformer key and value
+    samples_kv = torch.cat([meshes_input, solutions_input, monitors_input], dim=-1)
+    return samples_q, samples_kv
+
 
 def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func):
     feat_dim = data.mesh_feat.shape[-1]
@@ -653,13 +693,15 @@ def train_unsupervised(
 
         coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
         coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
-
         coord_ori_x.requires_grad = True
         coord_ori_y.requires_grad = True
-
         coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-        (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori, mesh_query)
+        num_nodes = coord_ori.shape[-2] // bs
+        input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
+        # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
+
+        (output_coord, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query)
         loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
         if not use_convex_loss:
@@ -787,7 +829,11 @@ def evaluate_unsupervised(
 
         coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-        (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori, mesh_query)
+        num_nodes = coord_ori.shape[-2] // bs
+        input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
+        # print(f"input q", input_q.shape, "input_kv ", input_kv.shape)
+
+        (output_coord, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query)
         loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
         if not use_convex_loss:
@@ -937,8 +983,10 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
     if (method == "inversion"):
         loader = DataLoader(dataset=dataset, batch_size=1,
                             shuffle=False)
+        bs = loader.batch_size
         for data in loader:
             with torch.no_grad():
+                data = data.to(device)
                 # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
                 mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
                 mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
@@ -950,7 +998,11 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
                 coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
                 coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-                (output_data, _, _), (_,_) = model(data.to(device), coord_ori.to(device), mesh_query.to(device))
+                num_nodes = coord_ori.shape[-2] // bs
+                input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
+                # print(f"input q", input_q.shape, "input_kv ", input_kv.shape)
+
+                (output_data, _, _), (_,_) = model(data.to(device), input_q.to(device), input_kv.to(device), mesh_query.to(device))
                 out_area = get_face_area(output_data, data.face)
                 in_area = get_face_area(data.x[:, :2], data.face)
                 # restore the sign of the area

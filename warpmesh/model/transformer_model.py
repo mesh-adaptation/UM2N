@@ -88,12 +88,12 @@ class TransformerBlock(nn.Module):
         self.c_attn = nn.Parameter(torch.ones(num_heads), requires_grad=True) 
         self.residual_weight = nn.Parameter(torch.ones(embed_dim), requires_grad=True)
 
-    def forward(self, x, x_cls=None, key_padding_mask=None, attn_mask=None, return_attn=False):
+    def forward(self, q, k, v, x_cls=None, key_padding_mask=None, attn_mask=None, return_attn=False):
         # In pytorch nn.MultiheadAttention, key_padding_mask True indicates ignore the corresponding key value
         # NOTE: check default True or False of key_padding_mask with nn.MultiheadAttention
         # if key_padding_mask is not None:
         #     key_padding_mask = ~key_padding_mask
-        
+        x = q
         if x_cls is not None:
             # to be implemented later
             pass
@@ -103,7 +103,7 @@ class TransformerBlock(nn.Module):
             # NOTE: Here we use batch first in nn.MultiheadAttention
             # [batch_size, num_points, embed_dim]
             
-            x, attn_scores = self.attn_layer(x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
+            x, attn_scores = self.attn_layer(q, k, v, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
             
         if self.c_attn is not None:
             num_points = x.shape[1]
@@ -154,10 +154,12 @@ class TransformerModel(nn.Module):
         self.mlp_out = MLP_model(embed_dim, output_dim, [embed_dim], hidden_act="GELU", output_act="GELU")
 
         
-    def forward(self, x, key_padding_mask=None, attention_mask=None):
-        x = self.mlp_in(x)
+    def forward(self, q, k, v, key_padding_mask=None, attention_mask=None):
+        q = self.mlp_in(q)
+        k = self.mlp_in(k)
+        v = self.mlp_in(v)
         for _, layer in enumerate(self.attn_layers):
-            x = layer(x, key_padding_mask=key_padding_mask, attn_mask=attention_mask)
+            x = layer(q, k, v, key_padding_mask=key_padding_mask, attn_mask=attention_mask)
 
         x = self.mlp_out(x)
         return x

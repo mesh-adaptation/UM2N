@@ -103,7 +103,7 @@ num_nodes = coords.shape[1]
 num_samples = 5
 
 meshes, solutions, hessian_norms = generate_samples(num_samples, num_nodes, coords, solution, hessian_norm)
-
+print(f"Sampled meshes: {meshes.shape}, solutions: {solutions.shape}, hessian norm: {hessian_norms.shape}")
 num_show = 4
 num_variables = 3 # meshes, solution, hessian_norms
 fig, ax = plt.subplots(num_variables, num_show + 1, figsize=(4*(num_show + 1), 4 * num_variables))

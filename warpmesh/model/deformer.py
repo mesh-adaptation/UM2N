@@ -61,6 +61,7 @@ class RecurrentGATConv(MessagePassing):
         self.poly_mesh = poly_mesh
         
         # Recurrent GAT
+        # print(coord.shape, hidden_state.shape)
         in_feat = torch.cat((coord, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
         hidden = self.activation(hidden)
