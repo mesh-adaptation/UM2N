@@ -640,26 +640,29 @@ if __name__ == "__main__":
 
     run_id = '0l8ujpdr' # mesh query semi 111, old dataset
     run_id = 'hmgwx4ju' # mesh query semi 011 (purely supervised), old dataset
-    run_id = 'tlvacka0' # 1 0 0, pure unsupervised fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
-    run_id = '989eagtl' # 1 1 1, semi unsupervised fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
-    run_id = 'cbey3q32' # 1 1 1, semi unsupervised fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6', freeze transformer
+    run_id = 'tlvacka0' # 1 0 0, pure unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
+    run_id = '989eagtl' # 1 1 1, semi unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
+    run_id = 'knjfc14i' # 1 1 1, semi unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
+    
+    run_id = 'cbey3q32' # 1 1 1, semi unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6', freeze transformer
 
-    run_id = 'boe36e11' # 0 1 1, pure supervised fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
-    epoch = 699
+    run_id = 'boe36e11' # 0 1 1, pure supervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
+    epoch = 999
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
-    # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
+    run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
+    ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
+                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
+                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
+                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
+                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
     # run_ids = [run_id]
     # run_ids = ['0l8ujpdr', 'hmgwx4ju']
     # run_ids = ['0l8ujpdr']
-    run_ids = [run_id]
+    # run_ids = ['knjfc14i']
     # run_ids = [run_id]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
@@ -669,7 +672,9 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
     #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
-    ds_roots = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
+    # ds_roots = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
+    # ds_roots = ['./data/dataset_meshtype_0/swirl/z=<0,1>_ndist=None_max_dist=6_<30x30>_n=iso_pad']
+    # ds_roots = ['./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_2']
 
     for run_id in run_ids:
         for ds_root in ds_roots:
