@@ -94,8 +94,8 @@ for batch in train_loader:
     break
 print(sample)
 coords = sample.mesh_feat.view(batch_size, -1, sample.mesh_feat.shape[-1])[:, :, :2]
-solution = sample.mesh_feat.view(batch_size, -1, sample.mesh_feat.shape[-1])[:, :, 3].unsqueeze(-1)
-hessian_norm = sample.mesh_feat.view(batch_size, -1, sample.mesh_feat.shape[-1])[:, :, 4].unsqueeze(-1)
+solution = sample.mesh_feat.view(batch_size, -1, sample.mesh_feat.shape[-1])[:, :, 2].unsqueeze(-1)
+hessian_norm = sample.mesh_feat.view(batch_size, -1, sample.mesh_feat.shape[-1])[:, :, 3].unsqueeze(-1)
 print(f"coords: {coords.shape}, solution: {solution.shape}, hessian norm: {hessian_norm.shape}")
 
 
