@@ -531,6 +531,8 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     return torch.stack(u_interpolateds, dim=0)
 
 
+# def generate_samples(bs, )
+
 def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func):
     feat_dim = data.mesh_feat.shape[-1]
     # mesh_feat [coord_x, coord_y, u, hessian_norm]
