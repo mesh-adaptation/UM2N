@@ -22,9 +22,10 @@ import warpmesh as wm
 
 from torch_geometric.loader import DataLoader
 from types import SimpleNamespace
+from warpmesh.model.train_util import generate_samples
 
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device = torch.device('cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cpu')
 
 # entity = 'mz-team'
 # project_name = 'warpmesh'
@@ -357,11 +358,14 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         wm.mkdir_if_not_exist(log_dir)
         wm.mkdir_if_not_exist(plot_dir)
 
+        model = model.to(device)
         for idx in range(start_idx, start_idx + num_samples):
             # model inference stage
             sample = next(iter(
                 DataLoader([dataset[idx]], batch_size=1, shuffle=False)))
             model.eval()
+            bs = 1
+            sample = sample.to(device)
             with torch.no_grad():
                 start = time.perf_counter()
 
@@ -373,7 +377,10 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
                 coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
                 coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-                (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query, poly_mesh=True if domain == "poly" else False)
+                num_nodes = coord_ori.shape[-2] // bs
+                input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=sample, device=device)
+
+                (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, input_q, input_kv, mesh_query, poly_mesh=True if domain == "poly" else False)
                 end = time.perf_counter()
                 dur_ms = (end - start) * 1000
             temp_time_consumption = dur_ms
@@ -428,7 +435,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
             error_reduction_model = (temp_error_og - temp_error_model) / temp_error_og
             # log file
             log_df = pd.DataFrame({
-                'deform_loss': temp_loss.numpy(),
+                'deform_loss': temp_loss.cpu().numpy(),
                 'tangled_element': temp_tangled_elem,
                 'error_og': temp_error_og,
                 'error_model': temp_error_model,
@@ -444,7 +451,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
             log_df.to_csv(os.path.join(log_dir, f"log_{idx:04d}.csv"))
 
             fig = wm.plot_mesh_compare_benchmark(
-                out, sample.y, sample.face,
+                out.cpu(), sample.y.cpu(), sample.face.cpu(),
                 deform_loss=temp_loss, 
                 pde_loss_model=temp_error_model,
                 pde_loss_reduction_model=error_reduction_model,
@@ -487,7 +494,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         # fd.triplot(mesh_fine)
 
         evaluator = wm.SwirlEvaluator(
-            mesh, mesh_fine, mesh_new, dataset, model, eval_dir, ds_root,
+            mesh, mesh_fine, mesh_new, dataset, model, eval_dir, ds_root, device=device,
             sigma=sigma, alpha=alpha, r_0=r_0,
             T=T, n_step=n_step,
         )
@@ -647,10 +654,18 @@ if __name__ == "__main__":
     run_id = 'cbey3q32' # 1 1 1, semi unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6', freeze transformer
 
     run_id = 'boe36e11' # 0 1 1, pure supervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
+    
+    run_id = '6oel4b5v' # enhanced with random sampling
+
+    run_id = '28ihwvfg' # 6oel4b5v continue train
+    
+    
     epoch = 999
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
-    run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
+    # run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
+
+    run_ids = [run_id]
     # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
     #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
     #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
@@ -658,10 +673,18 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
     #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
-    ds_roots = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6']
+    # ds_roots = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
+    #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
+    #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
+    #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6']
+
+    ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
+                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
+                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+                ]
 
     # run_ids = [run_id]
     # run_ids = ['0l8ujpdr', 'hmgwx4ju']
