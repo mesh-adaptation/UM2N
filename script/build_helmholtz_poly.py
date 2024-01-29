@@ -221,6 +221,8 @@ if __name__ == "__main__":
                 "RHS": res["RHS"],
                 "bc": res["bc"]
             })
+            # RHS of helmholtz problem
+            f = fd.interpolate(helmholtz_eq.f, helmholtz_eq.function_space)
             uh = solver.solve_eq()
             # Generate Mesh
             hessian = wm.MeshGenerator(params={
@@ -309,6 +311,8 @@ if __name__ == "__main__":
                         -1, 1),
                     "grad_phi": grad_phi.dat.data_ro.reshape(
                         -1, 2),
+                    "f": f.dat.data_ro.reshape(
+                        -1, 1),
                 },
                 raw_feature={
                     "uh": uh,

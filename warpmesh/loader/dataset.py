@@ -229,6 +229,8 @@ class MeshDataset(Dataset):
                 data.item().get('phi')).float() if data.item().get('phi') is not None else None,  # noqa: E501
             grad_phi=torch.from_numpy(
                 data.item().get('grad_phi')).float() if data.item().get('grad_phi') is not None else None,  # noqa: E501
+            f=torch.from_numpy(
+                data.item().get('f')).float() if data.item().get('f') is not None else None,  # noqa
             node_num=num_nodes,
             poly_mesh=data.item().get('poly_mesh') if data.item().get('poly_mesh') is not None else False,  # noqa: E501
         )

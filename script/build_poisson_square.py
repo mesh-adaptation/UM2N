@@ -32,7 +32,7 @@ def arg_parse():
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
     parser.add_argument('--boundary_scheme', type=str, default="pad",
                         help='scheme used to generate the dataset (pad/full))')
-    parser.add_argument('--n_samples', type=int, default=400,
+    parser.add_argument('--n_samples', type=int, default=100,
                         help='number of samples generated')
     parser.add_argument('--rand_seed', type=int, default=63,
                         help='number of samples generated')
