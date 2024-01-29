@@ -64,7 +64,7 @@ class M2N(torch.nn.Module):
         super().__init__()
         self.gfe_out_c = 16
         self.lfe_out_c = 16
-        self.deformer_in_feat = 7 + self.gfe_out_c + self.lfe_out_c
+        self.deformer_in_feat = deform_in_c + self.gfe_out_c + self.lfe_out_c
 
         self.gfe = GlobalFeatExtractor(
             in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop)
