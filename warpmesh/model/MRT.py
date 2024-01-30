@@ -160,7 +160,7 @@ class MRTransformer(torch.nn.Module):
         
         return hidden
 
-    def move(self, data, input_q, input_kv, mesh_query, num_step=1):
+    def move(self, data, input_q, input_kv, mesh_query, sampled_queries_edge_index, sampled_queries, num_step=1, poly_mesh=False):
         """
         Move the mesh according to the deformation learned, with given number
             steps.
@@ -184,18 +184,26 @@ class MRTransformer(torch.nn.Module):
         coord = mesh_query
 
         model_output = None
+        out_monitor = None
         # Recurrent GAT deform
-        for i in range(self.num_loop):
+        for i in range(num_step):
             (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, mesh_query, bd_mask, poly_mesh)
         
-        # Map hidden to monitor
-        out_monitor_1 = self.to_monitor_1(hidden)
-        out_monitor_2 = F.selu(self.to_monitor_2(out_monitor_1))
-        out_monitor = F.selu(self.to_monitor_3(out_monitor_2))
+        coord_extra = sampled_queries
+        # Recurrent GAT deform (extra sampled)
+        for i in range(num_step):
+            (coord_extra, model_output_extra), hidden, (phix_extra, phiy_extra) = self.deformer(coord_extra, hidden, sampled_queries_edge_index, sampled_queries, bd_mask, poly_mesh)
+        
+        coord_output = torch.cat([coord, coord_extra], dim=0)
+        model_raw_output = torch.cat([model_output, model_output_extra], dim=0)
+        # phix_output = torch.cat([phix, phix_extra], dim=0)
+        # phiy_output = torch.cat([phiy, phiy_extra], dim=0)
+        phix_output = phix_extra
+        phiy_output = phiy_extra
+        # print(phix.shape, phix_extra.shape)
+        return (coord_output, model_raw_output, out_monitor), (phix_output, phiy_output)
 
-        return (coord, model_output, out_monitor), (phix, phiy)
-
-    def forward(self, data, input_q, input_kv, mesh_query, poly_mesh=False):
+    def forward(self, data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index, poly_mesh=False):
         """
         Forward pass for MRN.
 
@@ -217,16 +225,24 @@ class MRTransformer(torch.nn.Module):
         coord = mesh_query
 
         model_output = None
+        out_monitor = None
         # Recurrent GAT deform
         for i in range(self.num_loop):
             (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, mesh_query, bd_mask, poly_mesh)
-
-        # Map hidden to monitor
-        out_monitor_1 = self.to_monitor_1(hidden)
-        out_monitor_2 = F.selu(self.to_monitor_2(out_monitor_1))
-        out_monitor = F.selu(self.to_monitor_3(out_monitor_2))
-
-        return (coord, model_output, out_monitor), (phix, phiy)
+        
+        coord_extra = sampled_queries
+        # Recurrent GAT deform (extra sampled)
+        for i in range(self.num_loop):
+            (coord_extra, model_output_extra), hidden, (phix_extra, phiy_extra) = self.deformer(coord_extra, hidden, sampled_queries_edge_index, sampled_queries, bd_mask, poly_mesh)
+        
+        coord_output = torch.cat([coord, coord_extra], dim=0)
+        model_raw_output = torch.cat([model_output, model_output_extra], dim=0)
+        # phix_output = torch.cat([phix, phix_extra], dim=0)
+        # phiy_output = torch.cat([phiy, phiy_extra], dim=0)
+        phix_output = phix_extra
+        phiy_output = phiy_extra
+        # print(phix.shape, phix_extra.shape)
+        return (coord_output, model_raw_output, out_monitor), (phix_output, phiy_output)
 
     def get_attention_scores(self, data):
         conv_feat_in = data.conv_feat

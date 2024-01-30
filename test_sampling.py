@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from warpmesh.loader import MeshDataset, normalise, AggreateDataset
 from torch_geometric.data import DataLoader
+from torch_geometric.nn import knn_graph
+
 
 
 def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
@@ -128,3 +130,11 @@ for i in range(1, num_show+1):
     ax[2, i].set_title(r"${}$".format(title_str_2))
 
 plt.savefig("sampled_mesh.png")
+
+
+batch_size = meshes.shape[0]
+node_num = meshes.shape[1]
+batch = torch.tensor([x for x in range(meshes.shape[0])]).unsqueeze(-1).repeat(1, node_num).reshape(-1)
+# batch = None
+edge_index = knn_graph(meshes.view(-1, 2), k=6, batch=batch, loop=False)
+print(edge_index.shape)
