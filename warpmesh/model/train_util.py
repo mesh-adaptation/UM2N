@@ -605,6 +605,32 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         return loss_eq_residual, loss_convex, 
     
 
+def compute_helmholtz_residual(bs, data, solution, mesh_query_x, mesh_query_y, phix, phiy, loss_func):
+    feat_dim = data.mesh_feat.shape[-1]
+    node_num = data.mesh_feat.view(bs, -1, feat_dim).shape[1]
+
+    rhs = data.f.view(bs, -1, 1)
+    solution = solution.view(bs, node_num, 1)
+    moved_x = phix.view(bs, node_num, 1) + mesh_query_x.view(bs, node_num, 1)
+    moved_y = phiy.view(bs, node_num, 1) + mesh_query_y.view(bs, node_num, 1)
+
+    solution_ = interpolate(solution, mesh_query_x, mesh_query_y, moved_x, moved_y)
+    rhs_ = interpolate(rhs, mesh_query_x, mesh_query_y, moved_x, moved_y)
+    # print(solution_.shape, rhs_.shape)
+
+    grad_seed = torch.ones(solution_.shape).to(device)
+    solution_x = torch.autograd.grad(solution_, moved_x, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+    solution_y = torch.autograd.grad(solution_, moved_y, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+
+    hessian_seed = torch.ones(solution_x.shape).to(device)
+    solution_xx = torch.autograd.grad(solution_x, moved_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+    solution_yy = torch.autograd.grad(solution_y, moved_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+    # print(solution_xx.shape, solution_yy.shape, solution_x.shape, solution_y.shape)
+    pde_residual = loss_func(- (solution_xx.view(-1, 1) + solution_yy.view(-1, 1)) + solution_.view(-1, 1) , rhs_.view(-1, 1))
+    return pde_residual
+
+
+
 def train_unsupervised(
         loader, model, optimizer, device, loss_func,
         use_jacob=False,
@@ -615,6 +641,7 @@ def train_unsupervised(
         weight_area_loss=1,
         weight_deform_loss=1,
         weight_eq_residual_loss=1,
+        weight_pde_residual_loss=1,
         scaler=100):
     """
     Trains a PyTorch model using the given data loader, optimizer,
@@ -640,6 +667,7 @@ def train_unsupervised(
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
     total_area_loss = 0
+    total_pde_residual = 0
     for batch in loader:
         optimizer.zero_grad()
         data = batch.to(device)
@@ -662,6 +690,9 @@ def train_unsupervised(
         (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori, mesh_query)
         loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
+        solution = data.mesh_feat[:, 2]
+        loss_pde_residual = compute_helmholtz_residual(bs, data, solution, mesh_query_x, mesh_query_y, phix, phiy, loss_func)
+        
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
 
@@ -691,7 +722,8 @@ def train_unsupervised(
             inversion_diff_loss +
             weight_area_loss * area_loss  + 
             weight_eq_residual_loss * loss_eq_residual +
-            loss_convex
+            loss_convex + 
+            weight_pde_residual_loss * loss_pde_residual
         )
 
         # Jacobian loss
@@ -710,11 +742,13 @@ def train_unsupervised(
         total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
         total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
         total_area_loss += area_loss.item()
+        total_pde_residual += loss_pde_residual.item()
 
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
-        "equation_residual": total_eq_residual_loss / len(loader)
+        "equation_residual": total_eq_residual_loss / len(loader),
+        "pde_residual": total_pde_residual / len(loader)
     }
     if (use_convex_loss):
         res["convex_loss"] = total_convex_loss / len(loader)
@@ -738,6 +772,7 @@ def evaluate_unsupervised(
         weight_area_loss=1,
         weight_deform_loss=1,
         weight_eq_residual_loss=1,
+        weight_pde_residual_loss=1,
         scaler=100):
     """
     Evaluates a model using the given data loader and loss function.
@@ -761,6 +796,7 @@ def evaluate_unsupervised(
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
     total_area_loss = 0
+    total_pde_residual = 0
     for batch in loader:
         data = batch.to(device)
 
@@ -790,6 +826,9 @@ def evaluate_unsupervised(
         (output_coord, output, out_monitor), (phix, phiy) = model(data, coord_ori, mesh_query)
         loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
 
+        solution = data.mesh_feat[:, 2]
+        loss_pde_residual = compute_helmholtz_residual(bs, data, solution, mesh_query_x, mesh_query_y, phix, phiy, loss_func)
+
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
 
@@ -812,7 +851,8 @@ def evaluate_unsupervised(
             inversion_diff_loss +
             weight_area_loss * area_loss +
             weight_eq_residual_loss * loss_eq_residual +
-            loss_convex
+            loss_convex + 
+            weight_pde_residual_loss * loss_pde_residual
         )
 
         total_loss += loss.item()
@@ -822,10 +862,13 @@ def evaluate_unsupervised(
         total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
         total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
         total_area_loss += area_loss.item()
+        total_pde_residual += loss_pde_residual.item()
+
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
-        "equation_residual": total_eq_residual_loss / len(loader)
+        "equation_residual": total_eq_residual_loss / len(loader),
+        "pde_residual": total_pde_residual / len(loader)
     }
     if (use_convex_loss):
         res["convex_loss"] = total_convex_loss / len(loader)
