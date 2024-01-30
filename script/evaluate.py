@@ -179,7 +179,7 @@ def get_sample_param_of_nu_generalization_by_idx_train(idx_in):
     return gauss_list_, nu_
 
 
-def init_dir(config, run_id, epoch, ds_root):
+def init_dir(config, run_id, epoch, ds_root, problem_type, domain):
     """
     Make dir for evaluation. All evaluation files will be stored
     under the dir created.
@@ -192,7 +192,9 @@ def init_dir(config, run_id, epoch, ds_root):
     ds_name = ds_root.split('/')[-1]
     experiment_dir = os.path.join(
         eval_dir, config.model_used + '_'
-        + str(epoch) + '_' + run_id, f"{ds_name}", now)
+        + str(epoch) + '_' + run_id,
+        problem_type + "_" + domain,
+        f"{ds_name}", now)
     wm.mkdir_if_not_exist(experiment_dir)
     print("\t## Make eval dir done\n")
     return experiment_dir
@@ -301,8 +303,10 @@ def get_log_og(log_path, idx):
         "time": df["time"][0],
     }
 
+
 def get_problem_type(ds_root):
     domain = None
+    print("ds_root", ds_root)
     ds_type = ds_root.split('/')[-2]
     meshtype = int(ds_root.split('/')[-3].split('_')[-1])
     problem_list = ds_type.split('_')
@@ -354,8 +358,10 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
         log_dir = os.path.join(eval_dir, 'log')
         plot_dir = os.path.join(eval_dir, 'plot')
+        plot_more_dir = os.path.join(eval_dir, 'plot_more')
         wm.mkdir_if_not_exist(log_dir)
         wm.mkdir_if_not_exist(plot_dir)
+        wm.mkdir_if_not_exist(plot_more_dir)
 
         for idx in range(start_idx, start_idx + num_samples):
             # model inference stage
@@ -373,7 +379,8 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
                 coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
                 coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-                (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query, poly_mesh=True if domain == "poly" else False)
+                # (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query, poly_mesh=True if domain == "poly" else False)
+                out = model(sample, poly_mesh=True if domain == "poly" else False)
                 end = time.perf_counter()
                 dur_ms = (end - start) * 1000
             temp_time_consumption = dur_ms
@@ -412,6 +419,11 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
             temp_error_model = compare_res["error_model_mesh"]
             temp_error_og = compare_res["error_og_mesh"]
             temp_error_ma = compare_res["error_ma_mesh"]
+
+            plot_more = compare_res["plot_more"]
+            plot_more.savefig(
+                os.path.join(plot_more_dir, f"plot_{idx:04d}.png")
+            )
 
             if int(meshtype) != 0:
                 log_og = get_log_og(os.path.join(ds_root, 'log'), idx)
@@ -519,8 +531,6 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
             eval_res = evaluator.eval_problem()                     # noqa
 
-        
-
 
 def write_sumo(eval_dir, ds_root):
     log_dir = os.path.join(eval_dir, 'log')
@@ -612,92 +622,47 @@ def write_sumo(eval_dir, ds_root):
     fig.savefig(os.path.join(summary_save_path, 'error_reduction_sumo.png'))
 
 
-
 if __name__ == "__main__":
 
-    entity = 'mz-team'
+    entity = 'w-chunyang'
     project_name = 'warpmesh'
-    run_id = '8ndi2teh' # semi-supervised phi grad
-    run_id = 'bzlj9vcl' # semi-supervised 111
-    run_id = 'x9woqsnn' # supervised phi grad
-    run_id = '7py7k3ah' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2
-    run_id = 'uka7cidv' # fine tune on helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
-    run_id = '81b3gh8y' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
-    run_id = '0ejnq1mt' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze deformer
-    run_id = 'dnolwyeb' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze transformer
-    # run_id = 'bxrlm3dl' # fine tune on supervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, no freeze
-    run_id = 'eanjdljm' # fine tune with to monitor on unsupervised helmholtz z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2, freeze both
-    run_id = 'cbzxfq1o' # semi-supervised from old dataset with to monitor
+    epoch = 1499
 
-    run_id = 'irjq8z0r' # supervised from old dataset with to monitor
+    # run_id = "xkmmgmrc"  # M2N https://wandb.ai/w-chunyang/warpmesh/runs/xkmmgmrc?workspace=user-w-chunyang  # noqa
+    run_id = "gwts42h7"  # MRN https://wandb.ai/w-chunyang/warpmesh/runs/gwts42h7?workspace=user-w-chunyang
 
-    run_id = 'b64qp0b3' # supervised from old dataset with to monitor with interpolation
+    ds_roots = [  # helmholtz square
+        '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_6',  # noqa
+        '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.055_n=400_aniso_full_meshtype_6',  # noqa
+        '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full_meshtype_6',  # noqa
+        '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_6',  # noqa
+    ]
 
-    # run_id = 'yn3aaiwi' # mesh query semi 111
-    run_id = 'pk66tmjj' # mesh query semi 111 50 smaples
+    # ds_roots = [  # helmholtz poly
+    #     '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.055_n=400_aniso_full_meshtype6',  # noqa
+    #     '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype6',  # noqa
+    #     '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=400_aniso_full_meshtype6',  # noqa
+    #     '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype6',  # noqa
+    # ]
 
-    # run_id = '1cf7cu3d' # mesh query purely supervised
+    for ds_root in ds_roots:
+        problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
+        print(f"Evaluating {run_id} on dataset: {ds_root}")
+        # loginto wandb API
+        api = wandb.Api()
+        run = api.run(f"{entity}/{project_name}/{run_id}")
+        config = SimpleNamespace(**run.config)
 
-    run_id = '0l8ujpdr' # mesh query semi 111, old dataset
-    run_id = 'hmgwx4ju' # mesh query semi 011 (purely supervised), old dataset
-    run_id = 'tlvacka0' # 1 0 0, pure unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
-    run_id = '989eagtl' # 1 1 1, semi unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
-    run_id = 'knjfc14i' # 1 1 1, semi unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
-    
-    run_id = 'cbey3q32' # 1 1 1, semi unsupervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6', freeze transformer
+        print("# Evaluation Pipeline Started\n")
+        # init
+        eval_dir = init_dir(config, run_id, epoch, ds_root, problem_type, domain)  # noqa
+        dataset = load_dataset(config, ds_root, tar_folder='data')
+        model = load_model(config, epoch, eval_dir)
 
-    run_id = 'boe36e11' # 0 1 1, pure supervised '0l8ujpdr' fine tune on './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6'
-    epoch = 999
-    
-    # run_ids = ['8ndi2teh', 'x9woqsnn']
-    run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
-    # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
-    ds_roots = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6']
+        bench_res = benchmark_model(
+            model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
 
-    # run_ids = [run_id]
-    # run_ids = ['0l8ujpdr', 'hmgwx4ju']
-    # run_ids = ['0l8ujpdr']
-    # run_ids = ['knjfc14i']
-    # run_ids = [run_id]
-    # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
-    # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
-    # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-    #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
-    # ds_roots = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6']
-    # ds_roots = ['./data/dataset_meshtype_0/swirl/z=<0,1>_ndist=None_max_dist=6_<30x30>_n=iso_pad']
-    # ds_roots = ['./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_2']
-
-    for run_id in run_ids:
-        for ds_root in ds_roots:
-            problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
-            print(f"Evaluating {run_id} on dataset: {ds_root}")
-            # loginto wandb API
-            api = wandb.Api()
-            run = api.run(f"{entity}/{project_name}/{run_id}")
-            config = SimpleNamespace(**run.config)
-
-            print("# Evaluation Pipeline Started\n")
-            # init
-            eval_dir = init_dir(config, run_id, epoch, ds_root)
-            dataset = load_dataset(config, ds_root, tar_folder='data')
-            model = load_model(config, epoch, eval_dir)
-
-            bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
-            
-            write_sumo(eval_dir, ds_root)
+        write_sumo(eval_dir, ds_root)
 
     exit()
 

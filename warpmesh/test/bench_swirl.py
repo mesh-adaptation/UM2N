@@ -366,7 +366,7 @@ class SwirlEvaluator():
 
                     # 2d plot and mesh for Model
                     ax4 = fig.add_subplot(2, 2, 4)
-                    ax4.set_title('Soultion on Model mesh')
+                    ax4.set_title('Soultion on Model Mesh')
                     fd.tripcolor(
                         uh_model, cmap='coolwarm', axes=ax4)
                     self.mesh_new.coordinates.dat.data[:] = out.detach().cpu().numpy()  # noqa
@@ -374,7 +374,7 @@ class SwirlEvaluator():
 
                 # 2d plot and mesh for MA
                 ax3 = fig.add_subplot(2, 2, 3)
-                ax3.set_title('Soultion on MA mesh')
+                ax3.set_title('Soultion on MA Mesh')
                 fd.tripcolor(
                     self.uh_new, cmap='coolwarm', axes=ax3)
                 self.mesh_new.coordinates.dat.data[:] = sample.y
