@@ -47,8 +47,8 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     return torch.stack(u_interpolateds, dim=0)
 
 
-def generate_samples(num_meshes, num_nodes, coords, solution, monitor, device='cpu'):
-    meshes = torch.tensor(np.random.uniform(0, 1, (num_meshes, num_nodes, 2)), dtype=torch.float).to(device)
+def generate_samples(num_meshes, num_samples_per_mesh, coords, solution, monitor, device='cpu'):
+    meshes = torch.tensor(np.random.uniform(0, 1, (num_meshes, 10 * num_samples_per_mesh, 2)), dtype=torch.float).to(device)
     solution_input = solution.repeat(num_meshes, 1, 1)
     monitor_input = monitor.repeat(num_meshes, 1, 1)
     coords_x = coords[: ,: ,0].unsqueeze(-1).repeat(num_meshes, 1, 1)
@@ -59,7 +59,19 @@ def generate_samples(num_meshes, num_nodes, coords, solution, monitor, device='c
     solutions = interpolate(solution_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
     monitors = interpolate(monitor_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
 
-    return meshes, solutions, monitors
+    meshes_ = []
+    soluitons_ = []
+    monitors_ = []
+
+    # resample according to the monitor values
+    for bs in range(monitors.shape[0]):
+        prob = monitors[bs, :, 0] / torch.sum(monitors[bs, :, 0])
+        index = np.random.choice(a=meshes.shape[1], size=num_samples_per_mesh, replace=False, p=prob.numpy())
+        # print(torch.max(prob), torch.min(prob), torch.max(monitors), torch.min(monitors))
+        meshes_.append(meshes[bs, index, :])
+        soluitons_.append(solutions[bs, index, :])
+        monitors_.append(monitors[bs, index, :])
+    return torch.stack(meshes_, dim=0), torch.stack(soluitons_, dim=0), torch.stack(monitors_, dim=0)
 
 data_paths = ["./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"]
 
