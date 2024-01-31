@@ -108,6 +108,7 @@ class MRTransformer(torch.nn.Module):
         transformer_input_q  = input_q.view(batch_size, -1, input_q.shape[-1])
         transformer_input_kv = input_kv.view(batch_size, -1, input_kv.shape[-1])
         node_num = transformer_input_q.shape[1]
+        # print(transformer_input_q.shape, transformer_input_kv.shape)
 
         key_padding_mask = None
         attention_mask = None
@@ -127,7 +128,7 @@ class MRTransformer(torch.nn.Module):
                 attention_mask = torch.zeros([batch_size*self.num_heads, node_num, node_num], dtype=torch.bool).to(self.device)
                 attention_mask[:, mask, mask] = True
         
-        features = self.transformer_encoder(q=transformer_input_q, k=transformer_input_kv, v=transformer_input_kv, key_padding_mask=key_padding_mask, attention_mask=attention_mask)
+        features = self.transformer_encoder(transformer_input_q, transformer_input_kv, transformer_input_kv, key_padding_mask=key_padding_mask, attention_mask=attention_mask)
         features = features.view(-1, self.num_transformer_out)
         features = torch.cat([boundary, features], dim=1)
         # print(f"transformer raw features: {features.shape}")
@@ -237,12 +238,13 @@ class MRTransformer(torch.nn.Module):
         
         coord_output = torch.cat([coord, coord_extra], dim=0)
         model_raw_output = torch.cat([model_output, model_output_extra], dim=0)
-        # phix_output = torch.cat([phix, phix_extra], dim=0)
-        # phiy_output = torch.cat([phiy, phiy_extra], dim=0)
+        # # phix_output = torch.cat([phix, phix_extra], dim=0)
+        # # phiy_output = torch.cat([phiy, phiy_extra], dim=0)
         phix_output = phix_extra
         phiy_output = phiy_extra
         # print(phix.shape, phix_extra.shape)
         return (coord_output, model_raw_output, out_monitor), (phix_output, phiy_output)
+        # return (coord, model_output, out_monitor), (phix, phiy)
 
     def get_attention_scores(self, data):
         conv_feat_in = data.conv_feat

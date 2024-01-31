@@ -456,43 +456,6 @@ def train(
 
     return res
 
-def interpolate(u, x, y):
-    """
-    u: b*n*n
-    x: b*1
-    y: b*1
-    """
-
-    n = u.shape[-1]
-    grid_x = np.linspace(0, 1, n)
-    grid_y = np.linspace(0, 1, n)
-    grid = torch.tensor(np.array(np.meshgrid(grid_x, grid_y)), dtype=torch.float).reshape(1, 2, -1).permute(0, 2, 1).to(u.device)
-    d = -torch.norm(grid.repeat(x.shape[0], 1, 1) - torch.cat((x, y), dim=-1).unsqueeze(1).repeat(1, n*n, 1), dim=-1) * n
-    normalize = nn.Softmax(dim=-1)
-    weight = normalize(d)  
-    interpolated = torch.sum(u.reshape(-1, n**2) * weight, dim=-1).unsqueeze(-1)
-
-    return interpolated # b*1
-
-
-def interpolate_tri(u, ori_x, ori_y, x, y):
-    """
-    u: b*n
-    ori_x: b*n*1
-    ori_y: b*n*1
-    x: b*n*1
-    y: b*n*1
-    """
-    n = u.shape[-1]
-    grid = torch.cat((ori_x, ori_y), dim=-1)
-    d = -torch.norm(grid - torch.cat((x, y), dim=-1), dim=-1) * np.sqrt(n)
-    normalize = nn.Softmax(dim=-1)
-    weight = normalize(d)  
-    # weight = softmax(d, dim=-1)  
-    interpolated = torch.sum(u * weight, dim=-1).unsqueeze(-1)
-
-    return interpolated # b*1
-
 
 def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
     """
@@ -551,7 +514,7 @@ def _generate_samples(num_meshes, num_samples_per_mesh, coords, solution, monito
     # resample according to the monitor values
     for bs in range(monitors.shape[0]):
         prob = monitors[bs, :, 0] / torch.sum(monitors[bs, :, 0])
-        index = np.random.choice(a=meshes.shape[1], size=num_samples_per_mesh, replace=False, p=prob.numpy())
+        index = np.random.choice(a=meshes.shape[1], size=num_samples_per_mesh, replace=False, p=prob.cpu().numpy())
         # print(torch.max(prob), torch.min(prob), torch.max(monitors), torch.min(monitors))
         meshes_.append(meshes[bs, index, :])
         soluitons_.append(solutions[bs, index, :])
@@ -562,7 +525,7 @@ def _generate_samples(num_meshes, num_samples_per_mesh, coords, solution, monito
 def generate_samples(bs, num_samples_per_mesh, data, num_meshes=5, device="cuda"):
     # num_meshes = 5
     # num_nodes = coord_ori.shape[-2] // bs
-    samples_q = data.mesh_feat[:, :4].view(bs, -1, 4)
+    # samples_q = data.mesh_feat[:, :4].view(bs, -1, 4)
     meshes_collection = []
     solutions_collection = []
     monitors_collection = []
@@ -583,7 +546,7 @@ def generate_samples(bs, num_samples_per_mesh, data, num_meshes=5, device="cuda"
     monitors_input = torch.stack(monitors_collection, dim=0)
     # merge all batched sampled attributes along feature dim for transformer key and value
     samples_kv = torch.cat([meshes_input, solutions_input, monitors_input], dim=-1)
-    return samples_q, samples_kv
+    return samples_kv
 
 
 def construct_graph(sampled_coords, num_neighbors=6):
@@ -635,7 +598,7 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
         # Interpolate on new moved mesh
 
-        hessian_norm_ = interpolate(hessian_norm, mesh_query_x, mesh_query_y, moved_x, moved_y)
+        hessian_norm_ = interpolate(hessian_norm, mesh_query_x.view(bs, sampled_num, 1), mesh_query_y.view(bs, sampled_num, 1), moved_x, moved_y)
         enhanced_hessian_norm = hessian_norm_ #+ out_monitor.view(bs, node_num, 1)
 
         # =========================== jacobian related attempts ==================
@@ -666,7 +629,49 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         # if use_convex_loss:
         loss_convex = torch.mean(torch.min(torch.tensor(0).type_as(phixx).to(device), 1 + phixx)**2 + torch.min(torch.tensor(0).type_as(phiyy).to(device), 1 + phiyy)**2)
         return loss_eq_residual, loss_convex, 
-    
+
+
+def model_forward(bs, data, model):
+    # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+    mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
+    mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
+    mesh_query_x.requires_grad = True
+    mesh_query_y.requires_grad = True
+    mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
+    num_nodes = mesh_query.shape[-2] // bs
+    # Generate random mesh queries for unsupervised learning
+    sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, num_meshes=5, data=data, device=device)
+    sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2], num_neighbors=6)
+
+    mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
+    mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
+    mesh_sampled_queries_x.requires_grad = True
+    mesh_sampled_queries_y.requires_grad = True
+    mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
+
+    coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
+    coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
+    coord_ori_x.requires_grad = True
+    coord_ori_y.requires_grad = True
+    coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+
+    num_nodes = coord_ori.shape[-2] // bs
+    input_q = data.mesh_feat[:, :4]
+    input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
+    # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
+
+    (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_q, mesh_query, mesh_sampled_queries, sampled_queries_edge_index)
+    # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
+    output_coord = output_coord_all[:num_nodes*bs]
+    # print(output_coord_all.shape, output_coord.shape)
+
+    # mesh_query_x_all = torch.cat([mesh_query_x, mesh_sampled_queries[:, :, 0].view(-1, 1)], dim=0)
+    # mesh_query_y_all = torch.cat([mesh_query_y, mesh_sampled_queries[:, :, 1].view(-1, 1)], dim=0)
+    mesh_query_x_all = mesh_sampled_queries_x
+    mesh_query_y_all = mesh_sampled_queries_y
+    return output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all
+
 
 def train_unsupervised(
         loader, model, optimizer, device, loss_func,
@@ -707,44 +712,10 @@ def train_unsupervised(
         optimizer.zero_grad()
         data = batch.to(device)
 
-        # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
-        mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
-        mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
-        mesh_query_x.requires_grad = True
-        mesh_query_y.requires_grad = True
-        mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
-
-        num_nodes = mesh_query.shape[-2] // bs
-        # Generate random mesh queries for unsupervised learning
-        _, sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
-        sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2])
-
-        mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
-        mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
-        mesh_sampled_queries_x.requires_grad = True
-        mesh_sampled_queries_y.requires_grad = True
-        mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
-
-
-        coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
-        coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
-        coord_ori_x.requires_grad = True
-        coord_ori_y.requires_grad = True
-        coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
-
-        num_nodes = coord_ori.shape[-2] // bs
-        input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
-        # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
-
-        (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_q, mesh_query, mesh_sampled_queries, sampled_queries_edge_index)
-        # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
-        output_coord = output_coord_all[:num_nodes*bs]
-
-        # mesh_query_x_all = torch.cat([mesh_query_x, mesh_sampled_queries[:, :, 0].view(-1, 1)], dim=0)
-        # mesh_query_y_all = torch.cat([mesh_query_y, mesh_sampled_queries[:, :, 1].view(-1, 1)], dim=0)
-        mesh_query_x_all = mesh_sampled_queries_x
-        mesh_query_y_all = mesh_sampled_queries_y
+        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model)
         loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
+
+        # loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
 
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
@@ -856,44 +827,9 @@ def evaluate_unsupervised(
 
         # with torch.no_grad():
 
-        # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
-        mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
-        mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
-        mesh_query_x.requires_grad = True
-        mesh_query_y.requires_grad = True
-        mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
-
-        num_nodes = mesh_query.shape[-2] // bs
-        # Generate random mesh queries for unsupervised learning
-        _, sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
-        sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2])
-
-        mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
-        mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
-        mesh_sampled_queries_x.requires_grad = True
-        mesh_sampled_queries_y.requires_grad = True
-        mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
-
-
-        coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
-        coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
-        coord_ori_x.requires_grad = True
-        coord_ori_y.requires_grad = True
-        coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
-
-        num_nodes = coord_ori.shape[-2] // bs
-        input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
-        # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
-
-        (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_q, mesh_query, mesh_sampled_queries, sampled_queries_edge_index)
-        # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
-        output_coord = output_coord_all[:num_nodes*bs]
-
-        # mesh_query_x_all = torch.cat([mesh_query_x, mesh_sampled_queries[:, :, 0].view(-1, 1)], dim=0)
-        # mesh_query_y_all = torch.cat([mesh_query_y, mesh_sampled_queries[:, :, 1].view(-1, 1)], dim=0)
-        mesh_query_x_all = mesh_sampled_queries_x
-        mesh_query_y_all = mesh_sampled_queries_y
+        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model)
         loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
+        # loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
         
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
@@ -1046,40 +982,42 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
         for data in loader:
             with torch.no_grad():
                 data = data.to(device)
-                # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
-                mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
-                mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
-                mesh_query_x.requires_grad = True
-                mesh_query_y.requires_grad = True
-                mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+                # # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+                # mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
+                # mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
+                # mesh_query_x.requires_grad = True
+                # mesh_query_y.requires_grad = True
+                # mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
 
-                num_nodes = mesh_query.shape[-2] // bs
-                # Generate random mesh queries for unsupervised learning
-                _, sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
-                sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2])
+                # num_nodes = mesh_query.shape[-2] // bs
+                # # Generate random mesh queries for unsupervised learning
+                # sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, num_meshes=1, device=device)
+                # sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2])
 
-                mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
-                mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
-                mesh_sampled_queries_x.requires_grad = True
-                mesh_sampled_queries_y.requires_grad = True
-                mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
+                # mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
+                # mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
+                # mesh_sampled_queries_x.requires_grad = True
+                # mesh_sampled_queries_y.requires_grad = True
+                # mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
 
 
-                coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
-                coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
-                coord_ori_x.requires_grad = True
-                coord_ori_y.requires_grad = True
-                coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+                # coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
+                # coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
+                # coord_ori_x.requires_grad = True
+                # coord_ori_y.requires_grad = True
+                # coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-                num_nodes = coord_ori.shape[-2] // bs
-                input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
-                # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
+                # num_nodes = coord_ori.shape[-2] // bs
+                # input_q = torch.cat([mesh_query, data.mesh_feat[:, 2:4]], dim=-1)
+                # input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
+                # # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
 
-                (output_coord_all, output, out_monitor), (phix, phiy) = model(data.to(device), input_q.to(device), input_q.to(device), mesh_query.to(device), mesh_sampled_queries.to(device), sampled_queries_edge_index)
-                # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
-                output_data = output_coord_all[:num_nodes*bs]
+                # (output_coord_all, output, out_monitor), (phix, phiy) = model(data.to(device), input_q.to(device), input_q.to(device), mesh_query.to(device), mesh_sampled_queries.to(device), sampled_queries_edge_index)
+                # # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
+                # output_data = output_coord_all[:num_nodes*bs]
+                output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model)
 
-                out_area = get_face_area(output_data, data.face)
+                out_area = get_face_area(output_coord, data.face)
                 in_area = get_face_area(data.x[:, :2], data.face)
                 # restore the sign of the area
                 out_area = torch.sign(in_area) * out_area

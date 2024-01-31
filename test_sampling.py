@@ -66,6 +66,7 @@ def generate_samples(num_meshes, num_samples_per_mesh, coords, solution, monitor
     # resample according to the monitor values
     for bs in range(monitors.shape[0]):
         prob = monitors[bs, :, 0] / torch.sum(monitors[bs, :, 0])
+        # print(meshes.shape[1], num_samples_per_mesh)
         index = np.random.choice(a=meshes.shape[1], size=num_samples_per_mesh, replace=False, p=prob.numpy())
         # print(torch.max(prob), torch.min(prob), torch.max(monitors), torch.min(monitors))
         meshes_.append(meshes[bs, index, :])

@@ -66,6 +66,7 @@ class RecurrentGATConv(MessagePassing):
         # print(coord.shape, hidden_state.shape)
         
         in_feat = torch.cat((coord, hidden_state.repeat(extra_sample_ratio, 1)), dim=1)
+        # in_feat = torch.cat((coord, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
         hidden = self.activation(hidden)
         output = self.to_output(hidden)
