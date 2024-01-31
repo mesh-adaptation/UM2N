@@ -661,7 +661,7 @@ def model_forward(bs, data, model):
     input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
     # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
 
-    (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_q, mesh_query, mesh_sampled_queries, sampled_queries_edge_index)
+    (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, mesh_sampled_queries, sampled_queries_edge_index)
     # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
     output_coord = output_coord_all[:num_nodes*bs]
     # print(output_coord_all.shape, output_coord.shape)

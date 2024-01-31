@@ -103,7 +103,7 @@ class TransformerBlock(nn.Module):
             # NOTE: Here we use batch first in nn.MultiheadAttention
             # [batch_size, num_points, embed_dim]
             
-            x, attn_scores = self.attn_layer(x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
+            x, attn_scores = self.attn_layer(x, k, v, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
             
         if self.c_attn is not None:
             num_points = x.shape[1]
@@ -156,10 +156,14 @@ class TransformerModel(nn.Module):
         
     def forward(self, x, k, v, key_padding_mask=None, attention_mask=None):
         x = self.mlp_in(x)
-        # k = self.mlp_in(k)
-        # v = self.mlp_in(v)
+        k = self.mlp_in(k)
+        v = self.mlp_in(v)
+        cnt = 0
         for _, layer in enumerate(self.attn_layers):
-            x = layer(x, k, v, key_padding_mask=key_padding_mask, attn_mask=attention_mask)
+            if cnt == 0:
+                x = layer(x, k, v, key_padding_mask=key_padding_mask, attn_mask=attention_mask)
+            else:
+                x = layer(x, x, x, key_padding_mask=key_padding_mask, attn_mask=attention_mask)
         x = self.mlp_out(x)
         return x
     
