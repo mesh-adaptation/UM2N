@@ -597,7 +597,7 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
 
         # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
         # Interpolate on new moved mesh
-
+        # print(hessian_norm.shape, mesh_query_x.shape, moved_x.shape)
         hessian_norm_ = interpolate(hessian_norm, mesh_query_x.view(bs, sampled_num, 1), mesh_query_y.view(bs, sampled_num, 1), moved_x, moved_y)
         enhanced_hessian_norm = hessian_norm_ #+ out_monitor.view(bs, node_num, 1)
 
