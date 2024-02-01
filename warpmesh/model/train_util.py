@@ -831,7 +831,7 @@ def evaluate_unsupervised(
 
         # with torch.no_grad():
 
-        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model, is_evaluate=True)
+        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model)
         loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
         # loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
         
