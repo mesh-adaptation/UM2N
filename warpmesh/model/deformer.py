@@ -61,7 +61,12 @@ class RecurrentGATConv(MessagePassing):
         self.poly_mesh = poly_mesh
         
         # Recurrent GAT
-        in_feat = torch.cat((coord, hidden_state), dim=1)
+        # print(coord.shape, hidden_state.shape)
+        extra_sample_ratio = coord.shape[0] // hidden_state.shape[0]
+        # print(coord.shape, hidden_state.shape)
+        
+        in_feat = torch.cat((coord, hidden_state.repeat(extra_sample_ratio, 1)), dim=1)
+        # in_feat = torch.cat((coord, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
         hidden = self.activation(hidden)
         output = self.to_output(hidden)
@@ -79,8 +84,8 @@ class RecurrentGATConv(MessagePassing):
             self.find_boundary(coord_ori)
             # fix boundary
             self.fix_boundary(output_coord)
-            phix = output[:, 0]
-            phiy = output[:, 1]
+            phix = output[:, 0].view(-1, 1)
+            phiy = output[:, 1].view(-1, 1)
         elif self.output_type == 'phi':
             # Compute the residual to the equation
             grad_seed = torch.ones(output.shape).to(self.device)

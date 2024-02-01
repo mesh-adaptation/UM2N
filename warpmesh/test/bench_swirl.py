@@ -13,6 +13,7 @@ import warpmesh as wm
 
 from pprint import pprint                               # noqa
 from torch_geometric.loader import DataLoader
+from warpmesh.model.train_util import generate_samples
 
 
 def get_log_og(log_path, idx):
@@ -39,6 +40,7 @@ class SwirlEvaluator():
             1. define problem on fine mesh and coarse mesh
             2. init function space on fine & coarse mesh
         """
+        self.device = kwargs.pop("device", "cuda")
         # mesh vars
         self.mesh = mesh                                        # coarse mesh
         self.mesh_fine = mesh_fine                              # fine mesh
@@ -258,6 +260,7 @@ class SwirlEvaluator():
                 # Evaluation time step hit
                 # initiate model inferencing ...
                 self.model.eval()
+                bs = 1
                 with torch.no_grad():
                     start = time.perf_counter()
 
@@ -268,9 +271,12 @@ class SwirlEvaluator():
                     coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
                     coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
                     coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+
+                    num_nodes = coord_ori.shape[-2] // bs
+                    input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=sample, device=self.device)
                     
-                    # (out, model_raw_output, out_monitor), (phix, phiy) = self.model(sample, coord_ori, mesh_query)
-                    out = self.model(sample)
+                    (out, model_raw_output, out_monitor), (phix, phiy) = self.model(sample, input_q, input_kv, mesh_query)
+
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1000
 

@@ -19,8 +19,8 @@ def compare_error(data_in,
     μ_y = data_in.dist_params['μ_y'][0]
     z = data_in.dist_params['z'][0]
     w = data_in.dist_params['w'][0]
-    simple_u = data_in.dist_params['simple_u'].numpy()[0]
-    n_dist = data_in.dist_params['n_dist'].numpy()[0]
+    simple_u = data_in.dist_params['simple_u'].cpu().numpy()[0]
+    n_dist = data_in.dist_params['n_dist'].cpu().numpy()[0]
     # print('showing dist_params:', data_in.dist_params)
 
     # construct u_exact
