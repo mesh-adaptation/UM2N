@@ -291,7 +291,10 @@ class BurgersEvaluator():
                 # plot compare mesh
                 compare_plot = wm.plot_mesh_compare_benchmark(
                     out.detach().cpu().numpy(), sample.y,
-                    sample.face, res["deform_loss"], res["tangled_element"],
+                    sample.face, res["deform_loss"],
+                    res["error_model"], res["error_reduction_model"],
+                    res["error_ma"], res["error_reduction_MA"],
+                    res["tangled_element"],
                 )
                 compare_plot.savefig(os.path.join(self.plot_path, f"plot_{self.idx}_{cur_step}.png"))  # noqa
                 # put coords back to original position (for u sampling)

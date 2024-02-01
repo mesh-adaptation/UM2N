@@ -269,7 +269,8 @@ class SwirlEvaluator():
                     coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
                     coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
                     
-                    (out, model_raw_output, out_monitor), (phix, phiy) = self.model(sample, coord_ori, mesh_query)
+                    # (out, model_raw_output, out_monitor), (phix, phiy) = self.model(sample, coord_ori, mesh_query)
+                    out = self.model(sample)
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1000
 

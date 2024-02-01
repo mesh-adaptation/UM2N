@@ -395,6 +395,10 @@ if __name__ == "__main__":
             i += 1
         except fd.exceptions.ConvergenceError:
             pass
+        except AttributeError:
+            pass
+        except ValueError:
+            pass
 
     move_data(problem_train_dir, problem_data_dir, 0, num_train)
 

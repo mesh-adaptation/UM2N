@@ -191,6 +191,7 @@ class MeshDataset(Dataset):
         conv_list = []
         for key in self.conv_feature_fix:
             feat = data.item().get(key)
+            print(key, feat.shape)
             conv_list.append(feat)
         conv = np.concatenate(conv_list, axis=0)
         conv = torch.from_numpy(conv).float()
