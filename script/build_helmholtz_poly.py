@@ -28,10 +28,10 @@ def arg_parse():
     parser.add_argument('--lc', type=float, default=6e-2,
                         help='the length characteristic of the elements in the\
                             mesh')
-    parser.add_argument('--field_type', type=str, default="iso",
+    parser.add_argument('--field_type', type=str, default="aniso",
                         help='anisotropic or isotropic data type(aniso/iso)')
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument('--boundary_scheme', type=str, default="pad",
+    parser.add_argument('--boundary_scheme', type=str, default="full",
                         help='scheme used to generate the dataset (pad/full))')
     parser.add_argument('--n_samples', type=int, default=100,
                         help='number of samples generated')
@@ -221,6 +221,8 @@ if __name__ == "__main__":
                 "RHS": res["RHS"],
                 "bc": res["bc"]
             })
+            # RHS of helmholtz problem
+            f = fd.interpolate(helmholtz_eq.f, helmholtz_eq.function_space)
             uh = solver.solve_eq()
             # Generate Mesh
             hessian = wm.MeshGenerator(params={
@@ -309,6 +311,8 @@ if __name__ == "__main__":
                         -1, 1),
                     "grad_phi": grad_phi.dat.data_ro.reshape(
                         -1, 2),
+                    "f": f.dat.data_ro.reshape(
+                        -1, 1),
                 },
                 raw_feature={
                     "uh": uh,
@@ -400,6 +404,10 @@ if __name__ == "__main__":
                   error_original_mesh, error_optimal_mesh)
             i += 1
         except fd.exceptions.ConvergenceError:
+            pass
+        except AttributeError:
+            pass
+        except ValueError:
             pass
 
     move_data(problem_train_dir, problem_data_dir, 0, num_train)

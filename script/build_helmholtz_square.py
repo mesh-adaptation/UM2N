@@ -14,7 +14,7 @@ import time
 
 def arg_parse():
     parser = ArgumentParser()
-    parser.add_argument('--mesh_type', type=int, default=6,
+    parser.add_argument('--mesh_type', type=int, default=2,
                         help='algorithm used to generate mesh')
     parser.add_argument('--max_dist', type=int, default=6,
                         help='max number of distributions used to\
@@ -32,7 +32,7 @@ def arg_parse():
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
     parser.add_argument('--boundary_scheme', type=str, default="full",
                         help='scheme used to generate the dataset (pad/full))')
-    parser.add_argument('--n_samples', type=int, default=400,
+    parser.add_argument('--n_samples', type=int, default=100,
                         help='number of samples generated')
     parser.add_argument('--rand_seed', type=int, default=63,
                         help='number of samples generated')
@@ -218,6 +218,10 @@ if __name__ == "__main__":
                 "RHS": res["RHS"],
                 "bc": res["bc"]
             })
+            # RHS of helmholtz problem
+            f = fd.interpolate(helmholtz_eq.f, helmholtz_eq.function_space)
+            # fd.trisurf(f)
+            # plt.show()
             uh = solver.solve_eq()
             # Generate Mesh
             hessian = wm.MeshGenerator(params={
@@ -299,6 +303,8 @@ if __name__ == "__main__":
                         -1, 1),
                     "grad_phi": grad_phi.dat.data_ro.reshape(
                         -1, 2),
+                    "f": f.dat.data_ro.reshape(
+                        -1, 1),
                 },
                 raw_feature={
                     "uh": uh,
@@ -388,6 +394,10 @@ if __name__ == "__main__":
                   error_original_mesh, error_optimal_mesh)
             i += 1
         except fd.exceptions.ConvergenceError:
+            pass
+        except AttributeError:
+            pass
+        except ValueError:
             pass
 
     move_data(problem_train_dir, problem_data_dir, 0, num_train)

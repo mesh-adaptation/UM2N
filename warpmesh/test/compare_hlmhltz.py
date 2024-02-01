@@ -120,9 +120,32 @@ def compare_error(data_in,
         u_exact, uh_ma_hr
     )
 
+    fig = plt.figure(figsize=(8, 8))
+    # 3D plot of MA solution
+    ax1 = fig.add_subplot(2, 2, 1, projection='3d')
+    ax1.set_title('MA Solution (3D)')
+    fd.trisurf(uh_ma, axes=ax1)
+    # 3D plot of model solution
+    if (num_tangle == 0):
+        ax2 = fig.add_subplot(2, 2, 2, projection="3d")
+        ax2.set_title("Model Solution (3D)")
+        fd.trisurf(uh_model, axes=ax2)
+
+    ax3 = fig.add_subplot(2, 2, 3)
+    ax3.set_title("Solution on MA Mesh")
+    fd.tripcolor(uh_ma, cmap='coolwarm', axes=ax3)
+    fd.triplot(mesh_MA, axes=ax3)
+
+    ax4 = fig.add_subplot(2, 2, 4)
+    ax4.set_title("Solution on Model Mesh")
+    if (num_tangle == 0):
+        fd.tripcolor(uh_model, cmap='coolwarm', axes=ax4)
+    fd.triplot(mesh_model, axes=ax4)
+
     return {
         "error_model_mesh": error_model_mesh,
         "error_og_mesh": error_og_mesh,
         "error_ma_mesh": error_ma_mesh,
         "u_exact": u_exact,
+        "plot_more": fig,
     }

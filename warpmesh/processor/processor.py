@@ -317,6 +317,7 @@ class MeshProcessor():
             "swirl_params": self.swirl_params,
             "t": self.t,      # time step when solving burgers eq.
             "idx": self.idx,  # index number for picking params for burgers tracer.  # noqa
+            "f": self.feature["f"] if "f" in self.feature else None
         }
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)
