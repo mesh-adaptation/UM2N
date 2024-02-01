@@ -22,7 +22,7 @@ import warpmesh as wm
 
 from torch_geometric.loader import DataLoader
 from types import SimpleNamespace
-from warpmesh.model.train_util import generate_samples
+from warpmesh.model.train_util import generate_samples, construct_graph
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # device = torch.device('cpu')
@@ -369,18 +369,39 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
             with torch.no_grad():
                 start = time.perf_counter()
 
+                # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
                 mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
                 mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
+                mesh_query_x.requires_grad = True
+                mesh_query_y.requires_grad = True
                 mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+
+                num_nodes = mesh_query.shape[-2] // bs
+                # Generate random mesh queries for unsupervised learning
+                sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, num_meshes=5, data=sample, device=device)
+                sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2], num_neighbors=6)
+
+                mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
+                mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
+                mesh_sampled_queries_x.requires_grad = True
+                mesh_sampled_queries_y.requires_grad = True
+                mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
 
                 coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
                 coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
+                coord_ori_x.requires_grad = True
+                coord_ori_y.requires_grad = True
                 coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
                 num_nodes = coord_ori.shape[-2] // bs
-                input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=sample, device=device)
+                input_q = sample.mesh_feat[:, :4]
+                input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=sample, device=device)
+                # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
 
-                (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, input_q, input_kv, mesh_query, poly_mesh=True if domain == "poly" else False)
+                (output_coord_all, output, out_monitor), (phix, phiy) = model(sample, input_q, input_q, mesh_query, sampled_queries=None, sampled_queries_edge_index=None, poly_mesh=True if domain == "poly" else False)
+                # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
+                out = output_coord_all[:num_nodes*bs]
+                # (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, input_q, input_q, mesh_query, poly_mesh=True if domain == "poly" else False)
                 end = time.perf_counter()
                 dur_ms = (end - start) * 1000
             temp_time_consumption = dur_ms
@@ -658,6 +679,8 @@ if __name__ == "__main__":
     run_id = '6oel4b5v' # enhanced with random sampling
 
     run_id = '28ihwvfg' # 6oel4b5v continue train
+
+    run_id = "2x84suu1" # with random sampling in deformer, semi-trained on meshtype 6 50 samples
     
     
     epoch = 999
@@ -678,12 +701,15 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
     #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6']
 
-    ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
-                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+    # ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
+    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
+    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
+    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
+    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+    #             ]
+    ds_roots = [
+                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6'
                 ]
 
     # run_ids = [run_id]

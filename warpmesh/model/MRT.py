@@ -161,7 +161,7 @@ class MRTransformer(torch.nn.Module):
         
         return hidden
 
-    def move(self, data, input_q, input_kv, mesh_query, sampled_queries_edge_index, sampled_queries, num_step=1, poly_mesh=False):
+    def move(self, data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index, num_step=1, poly_mesh=False):
         """
         Move the mesh according to the deformation learned, with given number
             steps.
@@ -230,19 +230,24 @@ class MRTransformer(torch.nn.Module):
         # Recurrent GAT deform
         for i in range(self.num_loop):
             (coord, model_output), hidden, (phix, phiy) = self.deformer(coord, hidden, edge_idx, mesh_query, bd_mask, poly_mesh)
-        
-        coord_extra = sampled_queries
-        # Recurrent GAT deform (extra sampled)
-        for i in range(self.num_loop):
-            (coord_extra, model_output_extra), hidden, (phix_extra, phiy_extra) = self.deformer(coord_extra, hidden, sampled_queries_edge_index, sampled_queries, bd_mask, poly_mesh)
-        
-        coord_output = torch.cat([coord, coord_extra], dim=0)
-        model_raw_output = torch.cat([model_output, model_output_extra], dim=0)
-        # # phix_output = torch.cat([phix, phix_extra], dim=0)
-        # # phiy_output = torch.cat([phiy, phiy_extra], dim=0)
-        phix_output = phix_extra
-        phiy_output = phiy_extra
-        # print(phix.shape, phix_extra.shape)
+        if sampled_queries is not None:
+            coord_extra = sampled_queries
+            # Recurrent GAT deform (extra sampled)
+            for i in range(self.num_loop):
+                (coord_extra, model_output_extra), hidden, (phix_extra, phiy_extra) = self.deformer(coord_extra, hidden, sampled_queries_edge_index, sampled_queries, bd_mask, poly_mesh)
+            
+            coord_output = torch.cat([coord, coord_extra], dim=0)
+            model_raw_output = torch.cat([model_output, model_output_extra], dim=0)
+            # # phix_output = torch.cat([phix, phix_extra], dim=0)
+            # # phiy_output = torch.cat([phiy, phiy_extra], dim=0)
+            phix_output = phix_extra
+            phiy_output = phiy_extra
+            # print(phix.shape, phix_extra.shape)
+        else:
+            coord_output = coord
+            model_raw_output = model_output
+            phix_output = phix
+            phiy_output = phiy
         return (coord_output, model_raw_output, out_monitor), (phix_output, phiy_output)
         # return (coord, model_output, out_monitor), (phix, phiy)
 

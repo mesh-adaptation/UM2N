@@ -549,11 +549,11 @@ def generate_samples(bs, num_samples_per_mesh, data, num_meshes=5, device="cuda"
     return samples_kv
 
 
-def construct_graph(sampled_coords, num_neighbors=6):
+def construct_graph(sampled_coords, num_neighbors=6, device="cuda"):
     bs = sampled_coords.shape[0]
     num_per_mesh = sampled_coords.shape[1]
-    batch = torch.tensor([x for x in range(bs)]).unsqueeze(-1).repeat(1, num_per_mesh).reshape(-1)
-    edge_index = knn_graph(sampled_coords.view(-1, 2), k=num_neighbors, batch=batch, loop=False)
+    batch = torch.tensor([x for x in range(bs)]).unsqueeze(-1).repeat(1, num_per_mesh).reshape(-1).to(device)
+    edge_index = knn_graph(sampled_coords.view(-1, 2).to(device), k=num_neighbors, batch=batch, loop=False)
     return edge_index
 
 
@@ -631,7 +631,7 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         return loss_eq_residual, loss_convex, 
 
 
-def model_forward(bs, data, model):
+def model_forward(bs, data, model, is_evaluate=False):
     # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
     mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
     mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
@@ -660,6 +660,10 @@ def model_forward(bs, data, model):
     input_q = data.mesh_feat[:, :4]
     input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
     # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
+
+    if is_evaluate:
+        mesh_sampled_queries = None
+        sampled_queries_edge_index = None
 
     (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_q, mesh_query, mesh_sampled_queries, sampled_queries_edge_index)
     # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
@@ -827,7 +831,7 @@ def evaluate_unsupervised(
 
         # with torch.no_grad():
 
-        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model)
+        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model, is_evaluate=True)
         loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
         # loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
         
