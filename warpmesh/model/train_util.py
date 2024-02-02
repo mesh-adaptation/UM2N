@@ -631,7 +631,7 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         return loss_eq_residual, loss_convex, 
 
 
-def model_forward(bs, data, model, is_evaluate=False):
+def model_forward(bs, data, model, use_add_random_query=True):
     # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
     mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
     mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
@@ -661,11 +661,16 @@ def model_forward(bs, data, model, is_evaluate=False):
     input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
     # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
 
-    if is_evaluate:
+    if not use_add_random_query:
         mesh_sampled_queries = None
         sampled_queries_edge_index = None
 
     (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_q, mesh_query, mesh_sampled_queries, sampled_queries_edge_index)
+
+    if not use_add_random_query:
+        phix = None
+        phiy = None
+
     # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
     output_coord = output_coord_all[:num_nodes*bs]
     # print(output_coord_all.shape, output_coord.shape)
@@ -684,6 +689,7 @@ def train_unsupervised(
         use_inversion_diff_loss=False,
         use_area_loss=False,
         use_convex_loss=False,
+        use_add_random_query=True,
         weight_area_loss=1,
         weight_deform_loss=1,
         weight_eq_residual_loss=1,
@@ -716,10 +722,11 @@ def train_unsupervised(
         optimizer.zero_grad()
         data = batch.to(device)
 
-        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model)
-        loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
-
-        # loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
+        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model, use_add_random_query=use_add_random_query)
+        if use_add_random_query:
+            loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
+        else:
+            loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
 
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
@@ -794,6 +801,7 @@ def evaluate_unsupervised(
         use_inversion_diff_loss=False,
         use_area_loss=False,
         use_convex_loss=False,
+        use_add_random_query=True,
         weight_area_loss=1,
         weight_deform_loss=1,
         weight_eq_residual_loss=1,
@@ -831,9 +839,12 @@ def evaluate_unsupervised(
 
         # with torch.no_grad():
 
-        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model)
-        loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
-        # loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
+        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model, use_add_random_query=use_add_random_query)
+
+        if use_add_random_query:
+            loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
+        else:
+            loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
         
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)

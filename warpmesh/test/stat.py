@@ -13,7 +13,7 @@ def write_stat(eval_dir, log_folder_name='log'):
     log_files = sorted(log_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))  # noqa
     dfs = [pd.read_csv(log_file) for log_file in log_files]
     df = pd.concat(dfs)
-    df.to_csv('/Users/chunyang/Desktop/temp/df.csv')
+    df.to_csv(os.path.join(eval_dir, 'df.csv'))
 
     fig, axs = plt.subplots(2, 3, figsize=(20, 10))
 
@@ -21,7 +21,7 @@ def write_stat(eval_dir, log_folder_name='log'):
     sns.histplot(df['error_ma'], kde=True, ax=axs[0, 0], bins=30)
     axs[0, 0].set_xlabel('PDE Error')
     axs[0, 0].set_ylabel('Frequency')
-    fig.savefig('/Users/chunyang/Desktop/temp/df.png')
+    fig.savefig(os.path.join(eval_dir, 'df.png'))
 
     axs[0, 1].set_title('PDE Error on Model Mesh')
     data_to_plot = df[df['error_model'] != -1]['error_model']

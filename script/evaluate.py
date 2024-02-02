@@ -623,8 +623,8 @@ def write_sumo(eval_dir, ds_root):
 
 if __name__ == "__main__":
 
-    # entity = 'mz-team'
-    entity = 'w-chunyang' 
+    entity = 'mz-team'
+    # entity = 'w-chunyang' 
     project_name = 'warpmesh'
     epoch = 999
 
@@ -664,6 +664,9 @@ if __name__ == "__main__":
     run_id = '28ihwvfg' # 6oel4b5v continue train
 
     run_id = "2x84suu1" # with random sampling in deformer, semi-trained on meshtype 6 50 samples
+
+    run_id = "4a1p7ekj" # trained with 600 samples, semi with random sampling query
+    run_id = "99zrohiu" # trained with 600 samples, purely supervised
     
     
     epoch = 999
@@ -691,9 +694,22 @@ if __name__ == "__main__":
     #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
     #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
     #             ]
-    ds_roots = [
-                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6'
+    # ds_roots = [
+    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
+    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
+    #             # './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
+    #             # './data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_2'
+    #             ]
+    ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
+                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
+                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
+                './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2'
+                # './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2'
                 ]
+    # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
     # run_ids = [run_id]
     # run_ids = ['0l8ujpdr', 'hmgwx4ju']
@@ -712,77 +728,77 @@ if __name__ == "__main__":
     # ds_roots = ['./data/dataset_meshtype_0/swirl/z=<0,1>_ndist=None_max_dist=6_<30x30>_n=iso_pad']
     # ds_roots = ['./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_2']
 
-    for run_id in run_ids:
-        for ds_root in ds_roots:
-            problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
-            print(f"Evaluating {run_id} on dataset: {ds_root}")
-            # loginto wandb API
-            api = wandb.Api()
-            run = api.run(f"{entity}/{project_name}/{run_id}")
-            config = SimpleNamespace(**run.config)
+    # for run_id in run_ids:
+    #     for ds_root in ds_roots:
+    #         problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
+    #         print(f"Evaluating {run_id} on dataset: {ds_root}")
+    #         # loginto wandb API
+    #         api = wandb.Api()
+    #         run = api.run(f"{entity}/{project_name}/{run_id}")
+    #         config = SimpleNamespace(**run.config)
 
-            print("# Evaluation Pipeline Started\n")
-            # init
-            eval_dir = init_dir(config, run_id, epoch, ds_root)
-            dataset = load_dataset(config, ds_root, tar_folder='data')
-            model = load_model(config, epoch, eval_dir)
+    #         print("# Evaluation Pipeline Started\n")
+    #         # init
+    #         eval_dir = init_dir(config, run_id, epoch, ds_root)
+    #         dataset = load_dataset(config, ds_root, tar_folder='data')
+    #         model = load_model(config, epoch, eval_dir)
 
-            bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
+    #         bench_res = benchmark_model(model, dataset, eval_dir, ds_root)
             
-            write_sumo(eval_dir, ds_root)
+    #         write_sumo(eval_dir, ds_root)
 
 
-    run_id = "5y50gqla"  # M2N og
+    # run_id = "5y50gqla"  # M2N og
 
-    # run_id = "0z6s9vky"  # M2N, with area loss, https://wandb.ai/w-chunyang/warpmesh/runs/xkmmgmrc?workspace=user-w-chunyang  # noqa
-    # run_id = "w7wbgtxa"  # M2N, fine-tuned on hlmltz poly mesh,  https://wandb.ai/mz-team/warpmesh/runs/w7wbgtxa?workspace=user-w-chunyang  # noqa
-    # run_id = "8qhw8kcf"  # M2N, fine-tuned on burgers, https://wandb.ai/mz-team/warpmesh/runs/8qhw8kcf?workspace=user-w-chunyang  # noqa
-    # run_id = ""
+    # # run_id = "0z6s9vky"  # M2N, with area loss, https://wandb.ai/w-chunyang/warpmesh/runs/xkmmgmrc?workspace=user-w-chunyang  # noqa
+    # # run_id = "w7wbgtxa"  # M2N, fine-tuned on hlmltz poly mesh,  https://wandb.ai/mz-team/warpmesh/runs/w7wbgtxa?workspace=user-w-chunyang  # noqa
+    # # run_id = "8qhw8kcf"  # M2N, fine-tuned on burgers, https://wandb.ai/mz-team/warpmesh/runs/8qhw8kcf?workspace=user-w-chunyang  # noqa
+    # # run_id = ""
 
-    # run_id = "ayqshvic"  # MRN, with area loss. https://wandb.ai/mz-team/warpmesh/runs/ayqshvic?workspace=user-w-chunyang  # noqa
-    # run_id = "oprm5ns5"  # MRN, fine-tuned on 30 burgers https://wandb.ai/w-chunyang/warpmesh/runs/oprm5ns5?workspace=user-w-chunyang  # noqa
-    # run_id = "gxq23t91"  # MRN, fine-tuned on 30 swirl https://wandb.ai/w-chunyang/warpmesh/runs/gxq23t91?workspace=user-w-chunyang  # noqa
-    # run_id = "hjrebg62"  # MRN, fine-tuned on 30 polymesh https://wandb.ai/w-chunyang/warpmesh/runs/hjrebg62?workspace=user-w-chunyang  # noqa
-    ds_roots = [
-        # test hard-dataset
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<25x25>_n=100_aniso_full',  # noqa
-        # test MA reduction
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=100_aniso_full_meshtype_2'  # noqa
+    # # run_id = "ayqshvic"  # MRN, with area loss. https://wandb.ai/mz-team/warpmesh/runs/ayqshvic?workspace=user-w-chunyang  # noqa
+    # # run_id = "oprm5ns5"  # MRN, fine-tuned on 30 burgers https://wandb.ai/w-chunyang/warpmesh/runs/oprm5ns5?workspace=user-w-chunyang  # noqa
+    # # run_id = "gxq23t91"  # MRN, fine-tuned on 30 swirl https://wandb.ai/w-chunyang/warpmesh/runs/gxq23t91?workspace=user-w-chunyang  # noqa
+    # # run_id = "hjrebg62"  # MRN, fine-tuned on 30 polymesh https://wandb.ai/w-chunyang/warpmesh/runs/hjrebg62?workspace=user-w-chunyang  # noqa
+    # ds_roots = [
+    #     # test hard-dataset
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<25x25>_n=100_aniso_full',  # noqa
+    #     # test MA reduction
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=100_aniso_full_meshtype_2'  # noqa
 
-        # poisson square
-        '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa,
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
+    #     # poisson square
+    #     '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa,
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
 
-        # # poisson poly
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
+    #     # # poisson poly
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
 
-        # helmholtz square
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
+    #     # helmholtz square
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
 
-        # # helmholtz poly
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.055_n=400_aniso_full_meshtype6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
+    #     # # helmholtz poly
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.055_n=400_aniso_full_meshtype6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
 
-        # # swirl
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.04_interval_5_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.045_interval_5_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',  # noqa
+    #     # # swirl
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.04_interval_5_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.045_interval_5_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',  # noqa
 
-        # # burgers
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.04_n=5_iso_pad_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.045_n=5_iso_pad_meshtype_6',  # noqa
-        # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.05_n=5_iso_pad_meshtype_6',  # noqa
-    ]
+    #     # # burgers
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.04_n=5_iso_pad_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.045_n=5_iso_pad_meshtype_6',  # noqa
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.05_n=5_iso_pad_meshtype_6',  # noqa
+    # ]
 
     for ds_root in ds_roots:
         problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
