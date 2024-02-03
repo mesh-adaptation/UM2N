@@ -6,6 +6,7 @@ conv_feat:
 - conv_hessian_norm
 conv_feat_fix:
 - conv_uh_fix
+- conv_hessian_norm
 count_tangle_method: inversion
 data_root: ./data/helmholtz/
 inversion_loss_scaler: 10000000000.0
@@ -15,7 +16,7 @@ mesh_feat:
 - coord
 - u
 - hessian_norm
-model_used: MRN
+model_used: M2N
 multi_scale_check_interval: 50
 n_grids:
 - 15
@@ -42,8 +43,8 @@ n_grids_test:
 - 33
 - 34
 - 35
-num_deform_in: 7
-num_deformer_loop: 3
+num_deform_in: 3
+num_deformer_loop: 5
 num_epochs: 1000
 num_gfe_in: 2
 num_lfe_in: 4
@@ -67,7 +68,7 @@ weight_decay: 0.1
 x_feat:
 - coord
 - bd_mask
-- bd_left_mask
-- bd_right_mask
-- bd_down_mask
-- bd_up_mask
+# - bd_left_mask
+# - bd_right_mask
+# - bd_down_mask
+# - bd_up_mask

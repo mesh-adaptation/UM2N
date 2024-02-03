@@ -58,7 +58,7 @@ project: warpmesh
 save_interval: 20
 train_boundary_scheme: full
 train_data_set_type: aniso
-use_area_loss: true
+use_area_loss: false
 use_cluster: false
 use_inversion_diff_loss: false
 use_inversion_loss: false

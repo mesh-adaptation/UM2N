@@ -434,7 +434,7 @@ def train(
             loss.backward()
         
 
-        print_parameter_grad(model)
+        # print_parameter_grad(model)
 
         optimizer.step()
         total_loss += loss.item()

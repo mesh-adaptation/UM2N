@@ -13,7 +13,7 @@ import warpmesh as wm
 
 from pprint import pprint                               # noqa
 from torch_geometric.loader import DataLoader
-from warpmesh.model.train_util import generate_samples
+from warpmesh.model.train_util import generate_samples, construct_graph
 
 
 def get_log_og(log_path, idx):
@@ -41,6 +41,7 @@ class SwirlEvaluator():
             2. init function space on fine & coarse mesh
         """
         self.device = kwargs.pop("device", "cuda")
+        self.model_used = kwargs.pop("model_used", "MRTransformer")
         # mesh vars
         self.mesh = mesh                                        # coarse mesh
         self.mesh_fine = mesh_fine                              # fine mesh
@@ -261,22 +262,49 @@ class SwirlEvaluator():
                 # initiate model inferencing ...
                 self.model.eval()
                 bs = 1
+                sample = sample.to(self.device)
+                self.model = self.model.to(self.device)
                 with torch.no_grad():
                     start = time.perf_counter()
+                    if (self.model_used == "MRTransformer"):
+                        # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+                        mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
+                        mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
+                        mesh_query_x.requires_grad = True
+                        mesh_query_y.requires_grad = True
+                        mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
 
-                    mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
-                    mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
-                    mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+                        num_nodes = mesh_query.shape[-2] // bs
+                        # Generate random mesh queries for unsupervised learning
+                        sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, num_meshes=5, data=sample, device=self.device)
+                        sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2], num_neighbors=6)
 
-                    coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
-                    coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
-                    coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+                        mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
+                        mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
+                        mesh_sampled_queries_x.requires_grad = True
+                        mesh_sampled_queries_y.requires_grad = True
+                        mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
 
-                    num_nodes = coord_ori.shape[-2] // bs
-                    input_q, input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=sample, device=self.device)
-                    
-                    (out, model_raw_output, out_monitor), (phix, phiy) = self.model(sample, input_q, input_kv, mesh_query)
+                        coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
+                        coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
+                        coord_ori_x.requires_grad = True
+                        coord_ori_y.requires_grad = True
+                        coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
+                        num_nodes = coord_ori.shape[-2] // bs
+                        input_q = sample.mesh_feat[:, :4]
+                        input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=sample, device=self.device)
+                        # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
+
+                        (output_coord_all, output, out_monitor), (phix, phiy) = self.model(sample, input_q, input_q, mesh_query, sampled_queries=None, sampled_queries_edge_index=None)
+                        # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
+                        out = output_coord_all[:num_nodes*bs]
+                    elif (self.model_used == "M2N"):
+                        out = self.model(sample)
+                    elif (self.model_used == "MRN"):
+                        out = self.model(sample)
+                    else:
+                        raise Exception(f"model {self.model_used} not implemented.")
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1000
 
@@ -340,7 +368,7 @@ class SwirlEvaluator():
                 df.to_csv(os.path.join(self.log_path, f"log_{idx:04d}.csv"))
                 # plot compare mesh
                 plot_fig = wm.plot_mesh_compare_benchmark(
-                    out.detach().cpu().numpy(), sample.y, sample.face, 
+                    out.detach().cpu().numpy(), sample.y.detach().cpu().numpy(), sample.face.detach().cpu().numpy(), 
                     deform_loss=res["deform_loss"],
                     pde_loss_model=res["error_model"],
                     pde_loss_reduction_model=res["error_reduction_model"],
@@ -384,7 +412,7 @@ class SwirlEvaluator():
                 ax3.set_title('Soultion on MA Mesh')
                 fd.tripcolor(
                     self.uh_new, cmap='coolwarm', axes=ax3)
-                self.mesh_new.coordinates.dat.data[:] = sample.y
+                self.mesh_new.coordinates.dat.data[:] = sample.y.cpu()
                 fd.triplot(self.mesh_new, axes=ax3)
 
                 fig.savefig(os.path.join(self.plot_more_path, f"plot_{idx}.png"))  # noqa
