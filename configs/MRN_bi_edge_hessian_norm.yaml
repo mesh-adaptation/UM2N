@@ -3,17 +3,19 @@ check_tangle_interval: 10
 cluster_r: 0.35
 conv_feat:
 - conv_uh
+- conv_hessian_norm
 conv_feat_fix:
 - conv_uh_fix
 count_tangle_method: inversion
 data_root: ./data/helmholtz/
 inversion_loss_scaler: 10000000000.0
 is_normalise: true
-learning_rate: 1.0e-03
+learning_rate: 5.0e-05
 mesh_feat:
 - coord
 - u
-model_used: M2N
+- hessian_norm
+model_used: MRN
 multi_scale_check_interval: 50
 n_grids:
 - 15
@@ -41,10 +43,10 @@ n_grids_test:
 - 34
 - 35
 num_deform_in: 7
-num_deformer_loop: 5
+num_deformer_loop: 3
 num_epochs: 1000
-num_gfe_in: 1
-num_lfe_in: 3
+num_gfe_in: 2
+num_lfe_in: 4
 num_transformer_in: 4
 num_transformer_out: 16
 num_transformer_embed_dim: 64
@@ -56,12 +58,12 @@ project: warpmesh
 save_interval: 20
 train_boundary_scheme: full
 train_data_set_type: aniso
-use_area_loss: true
+use_area_loss: false
 use_cluster: false
 use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false
-weight_decay: 5.0e-04
+weight_decay: 0.1
 x_feat:
 - coord
 - bd_mask

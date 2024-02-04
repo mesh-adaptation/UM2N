@@ -674,61 +674,69 @@ if __name__ == "__main__":
     run_id = "99zrohiu" # trained with 600 samples, purely supervised
 
     run_id = "6fxictgr" # M2N baseline, trained on 600 samples meshtype 2 helmholtz
-    
-    
+
+
+    run_id_mrn = "7qxbs9nt" # MRN
+    run_id_mrn_area_loss = "xwds86sw" # MRN area loss 
+    run_id_mrn_hessian_norm = "8vftl7it" # MRN hessian norm
+    run_id_mrn_area_loss_hessian_norm = "ilhhvshe" # MRN area loss, hessian norm
+
+    run_id_m2n = "cyzk2mna" # M2N
+    run_id_m2n_area_loss = "xfjd6pdm" # M2N area loss
+    run_id_m2n_hessian_norm = "1cu4qw9u" # M2N hessian norm
+    run_id_m2n_area_loss_hessian_norm = "u4uxcz1e" # M2N area loss hessian norm
+
     epoch = 999
     
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
 
-    run_ids = [run_id]
-    # ds_roots = ['./data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
-    # ds_roots = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
-    #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
-    #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
-    #             './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6']
+    run_ids = [run_id_mrn, run_id_mrn_area_loss, run_id_mrn_hessian_norm, run_id_mrn_area_loss_hessian_norm,
+               run_id_m2n, run_id_m2n_area_loss, run_id_m2n_hessian_norm, run_id_m2n_area_loss_hessian_norm]
 
-    # ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-    #             ]
-    # ds_roots = [
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-    #             # './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
-    #             # './data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_2'
-    #             ]
+    ds_root_helmholtz = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
+                        './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
+                        './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6',
+                        './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+                        './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+                        './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full']
     
-    run_ids = ["6fxictgr"]
-    # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
-    #             './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-    #             './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-    #             './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2'
-    #             # './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2'
-    #             ]
-    ds_roots = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
-                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
-                './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
-                './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-                './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full',
-                ]
+    ds_root_swirl = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
+                     './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
+                     './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
+                     './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6',]
+
+    ds_roots = [*ds_root_helmholtz, *ds_root_swirl]
+    
+    for run_id in run_ids:
+        for ds_root in ds_roots:
+            problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
+            print(f"Evaluating {run_id} on dataset: {ds_root}")
+            # loginto wandb API
+            api = wandb.Api()
+            run = api.run(f"{entity}/{project_name}/{run_id}")
+            config = SimpleNamespace(**run.config)
+
+            print("# Evaluation Pipeline Started\n")
+            # init
+            eval_dir = init_dir(config, run_id, epoch, ds_root, problem_type, domain)  # noqa
+            dataset = load_dataset(config, ds_root, tar_folder='data')
+            model = load_model(config, epoch, eval_dir)
+
+            # bench_res = benchmark_model(
+            #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
+            bench_res = benchmark_model(
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=100)
+
+            write_sumo(eval_dir, ds_root)
+
+    exit()
+
+
+
+
+
+
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6']
 
     # run_ids = [run_id]
@@ -819,26 +827,26 @@ if __name__ == "__main__":
     #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.045_n=5_iso_pad_meshtype_6',  # noqa
     #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/burgers/lc=0.05_n=5_iso_pad_meshtype_6',  # noqa
     # ]
-    for run_id in run_ids:
-        for ds_root in ds_roots:
-            problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
-            print(f"Evaluating {run_id} on dataset: {ds_root}")
-            # loginto wandb API
-            api = wandb.Api()
-            run = api.run(f"{entity}/{project_name}/{run_id}")
-            config = SimpleNamespace(**run.config)
+    # for run_id in run_ids:
+    #     for ds_root in ds_roots:
+    #         problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
+    #         print(f"Evaluating {run_id} on dataset: {ds_root}")
+    #         # loginto wandb API
+    #         api = wandb.Api()
+    #         run = api.run(f"{entity}/{project_name}/{run_id}")
+    #         config = SimpleNamespace(**run.config)
 
-            print("# Evaluation Pipeline Started\n")
-            # init
-            eval_dir = init_dir(config, run_id, epoch, ds_root, problem_type, domain)  # noqa
-            dataset = load_dataset(config, ds_root, tar_folder='data')
-            model = load_model(config, epoch, eval_dir)
+    #         print("# Evaluation Pipeline Started\n")
+    #         # init
+    #         eval_dir = init_dir(config, run_id, epoch, ds_root, problem_type, domain)  # noqa
+    #         dataset = load_dataset(config, ds_root, tar_folder='data')
+    #         model = load_model(config, epoch, eval_dir)
 
-            # bench_res = benchmark_model(
-            #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
-            bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=100)
+    #         # bench_res = benchmark_model(
+    #         #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
+    #         bench_res = benchmark_model(
+    #             model, dataset, eval_dir, ds_root, start_idx=0, num_samples=100)
 
-            write_sumo(eval_dir, ds_root)
+    #         write_sumo(eval_dir, ds_root)
 
-    exit()
+    # exit()

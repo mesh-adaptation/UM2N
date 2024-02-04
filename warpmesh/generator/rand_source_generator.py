@@ -36,6 +36,9 @@ class RandSourceGenerator():
         "w_max": 0.2,
         "c_min": 0.2,
         "c_max": 0.8,
+        "sigma_mean_scaler": 1/4,
+        "sigma_sigma_scaler": 1/5,
+        "sigma_eps": 1/20,
     }):
         """
         Initialize RandomHelmholtzGenerator.
@@ -57,7 +60,7 @@ class RandSourceGenerator():
         }
         self.z_list = []
         self.w_list = []
-        self.set_dist_params()
+        self.set_dist_params(eps=self.dist_params['sigma_eps'])
 
         self.u_exact = 0  # analytical solution
         self.f = 0  # simulated source function
@@ -77,9 +80,9 @@ class RandSourceGenerator():
         print("Generating {} Gaussian distributions".format(self.n_dist))
         for i in range(self.n_dist):
             σ_mean = (
-                self.dist_params["x_end"] - self.dist_params["x_start"]) / 4
+                self.dist_params["x_end"] - self.dist_params["x_start"]) * self.dist_params['sigma_mean_scaler']
             σ_sigma = (
-                self.dist_params["x_end"] - self.dist_params["x_start"]) / 5
+                self.dist_params["x_end"] - self.dist_params["x_start"]) * self.dist_params['sigma_sigma_scaler']
 
             self.μ_dict["x"].append(round(random.uniform(
                 self.dist_params["c_min"], self.dist_params["c_max"]), 3)) # noqa

@@ -9,7 +9,7 @@ count_tangle_method: inversion
 data_root: ./data/helmholtz/
 inversion_loss_scaler: 10000000000.0
 is_normalise: true
-learning_rate: 5.0e-05
+learning_rate: 1.0e-03
 mesh_feat:
 - coord
 - u
@@ -61,7 +61,7 @@ use_cluster: false
 use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false
-weight_decay: 0.1
+weight_decay: 5.0e-04
 x_feat:
 - coord
 - bd_mask

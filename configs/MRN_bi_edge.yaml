@@ -3,7 +3,7 @@ check_tangle_interval: 10
 cluster_r: 0.35
 conv_feat:
 - conv_uh
-- conv_hessian_norm
+# - conv_hessian_norm
 conv_feat_fix:
 - conv_uh_fix
 count_tangle_method: inversion
@@ -14,7 +14,7 @@ learning_rate: 5.0e-05
 mesh_feat:
 - coord
 - u
-- hessian_norm
+# - hessian_norm
 model_used: MRN
 multi_scale_check_interval: 50
 n_grids:
@@ -45,8 +45,8 @@ n_grids_test:
 num_deform_in: 7
 num_deformer_loop: 3
 num_epochs: 1000
-num_gfe_in: 2
-num_lfe_in: 4
+num_gfe_in: 1
+num_lfe_in: 3
 num_transformer_in: 4
 num_transformer_out: 16
 num_transformer_embed_dim: 64

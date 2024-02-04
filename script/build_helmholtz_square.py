@@ -85,12 +85,20 @@ p_val = 0.1
 num_train = int(n_samples * p_train)
 num_test = int(n_samples * p_test)
 num_val = int(n_samples * p_val)
+
+# parameters for dataset challenging level
+sigma_mean_scaler = 1/4 #
+sigma_sigma_scaler = 1/5 # larger, less challenging (because the gaussian is more like a circle)
+sigma_eps = 1/20
 # =======================================
 
 
 df = pd.DataFrame({
     'cmin': [c_min],
     'cmax': [c_max],
+    'sigma_mean_scaler': [sigma_mean_scaler],
+    'sigma_sigma_scaler': [sigma_sigma_scaler],
+    'sigma_eps': [sigma_eps],
     'data_type': [data_type],
     'scheme': [scheme],
     'n_samples': [n_samples],
@@ -206,6 +214,9 @@ if __name__ == "__main__":
                     "w_max": w_max,
                     "c_min": c_min,
                     "c_max": c_max,
+                    "sigma_mean_scaler": sigma_mean_scaler,
+                    "sigma_sigma_scaler": sigma_sigma_scaler,
+                    "sigma_eps": sigma_eps,
                 })
             helmholtz_eq = wm.RandHelmholtzEqGenerator(
                 rand_u_generator)
