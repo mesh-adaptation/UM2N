@@ -586,6 +586,8 @@ def write_sumo(eval_dir, ds_root):
             fail_count += 1
             num_tangle += log_df['tangled_element'][0]
     print(f"passed num: {pass_count}, failed num: {fail_count}")
+    if pass_count == 0:
+        pass_count = 1
     sumo_df = pd.DataFrame({
         # 'error_reduction_MA': (error_og - error_MA) / error_og,
         # 'error_reduction_model': (error_og - error_model) / error_og,'
@@ -691,8 +693,11 @@ if __name__ == "__main__":
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
 
-    run_ids = [run_id_mrn, run_id_mrn_area_loss, run_id_mrn_hessian_norm, run_id_mrn_area_loss_hessian_norm,
-               run_id_m2n, run_id_m2n_area_loss, run_id_m2n_hessian_norm, run_id_m2n_area_loss_hessian_norm]
+    # run_ids = [run_id_mrn, run_id_mrn_area_loss, run_id_mrn_hessian_norm, run_id_mrn_area_loss_hessian_norm,
+    #            run_id_m2n, run_id_m2n_area_loss, run_id_m2n_hessian_norm, run_id_m2n_area_loss_hessian_norm]
+    # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
+    run_ids = [run_id_mrn_area_loss_hessian_norm]
+
 
     ds_root_helmholtz = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
                         './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
@@ -700,12 +705,15 @@ if __name__ == "__main__":
                         './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
                         './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
                         './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full']
+    # ds_root_helmholtz =[
+    #                     './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
+    #                     './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
+    #                     './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full']
     
     ds_root_swirl = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
                      './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
                      './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
                      './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6',]
-
     ds_roots = [*ds_root_helmholtz, *ds_root_swirl]
     
     for run_id in run_ids:

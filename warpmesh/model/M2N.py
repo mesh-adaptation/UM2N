@@ -76,7 +76,8 @@ class M2N(torch.nn.Module):
         if (data.poly_mesh is not False):
             poly_mesh = True if data.poly_mesh.sum() > 0 else False
         x = data.x  # [num_nodes * batch_size, 2]
-        conv_feat_in = data.conv_feat_fix  # [batch_size, feat, 20, 20], using fixed conv-sample. # noqa
+        # conv_feat_in = data.conv_feat_fix  # [batch_size, feat, 20, 20], using fixed conv-sample. # noqa
+        conv_feat_in = data.conv_feat
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
