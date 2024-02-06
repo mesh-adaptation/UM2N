@@ -513,7 +513,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
     elif problem_type == 'burgers':
         # Select params to generate burgers bump
-        case_idxs = [5]
+        case_idxs = [5, 1]
         for idx in case_idxs:
             gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
             mesh = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
@@ -522,8 +522,8 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
             evaluator = wm.BurgersEvaluator(
                 mesh, mesh_fine, mesh_new,
-                dataset, model, eval_dir, ds_root, idx,
-                gauss_list=gaussian_list, nu=nu
+                dataset, model, eval_dir, ds_root, idx,  device=device,
+                gauss_list=gaussian_list, nu=nu, model_used = config.model_used
             )
 
             evaluator.make_log_dir()
@@ -672,10 +672,10 @@ if __name__ == "__main__":
 
     run_id = "2x84suu1" # with random sampling in deformer, semi-trained on meshtype 6 50 samples
 
-    run_id = "4a1p7ekj" # trained with 600 samples, semi with random sampling query
-    run_id = "99zrohiu" # trained with 600 samples, purely supervised
+    run_id_pi_m2t = "4a1p7ekj" # trained with 600 samples, semi with random sampling query
+    run_id_m2t = "99zrohiu" # trained with 600 samples, purely supervised
 
-    run_id = "6fxictgr" # M2N baseline, trained on 600 samples meshtype 2 helmholtz
+    # run_id = "6fxictgr" # M2N baseline, trained on 600 samples meshtype 2 helmholtz (wrong)
 
 
     run_id_mrn = "7qxbs9nt" # MRN
@@ -696,7 +696,7 @@ if __name__ == "__main__":
     # run_ids = [run_id_mrn, run_id_mrn_area_loss, run_id_mrn_hessian_norm, run_id_mrn_area_loss_hessian_norm,
     #            run_id_m2n, run_id_m2n_area_loss, run_id_m2n_hessian_norm, run_id_m2n_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
-    run_ids = [run_id_mrn_area_loss_hessian_norm]
+    run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
 
 
     ds_root_helmholtz = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
@@ -705,16 +705,19 @@ if __name__ == "__main__":
                         './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
                         './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
                         './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full']
-    # ds_root_helmholtz =[
-    #                     './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<15x15>_n=100_aniso_full',
-    #                     './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
-    #                     './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full']
     
     ds_root_swirl = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
                      './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
                      './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
                      './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6',]
-    ds_roots = [*ds_root_helmholtz, *ds_root_swirl]
+    
+    ds_root_burgers = ['./data/dataset_meshtype_2/burgers/lc=0.05_ngrid_20_n=5_iso_pad_meshtype_2',
+                     './data/dataset_meshtype_2/burgers/lc=0.028_ngrid_20_n=5_iso_pad_meshtype_2',
+                     './data/dataset_meshtype_6/burgers/lc=0.05_ngrid_20_n=5_iso_pad_meshtype_6',
+                     './data/dataset_meshtype_6/burgers/lc=0.028_ngrid_20_n=5_iso_pad_meshtype_6',]
+    
+    # ds_roots = [*ds_root_helmholtz, *ds_root_swirl, *ds_root_burgers]
+    ds_roots = [*ds_root_burgers]
     
     for run_id in run_ids:
         for ds_root in ds_roots:
