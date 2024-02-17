@@ -34,7 +34,7 @@ def get_first_entry(dataset, target_idx):
         raw_data_path = dataset.file_names[i]
         raw_data = np.load(raw_data_path, allow_pickle=True).item()
         # pprint(raw_data)
-        # print(raw_data.get('idx'), " ", target_idx)
+        print(raw_data.get('idx'), " ", target_idx)
         # print(raw_data.get('t'))
         if raw_data.get('idx') == target_idx:
             return i
@@ -183,6 +183,7 @@ class BurgersEvaluator():
         """
         Solves the Burgers equation.
         """
+        print("target index", self.idx)
         idx_start = get_first_entry(self.dataset, self.idx)
         print("idx_start: ", idx_start)
         i = 0
@@ -228,7 +229,7 @@ class BurgersEvaluator():
                 self.model = self.model.to(self.device)
                 with torch.no_grad():
                     start = time.perf_counter()
-                    if (self.model_used == "MRTransformer"):
+                    if (self.model_used == "MRTransformer" or self.model_used == "MRT"):
                         # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
                         mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
                         mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
@@ -267,7 +268,6 @@ class BurgersEvaluator():
                         out = self.model(sample)
                     else:
                         raise Exception(f"model {self.model_used} not implemented.")
-                    out = self.model(sample)
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1000
 

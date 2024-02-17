@@ -513,7 +513,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
     elif problem_type == 'burgers':
         # Select params to generate burgers bump
-        case_idxs = [5, 1]
+        case_idxs = [1]
         for idx in case_idxs:
             gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
             mesh = fd.Mesh(os.path.join(ds_root, 'mesh', 'mesh.msh'))
@@ -696,7 +696,8 @@ if __name__ == "__main__":
     # run_ids = [run_id_mrn, run_id_mrn_area_loss, run_id_mrn_hessian_norm, run_id_mrn_area_loss_hessian_norm,
     #            run_id_m2n, run_id_m2n_area_loss, run_id_m2n_hessian_norm, run_id_m2n_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
-    run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
+    # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
+    run_ids = [run_id_m2t]
 
 
     ds_root_helmholtz = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
