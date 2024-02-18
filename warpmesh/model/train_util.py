@@ -564,7 +564,8 @@ def compute_finite_difference(field):
     return f_x * inv_dx, f_y * inv_dy
 
 
-def generate_samples_structured_grid(num_meshes, coords, field, grid_resolution=100, device='cuda'):
+def generate_samples_structured_grid(coords, field, grid_resolution=100, device='cpu'):
+    num_meshes = coords.shape[0]
     nx = grid_resolution
     ny = grid_resolution
     x = np.linspace(0, 1, nx)
@@ -572,9 +573,9 @@ def generate_samples_structured_grid(num_meshes, coords, field, grid_resolution=
     uniform_grid = torch.tensor(np.array(np.meshgrid(x, y)), dtype=torch.float)\
                     .reshape(1, 2, -1).repeat(num_meshes, 1, 1).permute(0, 2, 1).to(device)
 
-    field_input = field.repeat(num_meshes, 1, 1)
-    coords_x = coords[: ,: ,0].unsqueeze(-1).repeat(num_meshes, 1, 1)
-    coords_y = coords[: ,: ,1].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    field_input = field.view(num_meshes, -1, field.shape[-1])
+    coords_x = coords[: ,: ,0].unsqueeze(-1)
+    coords_y = coords[: ,: ,1].unsqueeze(-1)
     new_meshes_x = uniform_grid[:, :, 0].unsqueeze(-1)
     new_meshes_y = uniform_grid[:, :, 1].unsqueeze(-1)
 
@@ -599,7 +600,7 @@ def construct_graph(sampled_coords, num_neighbors=6, device="cuda"):
     return edge_index
 
 
-def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func):
+def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func, finite_difference_grad=False):
     feat_dim = data.mesh_feat.shape[-1]
     node_num = data.mesh_feat.view(bs, -1, feat_dim).shape[1]
     sampled_num = mesh_query_x.shape[0] // bs
@@ -610,13 +611,16 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
     # Convex loss
     loss_convex = torch.tensor(0.0)
     if phix is not None and phiy is not None:
-        # print(f"phix: {phix.shape}, phiy: {phiy.shape}")
-        hessian_seed = torch.ones(phix.shape).to(device)
-        phixx = torch.autograd.grad(phix, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-        phixy = torch.autograd.grad(phix, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-        phiyx = torch.autograd.grad(phiy, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-        phiyy = torch.autograd.grad(phiy, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-
+        if not finite_difference_grad:
+            # print(f"phix: {phix.shape}, phiy: {phiy.shape}")
+            hessian_seed = torch.ones(phix.shape).to(device)
+            phixx = torch.autograd.grad(phix, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+            phixy = torch.autograd.grad(phix, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+            phiyx = torch.autograd.grad(phiy, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+            phiyy = torch.autograd.grad(phiy, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+        else:
+            _, _, _, _, phixx, phixy = generate_samples_structured_grid(torch.stack([mesh_query_x, mesh_query_y], dim=-1), phix)
+            _, _, _, _, phiyx, phiyy = generate_samples_structured_grid(torch.stack([mesh_query_x, mesh_query_y], dim=-1), phiy)
         # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
         # phixx = phix_grad[:, 0]
         # phixy = phix_grad[:, 1]
