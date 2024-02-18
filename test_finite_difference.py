@@ -76,15 +76,17 @@ def generate_samples_structured_grid(num_meshes, grid_resolution, coords, field,
     new_meshes_x = uniform_grid[:, :, 0].unsqueeze(-1)
     new_meshes_y = uniform_grid[:, :, 1].unsqueeze(-1)
 
-    # Interpolate to dense grid
+    # Interpolate to dense structured grid
     field = interpolate(field_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
     field_x_, field_y_ = compute_finite_difference(field.view(field.shape[0], grid_resolution, grid_resolution))
+    field_x_ = field_x_.view(num_meshes, -1, 1)
+    field_y_ = field_y_.view(num_meshes, -1, 1)
 
-    # Interpolate back to graph
-    field_x = interpolate(field_x_.view(num_meshes, -1, 1), new_meshes_x, new_meshes_y, coords_x, coords_y)
-    field_y = interpolate(field_y_.view(num_meshes, -1, 1), new_meshes_x, new_meshes_y, coords_x, coords_y)
+    # Interpolate back to original mesh
+    field_x = interpolate(field_x_, new_meshes_x, new_meshes_y, coords_x, coords_y)
+    field_y = interpolate(field_y_, new_meshes_x, new_meshes_y, coords_x, coords_y)
 
-    return uniform_grid, field, field_x, field_y
+    return uniform_grid, field, field_x_, field_y_, field_x, field_y
 
 data_paths = ["./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"]
 
@@ -129,13 +131,13 @@ num_nodes = coords.shape[1]
 num_samples = 5
 
 grid_resolution = 200
-meshes, solution_structure_grid, solution_x, solution_y  = generate_samples_structured_grid(num_samples, grid_resolution, coords, solution)
+meshes, solution_struct_grid, solution_x_strut_grid, solution_y_strut_grid, solution_x, solution_y  = generate_samples_structured_grid(num_samples, grid_resolution, coords, solution)
 solution_x = solution_x.view(num_samples, -1, 1)
 solution_y = solution_y.view(num_samples, -1, 1)
-print(f"Sampled meshes: {meshes.shape}, solution: {solution_structure_grid.shape}, solution_x: {solution_x.shape}, solution_y: {solution_y.shape}")
+print(f"Sampled meshes: {meshes.shape}, solution: {solution_struct_grid.shape}, solution_x: {solution_x.shape}, solution_y: {solution_y.shape}")
 
 
-num_show = 4
+num_show = 1
 num_variables = 4 # meshes, solution, solution_x, solution_y
 fig, ax = plt.subplots(num_variables, num_show + 1, figsize=(4*(num_show + 1), 4 * num_variables))
 ax[0, 0].scatter(coords[0,:,0], coords[0,:,1])
@@ -152,17 +154,17 @@ for i in range(1, num_show+1):
     title_str = f"xi_f^{i}"
     ax[0, i].set_title(r"$\{}$".format(title_str))
 
-    ax[1, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_structure_grid[i,:,0])
+    ax[1, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_struct_grid[i,:,0])
     title_str_1 = f"u_f^{i}"
     ax[1, i].set_title(r"${}$".format(title_str_1))
 
-    # ax[2, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_x[i,:,0])
-    # title_str_2 = f"u_x^{i}"
-    # ax[2, i].set_title(r"${}$".format(title_str_2))
+    ax[2, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_x_strut_grid[i,:,0])
+    title_str_2 = f"u_x^{i}"
+    ax[2, i].set_title(r"${}$".format(title_str_2))
 
-    # ax[3, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_y[i,:,0])
-    # title_str_3 = f"u_y^{i}"
-    # ax[3, i].set_title(r"${}$".format(title_str_3))
+    ax[3, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_y_strut_grid[i,:,0])
+    title_str_3 = f"u_y^{i}"
+    ax[3, i].set_title(r"${}$".format(title_str_3))
 plt.savefig("sampled_structure_grid.png")
 
 
