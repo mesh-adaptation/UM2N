@@ -62,7 +62,8 @@ def compute_finite_difference(field):
     return f_x * inv_dx, f_y * inv_dy
 
 
-def generate_samples_structured_grid(num_meshes, coords, field, grid_resolution=100, device='cpu'):
+def generate_samples_structured_grid(coords, field, grid_resolution=100, device='cpu'):
+    num_meshes = coords.shape[0]
     nx = grid_resolution
     ny = grid_resolution
     x = np.linspace(0, 1, nx)
@@ -70,9 +71,12 @@ def generate_samples_structured_grid(num_meshes, coords, field, grid_resolution=
     uniform_grid = torch.tensor(np.array(np.meshgrid(x, y)), dtype=torch.float)\
                     .reshape(1, 2, -1).repeat(num_meshes, 1, 1).permute(0, 2, 1).to(device)
 
-    field_input = field.repeat(num_meshes, 1, 1)
-    coords_x = coords[: ,: ,0].unsqueeze(-1).repeat(num_meshes, 1, 1)
-    coords_y = coords[: ,: ,1].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    # field_input = field.repeat(num_meshes, 1, 1)
+    # coords_x = coords[: ,: ,0].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    # coords_y = coords[: ,: ,1].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    field_input = field
+    coords_x = coords[: ,: ,0].unsqueeze(-1)
+    coords_y = coords[: ,: ,1].unsqueeze(-1)
     new_meshes_x = uniform_grid[:, :, 0].unsqueeze(-1)
     new_meshes_y = uniform_grid[:, :, 1].unsqueeze(-1)
 
@@ -111,7 +115,7 @@ train_sets = [MeshDataset(
 ) for data_path in data_paths]
 
 
-batch_size = 1
+batch_size = 2
 train_set = AggreateDataset(train_sets)
 train_loader = DataLoader(train_set, batch_size=batch_size)
 
@@ -131,9 +135,9 @@ num_nodes = coords.shape[1]
 num_samples = 5
 
 grid_resolution = 100
-meshes, solution_struct_grid, solution_x_strut_grid, solution_y_strut_grid, solution_x, solution_y  = generate_samples_structured_grid(num_samples, coords, solution, grid_resolution)
-solution_x = solution_x.view(num_samples, -1, 1)
-solution_y = solution_y.view(num_samples, -1, 1)
+meshes, solution_struct_grid, solution_x_strut_grid, solution_y_strut_grid, solution_x, solution_y  = generate_samples_structured_grid(coords, solution, grid_resolution)
+solution_x = solution_x.view(batch_size, -1, 1)
+solution_y = solution_y.view(batch_size, -1, 1)
 print(f"Sampled meshes: {meshes.shape}, solution: {solution_struct_grid.shape}, solution_x: {solution_x.shape}, solution_y: {solution_y.shape}")
 
 
@@ -142,35 +146,44 @@ num_variables = 4 # meshes, solution, solution_x, solution_y
 fig, ax = plt.subplots(num_variables, num_show + 1, figsize=(4*(num_show + 1), 4 * num_variables))
 ax[0, 0].scatter(coords[0,:,0], coords[0,:,1])
 ax[0, 0].set_title(r"$\xi_{query}$")
+ax[0, 1].scatter(meshes[0,:,0], meshes[0,:,1])
+title_str = f"xi_f"
+ax[0, 1].set_title(r"$\{}$".format(title_str))
+
 ax[1, 0].scatter(coords[0,:,0], coords[0,:,1], c=solution[0,:,0])
 ax[1, 0].set_title(r"$u_{query}$")
+ax[1, 1].scatter(meshes[0,:,0], meshes[0,:,1], c=solution_struct_grid[0,:,0])
+title_str_1 = f"u_f"
+ax[1, 1].set_title(r"${}$".format(title_str_1))
+
 ax[2, 0].scatter(coords[0,:,0], coords[0,:,1], c=solution_x[0,:,0])
 ax[2, 0].set_title(r"$u_x$")
+ax[2, 1].scatter(meshes[0,:,0], meshes[0,:,1], c=solution_x_strut_grid[0,:,0])
+title_str_2 = f"u_x"
+ax[2, 1].set_title(r"${}$".format(title_str_2))
+
 ax[3, 0].scatter(coords[0,:,0], coords[0,:,1], c=solution_y[0,:,0])
 ax[3, 0].set_title(r"$u_y$")
+ax[3, 1].scatter(meshes[0,:,0], meshes[0,:,1], c=solution_y_strut_grid[0,:,0])
+title_str_3 = f"u_y"
+ax[3, 1].set_title(r"${}$".format(title_str_3))
 
-for i in range(1, num_show+1):
-    ax[0, i].scatter(meshes[i,:,0], meshes[i,:,1])
-    title_str = f"xi_f^{i}"
-    ax[0, i].set_title(r"$\{}$".format(title_str))
+# for i in range(1, num_show+1):
+#     ax[0, i].scatter(meshes[i,:,0], meshes[i,:,1])
+#     title_str = f"xi_f^{i}"
+#     ax[0, i].set_title(r"$\{}$".format(title_str))
 
-    ax[1, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_struct_grid[i,:,0])
-    title_str_1 = f"u_f^{i}"
-    ax[1, i].set_title(r"${}$".format(title_str_1))
+#     ax[1, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_struct_grid[i,:,0])
+#     title_str_1 = f"u_f^{i}"
+#     ax[1, i].set_title(r"${}$".format(title_str_1))
 
-    ax[2, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_x_strut_grid[i,:,0])
-    title_str_2 = f"u_x^{i}"
-    ax[2, i].set_title(r"${}$".format(title_str_2))
+#     ax[2, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_x_strut_grid[i,:,0])
+#     title_str_2 = f"u_x^{i}"
+#     ax[2, i].set_title(r"${}$".format(title_str_2))
 
-    ax[3, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_y_strut_grid[i,:,0])
-    title_str_3 = f"u_y^{i}"
-    ax[3, i].set_title(r"${}$".format(title_str_3))
+#     ax[3, i].scatter(meshes[i,:,0], meshes[i,:,1], c=solution_y_strut_grid[i,:,0])
+#     title_str_3 = f"u_y^{i}"
+#     ax[3, i].set_title(r"${}$".format(title_str_3))
 plt.savefig("sampled_structure_grid.png")
 
 
-# batch_size = meshes.shape[0]
-# node_num = meshes.shape[1]
-# batch = torch.tensor([x for x in range(meshes.shape[0])]).unsqueeze(-1).repeat(1, node_num).reshape(-1)
-# # batch = None
-# edge_index = knn_graph(meshes.view(-1, 2), k=6, batch=batch, loop=False)
-# print(edge_index.shape)
