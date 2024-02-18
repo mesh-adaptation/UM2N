@@ -62,7 +62,7 @@ def compute_finite_difference(field):
     return f_x * inv_dx, f_y * inv_dy
 
 
-def generate_samples_structured_grid(num_meshes, grid_resolution, coords, field, device='cpu'):
+def generate_samples_structured_grid(num_meshes, coords, field, grid_resolution=100, device='cpu'):
     nx = grid_resolution
     ny = grid_resolution
     x = np.linspace(0, 1, nx)
@@ -130,8 +130,8 @@ print(f"coords: {coords.shape}, solution: {solution.shape}, hessian norm: {hessi
 num_nodes = coords.shape[1]
 num_samples = 5
 
-grid_resolution = 200
-meshes, solution_struct_grid, solution_x_strut_grid, solution_y_strut_grid, solution_x, solution_y  = generate_samples_structured_grid(num_samples, grid_resolution, coords, solution)
+grid_resolution = 100
+meshes, solution_struct_grid, solution_x_strut_grid, solution_y_strut_grid, solution_x, solution_y  = generate_samples_structured_grid(num_samples, coords, solution, grid_resolution)
 solution_x = solution_x.view(num_samples, -1, 1)
 solution_y = solution_y.view(num_samples, -1, 1)
 print(f"Sampled meshes: {meshes.shape}, solution: {solution_struct_grid.shape}, solution_x: {solution_x.shape}, solution_y: {solution_y.shape}")

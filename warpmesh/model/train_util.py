@@ -549,6 +549,48 @@ def generate_samples(bs, num_samples_per_mesh, data, num_meshes=5, device="cuda"
     return samples_kv
 
 
+def compute_finite_difference(field):
+    # Field: [bs, x_shape, y_shape]
+    f_x = torch.zeros_like(field)
+    f_x[:,:-1,:] = torch.diff(field, dim=-2)
+    f_x[:,-1,:] = f_x[:,-2,:]
+
+    f_y = torch.zeros_like(field)
+    f_y[:,:,:-1] = torch.diff(field, dim=-1)
+    f_y[:,:,-1] = f_y[:,:,-2]
+
+    inv_dx = field.shape[-2] - 1
+    inv_dy = field.shape[-1] - 1
+    return f_x * inv_dx, f_y * inv_dy
+
+
+def generate_samples_structured_grid(num_meshes, coords, field, grid_resolution=100, device='cuda'):
+    nx = grid_resolution
+    ny = grid_resolution
+    x = np.linspace(0, 1, nx)
+    y = np.linspace(0, 1, ny)
+    uniform_grid = torch.tensor(np.array(np.meshgrid(x, y)), dtype=torch.float)\
+                    .reshape(1, 2, -1).repeat(num_meshes, 1, 1).permute(0, 2, 1).to(device)
+
+    field_input = field.repeat(num_meshes, 1, 1)
+    coords_x = coords[: ,: ,0].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    coords_y = coords[: ,: ,1].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    new_meshes_x = uniform_grid[:, :, 0].unsqueeze(-1)
+    new_meshes_y = uniform_grid[:, :, 1].unsqueeze(-1)
+
+    # Interpolate to dense structured grid
+    field = interpolate(field_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
+    field_x_, field_y_ = compute_finite_difference(field.view(field.shape[0], grid_resolution, grid_resolution))
+    field_x_ = field_x_.view(num_meshes, -1, 1)
+    field_y_ = field_y_.view(num_meshes, -1, 1)
+
+    # Interpolate back to original mesh
+    field_x = interpolate(field_x_, new_meshes_x, new_meshes_y, coords_x, coords_y)
+    field_y = interpolate(field_y_, new_meshes_x, new_meshes_y, coords_x, coords_y)
+
+    return uniform_grid, field, field_x_, field_y_, field_x, field_y
+
+
 def construct_graph(sampled_coords, num_neighbors=6, device="cuda"):
     bs = sampled_coords.shape[0]
     num_per_mesh = sampled_coords.shape[1]
