@@ -71,10 +71,7 @@ def generate_samples_structured_grid(coords, field, grid_resolution=100, device=
     uniform_grid = torch.tensor(np.array(np.meshgrid(x, y)), dtype=torch.float)\
                     .reshape(1, 2, -1).repeat(num_meshes, 1, 1).permute(0, 2, 1).to(device)
 
-    # field_input = field.repeat(num_meshes, 1, 1)
-    # coords_x = coords[: ,: ,0].unsqueeze(-1).repeat(num_meshes, 1, 1)
-    # coords_y = coords[: ,: ,1].unsqueeze(-1).repeat(num_meshes, 1, 1)
-    field_input = field
+    field_input = field.view(num_meshes, -1, field.shape[-1])
     coords_x = coords[: ,: ,0].unsqueeze(-1)
     coords_y = coords[: ,: ,1].unsqueeze(-1)
     new_meshes_x = uniform_grid[:, :, 0].unsqueeze(-1)
