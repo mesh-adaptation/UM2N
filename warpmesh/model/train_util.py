@@ -564,7 +564,7 @@ def compute_finite_difference(field):
     return f_x * inv_dx, f_y * inv_dy
 
 
-def generate_samples_structured_grid(coords, field, grid_resolution=100, device='cpu'):
+def generate_samples_structured_grid(coords, field, grid_resolution=100, device='cuda'):
     num_meshes = coords.shape[0]
     nx = grid_resolution
     ny = grid_resolution
@@ -588,6 +588,7 @@ def generate_samples_structured_grid(coords, field, grid_resolution=100, device=
     # Interpolate back to original mesh
     field_x = interpolate(field_x_, new_meshes_x, new_meshes_y, coords_x, coords_y)
     field_y = interpolate(field_y_, new_meshes_x, new_meshes_y, coords_x, coords_y)
+    # print(f"coords shape {coords.shape} interp field x {field_x.shape} interp field y {field_y.shape}")
 
     return uniform_grid, field, field_x_, field_y_, field_x, field_y
 
@@ -687,7 +688,7 @@ def model_forward(bs, data, model, use_add_random_query=True):
 
     num_nodes = mesh_query.shape[-2] // bs
     # Generate random mesh queries for unsupervised learning
-    sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, num_meshes=5, data=data, device=device)
+    sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, num_meshes=1, data=data, device=device)
     sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2], num_neighbors=6)
 
     mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
@@ -736,6 +737,7 @@ def train_unsupervised(
         use_area_loss=False,
         use_convex_loss=False,
         use_add_random_query=True,
+        finite_difference_grad=True,
         weight_area_loss=1,
         weight_deform_loss=1,
         weight_eq_residual_loss=1,
@@ -770,7 +772,7 @@ def train_unsupervised(
 
         output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model, use_add_random_query=use_add_random_query)
         if use_add_random_query:
-            loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
+            loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func, finite_difference_grad=finite_difference_grad)
         else:
             loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
 
@@ -848,6 +850,7 @@ def evaluate_unsupervised(
         use_area_loss=False,
         use_convex_loss=False,
         use_add_random_query=True,
+        finite_difference_grad=True,
         weight_area_loss=1,
         weight_deform_loss=1,
         weight_eq_residual_loss=1,
@@ -888,7 +891,7 @@ def evaluate_unsupervised(
         output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model, use_add_random_query=use_add_random_query)
 
         if use_add_random_query:
-            loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func)
+            loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func, finite_difference_grad=finite_difference_grad)
         else:
             loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
         
