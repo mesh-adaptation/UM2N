@@ -10,6 +10,7 @@ from torch_geometric.data import DataLoader
 from torch.utils.data import SequentialSampler
 from types import SimpleNamespace
 from io import BytesIO
+from warpmesh.model.train_util import model_forward, compute_phi_hessian, compute_finite_difference, generate_samples_structured_grid
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -89,6 +90,9 @@ run_id = 'pk66tmjj' # mesh query semi 111 50 smaples
 run_id = '0l8ujpdr' # mesh query semi 111, old dataset
 
 
+run_id = 'zae8jkpm' # mesh query semi 111
+
+
 run_id_collections = {"MRT":['mfn1hnrg'],
 
                       "MRT-no-udlr":['2b0ouh5p'],
@@ -106,7 +110,9 @@ run_id_collections = {"MRT":['mfn1hnrg'],
                       "MRT-1R-phi-grad-test": ['fhmqq8eg'],
                       "MRT-1R-phi-grad-un-grad-test": ['s6qrcn54'],
                       "MRT-1R-phi-grad-un-grad-test-new": ['kuz2edst'],
-                      "MRT-1R-phi-grad-un-grad-test-query": ['0l8ujpdr'],
+                      # "MRT-1R-phi-grad-un-grad-test-query": ['zae8jkpm'],
+                      # "MRT-1R-phi-grad-un-grad-test-query": ['0l8ujpdr'],
+                      "MRT-1R-phi-grad-un-grad-test-query": ['8ndi2teh'],
 
                       "MRT-1R":['zdj9ocmw'],
                       "MRT-2R":['790xybc1'],
@@ -166,8 +172,8 @@ if dataset_name == 'helmholtz':
 
   # dataset_dir = f"./data/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=10_aniso_full"
   # dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full"
-  # dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6"
-  dataset_dir = f"./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"
+  dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6"
+  # dataset_dir = f"./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"
   # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
   # test_dir = f"./data/helmholtz_poly/helmholtz_poly/z=<0,1>_ndist=None_max_dist=6_lc=0.06_n=400_aniso_full/data"
@@ -193,10 +199,18 @@ phiyy_MA_collections = {}
 out_mesh_collections = {}
 out_phix_collections = {}
 out_phiy_collections = {}
+
+# Finite difference grad
 out_phixx_collections = {}
 out_phixy_collections = {}
 out_phiyy_collections = {}
 out_phiyx_collections = {}
+
+# Ad grad
+out_ad_phixx_collections = {}
+out_ad_phixy_collections = {}
+out_ad_phiyy_collections = {}
+out_ad_phiyx_collections = {}
 
 out_loss_collections = {}
 out_atten_collections = {}
@@ -235,7 +249,10 @@ for model_name in models_to_compare:
     else:
         raise Exception(f"Model {config.model_used} not implemented.")
     # config.mesh_feat.extend(['grad_u', 'phi', 'grad_phi', 'jacobian'])
-    config.mesh_feat.extend(['phi', 'grad_phi', 'jacobian'])
+    if 'grad_u' not in config.mesh_feat:
+      config.mesh_feat.extend(['grad_u', 'phi', 'grad_phi', 'jacobian'])
+    else:
+      config.mesh_feat.extend(['phi', 'grad_phi', 'jacobian'])
     print("mesh feat type ", config.mesh_feat)
     test_set = wm.MeshDataset(
         test_dir,
@@ -291,6 +308,10 @@ for model_name in models_to_compare:
     out_phixy_collections[model_name] = []
     out_phiyy_collections[model_name] = []
     out_phiyx_collections[model_name] = []
+    out_ad_phixx_collections[model_name] = []
+    out_ad_phixy_collections[model_name] = []
+    out_ad_phiyy_collections[model_name] = []
+    out_ad_phiyx_collections[model_name] = []
 
     phi_MA_collections[model_name] = []
     phix_MA_collections[model_name] = []
@@ -327,10 +348,10 @@ for model_name in models_to_compare:
               phix_MA_collections[model_name].append(sample.mesh_feat[:, 7].detach().cpu().numpy())
               phiy_MA_collections[model_name].append(sample.mesh_feat[:, 8].detach().cpu().numpy())
 
-              phiyy_MA_collections[model_name].append(sample.mesh_feat[:, 9].detach().cpu().numpy())
+              phixx_MA_collections[model_name].append(sample.mesh_feat[:, 9].detach().cpu().numpy())
               phixy_MA_collections[model_name].append(sample.mesh_feat[:, 10].detach().cpu().numpy())
               phiyx_MA_collections[model_name].append(sample.mesh_feat[:, 11].detach().cpu().numpy())
-              phixx_MA_collections[model_name].append(sample.mesh_feat[:, 12].detach().cpu().numpy())
+              phiyy_MA_collections[model_name].append(sample.mesh_feat[:, 12].detach().cpu().numpy())
 
               # Mannually normlize for model input
               mesh_val_feat = sample.mesh_feat[:, 2:]  # value feature (no coord)
@@ -341,22 +362,25 @@ for model_name in models_to_compare:
 
 
               # Create mesh query for deformer, seperate from the original mesh as feature for encoder
-              mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
-              mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
-              mesh_query_x.requires_grad = True
-              mesh_query_y.requires_grad = True
-              mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
+              # mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
+              # mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
+              # mesh_query_x.requires_grad = True
+              # mesh_query_y.requires_grad = True
+              # mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
 
-              coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
-              coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
+              # coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
+              # coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
 
-              coord_ori_x.requires_grad = True
-              coord_ori_y.requires_grad = True
+              # coord_ori_x.requires_grad = True
+              # coord_ori_y.requires_grad = True
 
-              coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
+              # coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
               # (out, phi, out_monitor), (phix, phiy) = model.move(sample, coord_ori, mesh_query, num_step=1)
-              (out, phi, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query)
+              # (out, phi, out_monitor), (phix, phiy) = model(sample, coord_ori, mesh_query)
+              bs = 1
+              output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, sample, model, use_add_random_query=False)
+
               feat_dim = sample.mesh_feat.shape[-1]
               node_num = sample.mesh_feat.reshape(1, -1, feat_dim).shape[1]
 
@@ -364,16 +388,27 @@ for model_name in models_to_compare:
               out_phiy_collections[model_name].append(phiy.detach().cpu().numpy())
               
               hessian_seed = torch.ones(phix.shape).to(device)
-              phixx = torch.autograd.grad(phix, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-              phixy = torch.autograd.grad(phix, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-              phiyx = torch.autograd.grad(phiy, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-              phiyy = torch.autograd.grad(phiy, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phixx_ad = torch.autograd.grad(phix, mesh_query_x_all, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phixy_ad = torch.autograd.grad(phix, mesh_query_y_all, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phiyx_ad = torch.autograd.grad(phiy, mesh_query_x_all, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+              phiyy_ad = torch.autograd.grad(phiy, mesh_query_y_all, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
 
+              out_ad_phixx_collections[model_name].append(phixx_ad.detach().cpu().numpy())
+              out_ad_phiyy_collections[model_name].append(phiyy_ad.detach().cpu().numpy())
+              out_ad_phixy_collections[model_name].append(phixy_ad.detach().cpu().numpy())
+              out_ad_phiyx_collections[model_name].append(phiyx_ad.detach().cpu().numpy())
+
+              mesh_query_x_all = mesh_query_x_all.view(bs, -1, 1)
+              mesh_query_y_all = mesh_query_y_all.view(bs, -1, 1)
+              _, _, _, _, phixy, phixx = generate_samples_structured_grid(torch.cat([mesh_query_x_all, mesh_query_y_all], dim=-1), phix)
+              _, _, _, _, phiyy, phiyx = generate_samples_structured_grid(torch.cat([mesh_query_x_all, mesh_query_y_all], dim=-1), phiy)
 
               out_phixx_collections[model_name].append(phixx.detach().cpu().numpy())
               out_phiyy_collections[model_name].append(phiyy.detach().cpu().numpy())
               out_phixy_collections[model_name].append(phixy.detach().cpu().numpy())
               out_phiyx_collections[model_name].append(phiyx.detach().cpu().numpy())
+
+              out = output_coord[:node_num*bs]
 
             elif 'MRT-1R-coord' in model_name:
               out, (phix, phiy) = model.move(sample, num_step=1)
@@ -431,12 +466,19 @@ model_name = "MRT-1R-phi-grad-un-grad-test-new"
 model_name = "MRT-1R-phi-grad-un-grad-test-query"
 num_selected = 2
 
+# Grad from finite difference
 phix = out_phix_collections[model_name][num_selected]
 phiy = out_phiy_collections[model_name][num_selected]
 phixx = out_phixx_collections[model_name][num_selected]
 phiyy = out_phiyy_collections[model_name][num_selected]
 phixy = out_phixy_collections[model_name][num_selected]
 phiyx = out_phiyx_collections[model_name][num_selected]
+
+# Grad from ad
+phixx_ad = out_ad_phixx_collections[model_name][num_selected]
+phiyy_ad = out_ad_phiyy_collections[model_name][num_selected]
+phixy_ad = out_ad_phixy_collections[model_name][num_selected]
+phiyx_ad = out_ad_phiyx_collections[model_name][num_selected]
 
 coord = out_mesh_collections[model_name][num_selected]
 fd_coord = target_mesh[num_selected]
@@ -451,12 +493,12 @@ phiyy_sample = phiyy_MA_collections[model_name][num_selected]
 
 import os
 
-variables_collections = {r'$\nabla_x \phi$': (phix, phix_sample),
-                         r'$\nabla_y \phi$': (phiy, phiy_sample),
-                         r'$\nabla_{xx} \phi$': (-phixx, phixx_sample),
-                         r'$\nabla_{xy} \phi$': (phixy, phixy_sample),
-                         r'$\nabla_{yx} \phi$': (phiyx, phiyx_sample),
-                         r'$\nabla_{yy} \phi$': (-phiyy, phiyy_sample),
+variables_collections = {r'$\nabla_x \phi$': (phix, phix, phix_sample),
+                         r'$\nabla_y \phi$': (phiy, phiy, phiy_sample),
+                         r'$\nabla_{xx} \phi$': (phixx, phixx_ad, phixx_sample - 1), # The values recored from firedrake is actually I + H(\phi)
+                         r'$\nabla_{xy} \phi$': (phixy, phixy_ad, phixy_sample),
+                         r'$\nabla_{yx} \phi$': (phiyx, phiyx_ad, phiyx_sample),
+                         r'$\nabla_{yy} \phi$': (phiyy, phiyy_ad, phiyy_sample - 1),
                          }
 
 num_variables = len(variables_collections.keys())
@@ -471,10 +513,10 @@ elif dataset_name == 'swirl':
   model_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh.msh"))
   fd_mesh = mesh_gen.load_mesh(file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh.msh"))
 
-fig, axs = plt.subplots(num_variables, 5, figsize=(40, 8 * num_variables))
+fig, axs = plt.subplots(num_variables, 6, figsize=(48, 8 * num_variables))
 
 row = 0
-for name, (model_val, fd_val) in variables_collections.items():
+for name, (finite_diff_val, model_val, fd_val) in variables_collections.items():
   # model values
   model_mesh.coordinates.dat.data[:] = coord[:]
   mesh_function_space = fd.Function(
@@ -483,26 +525,33 @@ for name, (model_val, fd_val) in variables_collections.items():
   plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 0])
   axs[row, 0].set_title(f"{dataset_name} - {name} (torch autograd)", fontsize=font_size)
   plt.colorbar(plt_obj3)
+
+  # Finite difference grad
+  mesh_function_space.dat.data[:] = finite_diff_val.reshape(-1)[:]
+  plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 1])
+  axs[row, 1].set_title(f"{dataset_name} - {name} (torch finite diff)", fontsize=font_size)
+  plt.colorbar(plt_obj3)
+
   # model output mesh
-  fd.triplot(model_mesh, axes=axs[row, 1])
-  axs[row, 1].set_title(f"{dataset_name} - Model output mesh", fontsize=font_size)
+  fd.triplot(model_mesh, axes=axs[row, 2])
+  axs[row, 2].set_title(f"{dataset_name} - Model output mesh", fontsize=font_size)
 
   # Sample values from firedrake
   mesh_function_space.dat.data[:] = fd_val.reshape(-1)[:]
-  plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 2])
-  axs[row, 2].set_title(f"{dataset_name} - {name} (firedrake)", fontsize=font_size)
+  plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 3])
+  axs[row, 3].set_title(f"{dataset_name} - {name} (firedrake)", fontsize=font_size)
   plt.colorbar(plt_obj3)
 
   # MA output mesh
   fd_mesh.coordinates.dat.data[:] = fd_coord[:]
-  fd.triplot(fd_mesh, axes=axs[row, 3])
-  axs[row, 3].set_title(f"{dataset_name} - MA output mesh", fontsize=font_size)
+  fd.triplot(fd_mesh, axes=axs[row, 4])
+  axs[row, 4].set_title(f"{dataset_name} - MA output mesh", fontsize=font_size)
 
   # Error map
   mesh_function_space.dat.data[:] = np.abs(fd_val.reshape(-1)[:] - model_val.reshape(-1)[:])
-  plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 4])
-  axs[row, 4].set_title(f"{dataset_name} - {name} (error L1)", fontsize=font_size)
+  plt_obj3 = fd.tripcolor(mesh_function_space, axes=axs[row, 5])
+  axs[row, 5].set_title(f"{dataset_name} - {name} (error L1)", fontsize=font_size)
   plt.colorbar(plt_obj3)
   row += 1
 
-fig.savefig(f"{dataset_name}_output_comparison_{start_num+num_selected}_new_query.png")
+fig.savefig(f"{dataset_name}_output_comparison_{start_num+num_selected}_new_query_fd.png")
