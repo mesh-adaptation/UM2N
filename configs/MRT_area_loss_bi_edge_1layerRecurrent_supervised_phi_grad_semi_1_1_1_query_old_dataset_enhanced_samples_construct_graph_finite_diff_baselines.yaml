@@ -73,6 +73,7 @@ use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false
 use_add_random_query: true
+use_equation_residual_on_grid: false
 weight_area_loss: 1.0
 weight_deform_loss: 1.0
 weight_eq_residual_loss: 1.0

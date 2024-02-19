@@ -238,10 +238,10 @@ class MRTransformer(torch.nn.Module):
             
             coord_output = torch.cat([coord, coord_extra], dim=0)
             model_raw_output = torch.cat([model_output, model_output_extra], dim=0)
-            # # phix_output = torch.cat([phix, phix_extra], dim=0)
-            # # phiy_output = torch.cat([phiy, phiy_extra], dim=0)
-            phix_output = phix_extra
-            phiy_output = phiy_extra
+            phix_output = torch.cat([phix, phix_extra], dim=0)
+            phiy_output = torch.cat([phiy, phiy_extra], dim=0)
+            # phix_output = phix_extra
+            # phiy_output = phiy_extra
             # print(phix.shape, phix_extra.shape)
         else:
             coord_output = coord

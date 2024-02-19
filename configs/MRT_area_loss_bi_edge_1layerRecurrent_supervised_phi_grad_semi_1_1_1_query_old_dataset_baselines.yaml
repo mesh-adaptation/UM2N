@@ -72,10 +72,13 @@ use_convex_loss: true
 use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false
+use_add_random_query: false
+use_equation_residual_on_grid: false
 weight_area_loss: 1.0
 weight_deform_loss: 1.0
 weight_eq_residual_loss: 1.0
 weight_decay: 0.1
+finite_difference_grad: false
 freeze_transformer_monitor: false
 freeze_deformer: false
 x_feat:
