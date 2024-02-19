@@ -620,8 +620,9 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
             phiyx = torch.autograd.grad(phiy, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
             phiyy = torch.autograd.grad(phiy, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
         else:
-            _, _, _, _, phixx, phixy = generate_samples_structured_grid(torch.stack([mesh_query_x, mesh_query_y], dim=-1), phix)
-            _, _, _, _, phiyx, phiyy = generate_samples_structured_grid(torch.stack([mesh_query_x, mesh_query_y], dim=-1), phiy)
+            # TODO: the finite difference method here returns the (u_y, u_x), whose order is different from ad
+            _, _, _, _, phixy, phixx = generate_samples_structured_grid(torch.stack([mesh_query_x, mesh_query_y], dim=-1), phix)
+            _, _, _, _, phiyy, phiyx = generate_samples_structured_grid(torch.stack([mesh_query_x, mesh_query_y], dim=-1), phiy)
         # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
         # phixx = phix_grad[:, 0]
         # phixy = phix_grad[:, 1]
