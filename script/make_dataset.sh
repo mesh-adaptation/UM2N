@@ -4,7 +4,7 @@
 # number of samples for time-indepedent cases
 n_samples_train=100
 # use 2 / 6 / 0
-mesh_type=2
+mesh_type=6
 
 # training set build
 rand_seed=63
@@ -57,20 +57,28 @@ lcs=(0.055 0.05)
 # # python ./script/build_burgers_square.py --lc=0.045  --n_case=5 --mesh_type=$mesh_type
 # python ./script/build_burgers_square.py --lc=0.028  --n_case=5 --mesh_type=$mesh_type
 
-mesh_types=(2 6)
-for i in "${mesh_types[@]}"; do
-    echo "mesh type = $i"
-    python ./script/build_burgers_square.py --lc=0.028  --n_case=5 --mesh_type=$i
-    python ./script/build_burgers_square.py --lc=0.05 --n_case=5 --mesh_type=$i
-    # python ./script/build_burgers_square.py --lc=0.045  --n_case=5 --mesh_type=$mesh_type
+# mesh_types=(2 6)
+# for i in "${mesh_types[@]}"; do
+#     echo "mesh type = $i"
+#     python ./script/build_burgers_square.py --lc=0.028  --n_case=5 --mesh_type=$i
+#     python ./script/build_burgers_square.py --lc=0.05 --n_case=5 --mesh_type=$i
+#     # python ./script/build_burgers_square.py --lc=0.045  --n_case=5 --mesh_type=$mesh_type
     
-done
-python ./script/evaluate.py
+# done
+
 # swirl test case square
 # python ./script/build_swirl.py --lc=0.05 --alpha=1.5 --mesh_type=$mesh_type
 # python ./script/build_swirl.py --lc=0.05 --alpha=1 --mesh_type=$mesh_type
 
-# python ./script/build_swirl.py --lc=0.028 --alpha=1.5 --mesh_type=$mesh_type
+# python ./script/build_swirl.py --lc=0.028 --alpha=1.5 --x_0 0.5 --y_0 0.75 --mesh_type=$mesh_type
+mesh_type=6
+python ./script/build_swirl.py --lc=0.028 --alpha=1.5 --x_0 0.25 --y_0 0.25 --r_0 0.10 --mesh_type=$mesh_type
+python ./script/build_swirl.py --lc=0.028 --alpha=1.5 --x_0 0.25 --y_0 0.25 --mesh_type=$mesh_type
+
+
+mesh_type=2
+python ./script/build_swirl.py --lc=0.028 --alpha=1.5 --x_0 0.25 --y_0 0.25 --r_0 0.10 --mesh_type=$mesh_type
+python ./script/build_swirl.py --lc=0.028 --alpha=1.5 --x_0 0.25 --y_0 0.25 --mesh_type=$mesh_type
 # python ./script/build_swirl.py --lc=0.028 --alpha=1 --mesh_type=$mesh_type
 # python ./script/build_swirl.py --lc=0.045--alpha=1.5 --mesh_type=$mesh_type
 # python ./script/build_swirl.py --lc=0.045 --alpha=1 --mesh_type=$mesh_type

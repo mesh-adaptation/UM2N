@@ -96,7 +96,7 @@ class SwirlEvaluator():
         self.dt = self.T / self.n_step
         self.dtc = fd.Constant(self.dt)
         # initial condition params
-        self.sigma = kwargs.pop("sigma", (0.05/6))
+        self.sigma = kwargs.pop("sigma", (0.05/3))
         self.alpha = kwargs.pop("alpha", 1.5)
         self.r_0 = kwargs.pop("r_0", 0.2)
         self.x_0 = kwargs.pop("x_0", 0.25)

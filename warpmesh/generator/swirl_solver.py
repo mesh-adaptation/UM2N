@@ -30,7 +30,7 @@ def get_c(x, y, t, threshold=0.5, alpha=1.5):
     return velocity
 
 
-def get_u_0(x, y, r_0=0.2, x_0=0.25, y_0=0.25, sigma=(0.05/3)):
+def get_u_0(x, y, r_0=0.2, x_0=0.5, y_0=0.75, sigma=(0.05/3)):
     """
     Compute the initial trace value.
 
@@ -38,7 +38,7 @@ def get_u_0(x, y, r_0=0.2, x_0=0.25, y_0=0.25, sigma=(0.05/3)):
         u_0 (ufl.tensors): expression of u_0
     """
     u = fd.exp(
-        (-1 / (2*sigma)) *
+        (-1 / (2*sigma**2)) *
         (fd.sqrt(
             (x - x_0)**2 + (y - y_0)**2
         ) - r_0) ** 2
@@ -69,6 +69,7 @@ class SwirlSolver():
         self.init_coord_fine = self.mesh_fine.coordinates.vector().array().reshape(-1, 2) # noqa
         self.best_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
         self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.adapt_coord_prev = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
         # error measuring vars
         self.error_adapt_list = []
         self.error_og_list = []
@@ -277,6 +278,8 @@ class SwirlSolver():
             if ((step+1) % self.save_interval == 0) or (step == 0):
                 print(f"---- getting samples: step: {step}, t: {self.t:.5f}")
                 try:
+                    # # TODO: Starting the mesh movement from last adapted mesh (This is not working currently)
+                    # self.mesh.coordinates.dat.data[:] = self.adapt_coord_prev
                     # mesh movement - calculate the adapted coords
                     start = time.perf_counter()
                     adapter = mv.MongeAmpereMover(
@@ -288,6 +291,7 @@ class SwirlSolver():
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1e3
                     self.mesh_new.coordinates.dat.data[:] = self.adapt_coord
+                    # self.adapt_coord_prev = self.mesh_new.coordinates.dat.data[:]
 
                     # calculate solution on original mesh
                     self.mesh.coordinates.dat.data[:] = self.init_coord

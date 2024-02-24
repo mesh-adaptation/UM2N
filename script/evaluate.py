@@ -484,6 +484,8 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         sigma = info_df["sigma"][0]
         alpha = info_df["alpha"][0]
         r_0 = info_df["r_0"][0]
+        x_0 = info_df["x_0"][0]
+        y_0 = info_df["y_0"][0]
         T = info_df["T"][0]
         n_step = info_df["n_step"][0]
 
@@ -501,7 +503,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
 
         evaluator = wm.SwirlEvaluator(
             mesh, mesh_fine, mesh_new, dataset, model, eval_dir, ds_root, device=device,
-            sigma=sigma, alpha=alpha, r_0=r_0,
+            sigma=sigma, alpha=alpha, r_0=r_0, x_0=x_0, y_0=y_0,
             T=T, n_step=n_step, model_used = config.model_used
         )
 
