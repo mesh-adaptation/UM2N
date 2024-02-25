@@ -135,6 +135,7 @@ problem_specific_dir = os.path.join(
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
 problem_plot_dir = os.path.join(problem_specific_dir, "plot")
+problem_plot_compare_dir = os.path.join(problem_specific_dir, "plot_compare")
 problem_log_dir = os.path.join(problem_specific_dir, "log")
 
 problem_mesh_dir = os.path.join(problem_specific_dir, "mesh")
@@ -175,6 +176,14 @@ else:
     for f in filelist:
         os.remove(os.path.join(problem_plot_dir, f))
 
+if not os.path.exists(problem_plot_compare_dir):
+    os.makedirs(problem_plot_compare_dir)
+else:
+    # delete all files under the directory
+    filelist = [f for f in os.listdir(problem_plot_compare_dir)]
+    for f in filelist:
+        os.remove(os.path.join(problem_plot_compare_dir, f))
+
 if not os.path.exists(problem_log_dir):
     os.makedirs(problem_log_dir)
 else:
@@ -196,7 +205,7 @@ if __name__ == "__main__":
             unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(scale=scale_x, mesh_type=mesh_type)  # noqa
             mesh = unstructure_square_mesh_gen.get_mesh(
                 res=lc, file_path=os.path.join(
-                    problem_mesh_dir, f"mesh{i}.msh"
+                    problem_mesh_dir, f"mesh_{i:04d}.msh"
                 )
             )
             # Generate Random solution field
@@ -237,13 +246,13 @@ if __name__ == "__main__":
             # Generate Mesh
             hessian = wm.MeshGenerator(params={
                     "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh"))  # noqa
+                    "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"))  # noqa
                 }
             ).get_hessian(mesh)
 
             hessian_norm = wm.MeshGenerator(params={
                     "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh"))  # noqa
+                    "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"))  # noqa
                     }
             ).monitor_func(mesh)
 
@@ -256,7 +265,7 @@ if __name__ == "__main__":
 
             mesh_gen = wm.MeshGenerator(params={
                 "eq": helmholtz_eq,
-                "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh"))  # noqa
+                "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"))  # noqa
             })
 
             start = time.perf_counter()
@@ -327,52 +336,52 @@ if __name__ == "__main__":
             )
 
             mesh_processor.save_taining_data(
-                os.path.join(problem_data_dir, "data_{}".format(i))
+                os.path.join(problem_data_dir, f"data_{i:04d}")
             )
 
-            # ====  Plot Scripts ======================
-            fig = plt.figure(figsize=(15, 10))
-            ax1 = fig.add_subplot(2, 3, 1, projection='3d')
-            # Plot the exact solution
-            ax1.set_title('Exact Solution')
-            fd.trisurf(fd.interpolate(
-                res["u_exact"], res["function_space"]), axes=ax1)
-            # Plot the solved solution
-            ax2 = fig.add_subplot(2, 3, 2, projection='3d')
-            ax2.set_title('FEM Solution')
-            fd.trisurf(uh, axes=ax2)
+            # # ====  Plot Scripts ======================
+            # fig = plt.figure(figsize=(15, 10))
+            # ax1 = fig.add_subplot(2, 3, 1, projection='3d')
+            # # Plot the exact solution
+            # ax1.set_title('Exact Solution')
+            # fd.trisurf(fd.interpolate(
+            #     res["u_exact"], res["function_space"]), axes=ax1)
+            # # Plot the solved solution
+            # ax2 = fig.add_subplot(2, 3, 2, projection='3d')
+            # ax2.set_title('FEM Solution')
+            # fd.trisurf(uh, axes=ax2)
 
-            # Plot the solution on a optimal mesh
-            ax3 = fig.add_subplot(2, 3, 3, projection='3d')
-            ax3.set_title('FEM Solution on Optimal Mesh')
-            fd.trisurf(uh_new, axes=ax3)
+            # # Plot the solution on a optimal mesh
+            # ax3 = fig.add_subplot(2, 3, 3, projection='3d')
+            # ax3.set_title('FEM Solution on Optimal Mesh')
+            # fd.trisurf(uh_new, axes=ax3)
 
-            # Plot the mesh
-            ax4 = fig.add_subplot(2, 3, 4)
-            ax4.set_title('Original Mesh')
-            fd.triplot(mesh, axes=ax4)
-            ax5 = fig.add_subplot(2, 3, 5)
-            ax5.set_title('Optimal Mesh')
-            fd.triplot(new_mesh, axes=ax5)
+            # # Plot the mesh
+            # ax4 = fig.add_subplot(2, 3, 4)
+            # ax4.set_title('Original Mesh')
+            # fd.triplot(mesh, axes=ax4)
+            # ax5 = fig.add_subplot(2, 3, 5)
+            # ax5.set_title('Optimal Mesh')
+            # fd.triplot(new_mesh, axes=ax5)
 
-            # plot mesh with function evaluated on it
-            ax6 = fig.add_subplot(2, 3, 6)
-            ax6.set_title('Soultion Projected on optimal mesh')
-            fd.tripcolor(
-                uh_new, cmap='coolwarm', axes=ax6)
-            fd.triplot(new_mesh, axes=ax6)
+            # # plot mesh with function evaluated on it
+            # ax6 = fig.add_subplot(2, 3, 6)
+            # ax6.set_title('Soultion Projected on optimal mesh')
+            # fd.tripcolor(
+            #     uh_new, cmap='coolwarm', axes=ax6)
+            # fd.triplot(new_mesh, axes=ax6)
 
-            fig.savefig(
-                os.path.join(
-                    problem_plot_dir, "plot_{}.png".format(i))
-            )
+            # fig.savefig(
+            #     os.path.join(
+            #         problem_plot_dir, f"plot_{i:04d}.png")
+            # )
 
             # ==========================================
 
             # generate log file
             high_res_mesh = unstructure_square_mesh_gen.get_mesh(
                 res=1e-2, file_path=os.path.join(
-                    problem_mesh_fine_dir, f"mesh{i}.msh"
+                    problem_mesh_fine_dir, f"mesh_{i:04d}.msh"
                 )
             )
             high_res_function_space = fd.FunctionSpace(
@@ -382,14 +391,14 @@ if __name__ == "__main__":
             u_exact = fd.interpolate(
                 res_high_res["u_exact"], res_high_res["function_space"])
 
-            uh = fd.project(uh, high_res_function_space)
-            uh_new = fd.project(uh_new, high_res_function_space)
+            uh_proj = fd.project(uh, high_res_function_space)
+            uh_new_proj = fd.project(uh_new, high_res_function_space)
 
             error_original_mesh = fd.errornorm(
-                u_exact, uh
+                u_exact, uh_proj
             )
             error_optimal_mesh = fd.errornorm(
-                u_exact, uh_new
+                u_exact, uh_new_proj
             )
 
             df = pd.DataFrame({
@@ -399,17 +408,78 @@ if __name__ == "__main__":
             }, index=[0])
             df.to_csv(
                 os.path.join(
-                        problem_log_dir, "log{}.csv".format(i))
+                        problem_log_dir, f"log_{i:04d}.csv")
                 )
             print("error og/optimal:",
                   error_original_mesh, error_optimal_mesh)
+            
+            # ====  Plot mesh, solution, error ======================
+            rows, cols = 3, 3
+            fig, ax = plt.subplots(rows, cols, figsize=(cols*5, rows*5 ), layout='compressed')
+
+            # High resolution mesh
+            fd.triplot(high_res_mesh, axes=ax[0, 0])
+            ax[0, 0].set_title(f"High resolution Mesh ")
+            # Orginal low resolution uniform mesh
+            fd.triplot(mesh, axes=ax[0, 1])
+            ax[0, 1].set_title(f"Original uniform Mesh")
+            # Adapted mesh
+            fd.triplot(new_mesh, axes=ax[0, 2])
+            ax[0, 2].set_title(f"Adapted Mesh (MA)")
+
+            cmap = 'seismic'
+            # Solution on high resolution mesh
+            cb = fd.tripcolor(u_exact, cmap=cmap, axes=ax[1, 0])
+            ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
+            plt.colorbar(cb)
+            # Solution on orginal low resolution uniform mesh
+            cb = fd.tripcolor(uh, cmap=cmap, axes=ax[1, 1])
+            ax[1, 1].set_title(f"Solution on uniform Mesh")
+            plt.colorbar(cb)
+            # Solution on adapted mesh
+            cb = fd.tripcolor(uh_new, cmap=cmap, axes=ax[1, 2])
+            ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
+            plt.colorbar(cb)
+
+            err_orignal_mesh = fd.assemble(uh_proj - u_exact)
+            err_adapted_mesh = fd.assemble(uh_new_proj - u_exact)
+            err_abs_max_val_ori = max(abs(err_orignal_mesh.dat.data[:].max()), abs(err_orignal_mesh.dat.data[:].min()))
+            err_abs_max_val_adapted = max(abs(err_adapted_mesh.dat.data[:].max()), abs(err_adapted_mesh.dat.data[:].min()))
+            err_abs_max_val = max(err_abs_max_val_ori, err_abs_max_val_adapted)
+            err_v_max = err_abs_max_val
+            err_v_min = -err_v_max
+            
+            # Error on high resolution mesh
+            cb = fd.tripcolor(fd.assemble(u_exact - u_exact), cmap=cmap, axes=ax[2, 0], vmax=err_v_max, vmin=err_v_min)
+            ax[2, 0].set_title(f"Error Map High Resolution (u_exact-u_exact)")
+            plt.colorbar(cb)
+            # Error on orginal low resolution uniform mesh
+            cb = fd.tripcolor(err_orignal_mesh, cmap=cmap, axes=ax[2, 1], vmax=err_v_max, vmin=err_v_min)
+            ax[2, 1].set_title(f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_original_mesh:.5f}")
+            plt.colorbar(cb)
+            # Error on adapted mesh
+            cb = fd.tripcolor(err_adapted_mesh, cmap=cmap, axes=ax[2, 2], vmax=err_v_max, vmin=err_v_min)
+            ax[2, 2].set_title(f"Error (u-u_exact) Adapted Mesh (MA)| L2 Norm: {error_optimal_mesh:.5f} | {(error_original_mesh-error_optimal_mesh)/error_original_mesh*100:.2f}%")
+            plt.colorbar(cb)
+
+            for rr in range(rows):
+                for cc in range(cols):
+                    ax[rr, cc].set_aspect('equal', 'box')
+            fig.savefig(
+                os.path.join(
+                    problem_plot_compare_dir, f"plot_{i:04d}.png")
+            )
+            plt.close()
+
             i += 1
         except fd.exceptions.ConvergenceError:
+            print(f"Iteration: {i}, not coverged.")
             pass
-        except AttributeError:
-            pass
-        except ValueError:
-            pass
+        # except AttributeError:
+        #     print(f"AttributeError")
+        #     pass
+        # except ValueError:
+        #     pass
 
     move_data(problem_train_dir, problem_data_dir, 0, num_train)
 

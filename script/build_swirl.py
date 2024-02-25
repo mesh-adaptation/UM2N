@@ -220,43 +220,44 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
         os.path.join(problem_data_dir, f"data_{i:04d}")
     )
 
-    # ====  Plot Scripts ======================
-    fig = plt.figure(figsize=(15, 10))
-    ax1 = fig.add_subplot(2, 3, 1, projection='3d')
-    # Plot the exact solution
-    ax1.set_title('Solution field (HR)')
-    fd.trisurf(uh_fine, axes=ax1)
-    # Plot the solved solution
-    ax2 = fig.add_subplot(2, 3, 2, projection='3d')
-    ax2.set_title('Solution field (Original Mesh)')
-    fd.trisurf(uh, axes=ax2)
+    # # ====  Plot Scripts ======================
+    # fig = plt.figure(figsize=(15, 10))
+    # ax1 = fig.add_subplot(2, 3, 1, projection='3d')
+    # # Plot the exact solution
+    # ax1.set_title('Solution field (HR)')
+    # fd.trisurf(uh_fine, axes=ax1)
+    # # Plot the solved solution
+    # ax2 = fig.add_subplot(2, 3, 2, projection='3d')
+    # ax2.set_title('Solution field (Original Mesh)')
+    # fd.trisurf(uh, axes=ax2)
 
-    ax3 = fig.add_subplot(2, 3, 3, projection='3d')
-    ax3.set_title('Solution field (Adapted Mesh)')
-    fd.trisurf(uh_new, axes=ax3)
+    # ax3 = fig.add_subplot(2, 3, 3, projection='3d')
+    # ax3.set_title('Solution field (Adapted Mesh)')
+    # fd.trisurf(uh_new, axes=ax3)
 
-    # Plot the mesh
-    ax4 = fig.add_subplot(2, 3, 4)
-    ax4.set_title('Original Mesh ')
-    fd.triplot(mesh_og, axes=ax4)
+    # # Plot the mesh
+    # ax4 = fig.add_subplot(2, 3, 4)
+    # ax4.set_title('Original Mesh ')
+    # fd.triplot(mesh_og, axes=ax4)
 
-    ax5 = fig.add_subplot(2, 3, 5)
-    ax5.set_title('Optimal Mesh')
+    # ax5 = fig.add_subplot(2, 3, 5)
+    # ax5.set_title('Optimal Mesh')
+    # # fd.tripcolor(
+    # #     uh, cmap='coolwarm', axes=ax5)
+    # fd.triplot(mesh_new, axes=ax5)
+
+    # # plot mesh with function evaluated on it
+    # ax6 = fig.add_subplot(2, 3, 6)
+    # ax6.set_title('Solution Projected on Optimal Mesh')
     # fd.tripcolor(
-    #     uh, cmap='coolwarm', axes=ax5)
-    fd.triplot(mesh_new, axes=ax5)
+    #     uh_new, cmap='coolwarm', axes=ax6)
+    # fd.triplot(mesh_new, axes=ax6)
 
-    # plot mesh with function evaluated on it
-    ax6 = fig.add_subplot(2, 3, 6)
-    ax6.set_title('Solution Projected on Optimal Mesh')
-    fd.tripcolor(
-        uh_new, cmap='coolwarm', axes=ax6)
-    fd.triplot(mesh_new, axes=ax6)
-
-    fig.savefig(
-        os.path.join(
-            problem_plot_dir, f"plot_{i:04d}.png")
-    )
+    # fig.savefig(
+    #     os.path.join(
+    #         problem_plot_dir, f"plot_{i:04d}.png")
+    # )
+    # plt.close()
     # fig, ax = plt.subplots()
     # ax.set_title("adapt error list")
     # ax.plot(error_adapt_list, linestyle='--', color='blue', label='adapt')
@@ -327,15 +328,15 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     
     # Error on high resolution mesh
     cb = fd.tripcolor(fd.assemble(uh_fine - uh_fine), cmap=cmap, axes=ax[2, 0], vmax=err_v_max, vmin=err_v_min)
-    ax[2, 1].set_title(f"Error Map High Resolution")
+    ax[2, 0].set_title(f"Error Map High Resolution")
     plt.colorbar(cb)
     # Error on orginal low resolution uniform mesh
     cb = fd.tripcolor(err_orignal_mesh, cmap=cmap, axes=ax[2, 1], vmax=err_v_max, vmin=err_v_min)
-    ax[2, 1].set_title(f"Error Map (u-u_exact) uniform Mesh")
+    ax[2, 1].set_title(f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_original_mesh:.5f}")
     plt.colorbar(cb)
     # Error on adapted mesh
     cb = fd.tripcolor(err_adapted_mesh, cmap=cmap, axes=ax[2, 2], vmax=err_v_max, vmin=err_v_min)
-    ax[2, 2].set_title(f"Error Map (u-u_exact) Adapted Mesh (MA)")
+    ax[2, 2].set_title(f"Error (u-u_exact) Adapted Mesh (MA)| L2 Norm: {error_optimal_mesh:.5f} | {(error_original_mesh-error_optimal_mesh)/error_original_mesh*100:.2f}%")
     plt.colorbar(cb)
 
     for rr in range(rows):
@@ -346,7 +347,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
         os.path.join(
             problem_plot_compare_dir, f"plot_{i:04d}.png")
     )
-
+    plt.close()
     i += 1
     return
 
