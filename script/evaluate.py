@@ -262,7 +262,7 @@ def get_log_og(log_path, idx):
     """
     Read log file from dataset log dir and return value in it
     """
-    df = pd.read_csv(os.path.join(log_path, f"log{idx}.csv"))
+    df = pd.read_csv(os.path.join(log_path, f"log_{idx:04d}.csv"))
     return {
         "error_og": df["error_og"][0],
         "error_adapt": df["error_adapt"][0],
@@ -331,9 +331,10 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         wm.mkdir_if_not_exist(plot_more_dir)
 
         model = model.to(device)
+        print(f"Total num: {len(dataset)}")
         for idx in range(start_idx, start_idx + num_samples):
             # model inference stage
-            print(len(dataset))
+            # print(len(dataset))
             print("IDX", idx)
             sample = next(iter(
                 DataLoader([dataset[idx]], batch_size=1, shuffle=False)))
@@ -391,31 +392,31 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
             if domain == 'square':
                 if n_grid is None:
                     mesh = fd.Mesh(
-                        os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                        os.path.join(ds_root, 'mesh', f'mesh_{idx:04d}.msh'))
                     mesh_MA = fd.Mesh(
-                        os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                        os.path.join(ds_root, 'mesh', f'mesh_{idx:04d}.msh'))
                     mesh_fine = fd.Mesh(
-                        os.path.join(ds_root, 'mesh_fine', f'mesh{idx}.msh'))
+                        os.path.join(ds_root, 'mesh_fine', f'mesh_{idx:04d}.msh'))
                     mesh_model = fd.Mesh(
-                        os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                        os.path.join(ds_root, 'mesh', f'mesh_{idx:04d}.msh'))
                 else:
                     mesh = fd.UnitSquareMesh(n_grid, n_grid)
                     mesh_MA = fd.UnitSquareMesh(n_grid, n_grid)
-                    mesh_fine = fd.UnitSquareMesh(80, 80)
+                    mesh_fine = fd.UnitSquareMesh(100, 100)
                     mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
             elif domain == 'poly':
                 mesh = fd.Mesh(
-                    os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                    os.path.join(ds_root, 'mesh', f'mesh_{idx:04d}.msh'))
                 mesh_MA = fd.Mesh(
-                    os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                    os.path.join(ds_root, 'mesh', f'mesh_{idx:04d}.msh'))
                 mesh_fine = fd.Mesh(
-                    os.path.join(ds_root, 'mesh_fine', f'mesh{idx}.msh'))
+                    os.path.join(ds_root, 'mesh_fine', f'mesh_{idx:04d}.msh'))
                 mesh_model = fd.Mesh(
-                    os.path.join(ds_root, 'mesh', f'mesh{idx}.msh'))
+                    os.path.join(ds_root, 'mesh', f'mesh_{idx:04d}.msh'))
             mesh_model.coordinates.dat.data[:] = out.detach().cpu().numpy()
 
             compare_res = wm.compare_error(
-                sample, mesh, mesh_fine, mesh_model, mesh_MA, temp_tangled_elem,
+                sample, mesh, mesh_fine, mesh_model, mesh_MA, temp_tangled_elem, model_name=config.model_used,
                 problem_type=problem_type)
             temp_error_model = compare_res["error_model_mesh"]
             temp_error_og = compare_res["error_og_mesh"]
@@ -425,6 +426,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
             plot_more.savefig(
                 os.path.join(plot_more_dir, f"plot_{idx:04d}.png")
             )
+            plt.close()
 
             if int(meshtype) != 0:
                 log_og = get_log_og(os.path.join(ds_root, 'log'), idx)
@@ -699,7 +701,7 @@ if __name__ == "__main__":
     #            run_id_m2n, run_id_m2n_area_loss, run_id_m2n_hessian_norm, run_id_m2n_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
-    run_ids = [run_id_m2t]
+    run_ids = [run_id_pi_m2t, run_id_m2t, run_id_m2n]
 
 
     ds_root_helmholtz = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
@@ -720,7 +722,8 @@ if __name__ == "__main__":
                      './data/dataset_meshtype_6/burgers/lc=0.028_ngrid_20_n=5_iso_pad_meshtype_6',]
     
     # ds_roots = [*ds_root_helmholtz, *ds_root_swirl, *ds_root_burgers]
-    ds_roots = [*ds_root_burgers]
+    # ds_roots = [*ds_root_burgers]
+    ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     
     for run_id in run_ids:
         for ds_root in ds_roots:
