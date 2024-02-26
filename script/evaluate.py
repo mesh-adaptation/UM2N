@@ -498,7 +498,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         else:
             mesh = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_new = fd.UnitSquareMesh(n_grid, n_grid)
-            mesh_fine = fd.UnitSquareMesh(80, 80)
+            mesh_fine = fd.UnitSquareMesh(100, 100)
 
         # fd.triplot(mesh)
         # fd.triplot(mesh_fine)
@@ -512,8 +512,10 @@ def benchmark_model(model, dataset, eval_dir, ds_root,
         evaluator.make_log_dir()
         evaluator.make_plot_dir()
         evaluator.make_plot_more_dir()
-
-        eval_res = evaluator.eval_problem()                     # noqa
+        model_name = config.model_used
+        if config.model_used == 'MRTransform':
+            model_name = 'M2T'
+        eval_res = evaluator.eval_problem(model_name=model_name)                     # noqa
 
     elif problem_type == 'burgers':
         # Select params to generate burgers bump
@@ -701,7 +703,7 @@ if __name__ == "__main__":
     #            run_id_m2n, run_id_m2n_area_loss, run_id_m2n_hessian_norm, run_id_m2n_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
-    run_ids = [run_id_pi_m2t, run_id_m2t, run_id_m2n]
+    run_ids = [run_id_pi_m2t, run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
 
 
     ds_root_helmholtz = ['./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2',
@@ -711,10 +713,15 @@ if __name__ == "__main__":
                         './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=100_aniso_full',
                         './data/dataset_meshtype_0/helmholtz/z=<0,1>_ndist=None_max_dist=6_<35x35>_n=100_aniso_full']
     
-    ds_root_swirl = ['./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5_meshtype_6',
-                     './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.028_interval_5_meshtype_6',
-                     './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.05_interval_5_meshtype_6',
-                     './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_lc_0.028_interval_5_meshtype_6',]
+    ds_root_helmholtz = [
+                    './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6',
+                    './data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6',
+                    './data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=300_aniso_full_meshtype_2',
+                    ]
+    
+    ds_root_swirl = [
+                     './data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_20_interval_5_meshtype_6',
+                     './data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_20_interval_5_meshtype_2']
     
     ds_root_burgers = ['./data/dataset_meshtype_2/burgers/lc=0.05_ngrid_20_n=5_iso_pad_meshtype_2',
                      './data/dataset_meshtype_2/burgers/lc=0.028_ngrid_20_n=5_iso_pad_meshtype_2',
@@ -723,7 +730,8 @@ if __name__ == "__main__":
     
     # ds_roots = [*ds_root_helmholtz, *ds_root_swirl, *ds_root_burgers]
     # ds_roots = [*ds_root_burgers]
-    ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
+    # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
+    ds_roots = [*ds_root_helmholtz, *ds_root_swirl]
     
     for run_id in run_ids:
         for ds_root in ds_roots:

@@ -12,26 +12,47 @@ from argparse import ArgumentParser
 
 def arg_parse():
     parser = ArgumentParser()
-    parser.add_argument('--mesh_type', type=int, default=6,
-                        help='algorithm used to generate mesh')
-    parser.add_argument('--sigma', type=float, default=(0.05/3),
-                        help='sigma used to control the initial ring shape')
-    parser.add_argument('--r_0', type=float, default=0.2,
-                        help='radius of the initial ring')
-    parser.add_argument('--x_0', type=float, default=0.5,
-                        help='center of the ring in x')
-    parser.add_argument('--y_0', type=float, default=0.5,
-                        help='center of the ring in y')
-    parser.add_argument('--alpha', type=float, default=1.5,
-                        help='scalar coefficient of the swirl (velocity)')
-    parser.add_argument('--save_interval', type=int, default=5,
-                        help='interval for stroing sample file')
-    parser.add_argument('--lc', type=float, default=5e-2,
-                        help='the length characteristic of the elements in the\
-                            mesh (if using unstructured mesh)')
-    parser.add_argument('--n_grid', type=int, default=20,
-                        help='number of grids in a mesh (only appliable when\
-                                mesh_type is 0)')
+    parser.add_argument(
+        "--mesh_type", type=int, default=6, help="algorithm used to generate mesh"
+    )
+    parser.add_argument(
+        "--sigma",
+        type=float,
+        default=(0.05 / 3),
+        help="sigma used to control the initial ring shape",
+    )
+    parser.add_argument(
+        "--r_0", type=float, default=0.2, help="radius of the initial ring"
+    )
+    parser.add_argument(
+        "--x_0", type=float, default=0.5, help="center of the ring in x"
+    )
+    parser.add_argument(
+        "--y_0", type=float, default=0.5, help="center of the ring in y"
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=1.5,
+        help="scalar coefficient of the swirl (velocity)",
+    )
+    parser.add_argument(
+        "--save_interval", type=int, default=5, help="interval for stroing sample file"
+    )
+    parser.add_argument(
+        "--lc",
+        type=float,
+        default=5e-2,
+        help="the length characteristic of the elements in the\
+                            mesh (if using unstructured mesh)",
+    )
+    parser.add_argument(
+        "--n_grid",
+        type=int,
+        default=20,
+        help="number of grids in a mesh (only appliable when\
+                                mesh_type is 0)",
+    )
     args_ = parser.parse_args()
     print(args_)
     return args_
@@ -84,15 +105,18 @@ def move_data(target, source, start, num_file):
     for i in range(start, num_file):
         shutil.copy(
             os.path.join(source, "data_{}.npy".format(i)),
-            os.path.join(target, "data_{}.npy".format(i))
+            os.path.join(target, "data_{}.npy".format(i)),
         )
 
 
 project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)  # noqa
+dataset_dir = os.path.join(
+    project_dir, "data", f"dataset_meshtype_{mesh_type}", problem
+)  # noqa
 problem_specific_dir = os.path.join(
-        dataset_dir,
-        f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_x0_{x_0}_y0_{y_0}_lc_{lc}_ngrid_{n_grid}_interval_{save_interval}_meshtype_{mesh_type}")  # noqa
+    dataset_dir,
+    f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_x0_{x_0}_y0_{y_0}_lc_{lc}_ngrid_{n_grid}_interval_{save_interval}_meshtype_{mesh_type}",
+)  # noqa
 
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
@@ -162,42 +186,49 @@ def fail_callback(t):
     fail_t.append(t)
 
 
-def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
-                     phi, grad_phi,
-                     jacobian, jacobian_det,
-                     uh_new, mesh_og, mesh_new,
-                     function_space,
-                     function_space_fine,
-                     uh_fine, dur,
-                     sigma, alpha, r_0, t,
-                     error_og_list=[],
-                     error_adapt_list=[],
-                     ):
+def sample_from_loop(
+    uh,
+    uh_grad,
+    hessian,
+    hessian_norm,
+    monitor_values,
+    phi,
+    grad_phi,
+    jacobian,
+    jacobian_det,
+    uh_new,
+    mesh_og,
+    mesh_new,
+    function_space,
+    function_space_fine,
+    uh_fine,
+    dur,
+    sigma,
+    alpha,
+    r_0,
+    t,
+    error_og_list=[],
+    error_adapt_list=[],
+):
     """
     Call back function for storing data.
     """
     global i
     print("before processing")
     mesh_processor = wm.MeshProcessor(
-        original_mesh=mesh_og, optimal_mesh=mesh_new,
+        original_mesh=mesh_og,
+        optimal_mesh=mesh_new,
         function_space=function_space,
         use_4_edge=True,
         feature={
             "uh": uh.dat.data_ro.reshape(-1, 1),
-            "grad_uh": uh_grad.dat.data_ro.reshape(
-                -1, 2),
-            "hessian": hessian.dat.data_ro.reshape(
-                -1, 4),
-            "hessian_norm": hessian_norm.dat.data_ro.reshape(
-                -1, 1),
-            "jacobian": jacobian.dat.data_ro.reshape(
-                -1, 4),
-            "jacobian_det": jacobian_det.dat.data_ro.reshape(
-                -1, 1),
-            "phi": phi.dat.data_ro.reshape(
-                -1, 1),
-            "grad_phi": grad_phi.dat.data_ro.reshape(
-                -1, 2),
+            "grad_uh": uh_grad.dat.data_ro.reshape(-1, 2),
+            "hessian": hessian.dat.data_ro.reshape(-1, 4),
+            "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
+            "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
+            "jacobian_det": jacobian_det.dat.data_ro.reshape(-1, 1),
+            "phi": phi.dat.data_ro.reshape(-1, 1),
+            "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
         },
         raw_feature={
             "uh": uh,
@@ -211,14 +242,12 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
             "alpha": alpha,
             "r_0": r_0,
             "x_0": x_0,
-            "y_0": y_0
+            "y_0": y_0,
         },
-        dur=dur
+        dur=dur,
     )
 
-    mesh_processor.save_taining_data(
-        os.path.join(problem_data_dir, f"data_{i:04d}")
-    )
+    mesh_processor.save_taining_data(os.path.join(problem_data_dir, f"data_{i:04d}"))
 
     # # ====  Plot Scripts ======================
     # fig = plt.figure(figsize=(15, 10))
@@ -270,28 +299,24 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     uh_proj = fd.project(uh, function_space_fine)
     uh_new_proj = fd.project(uh_new, function_space_fine)
 
-    error_original_mesh = fd.errornorm(
-        uh_proj, uh_fine, norm_type="L2"
+    error_original_mesh = fd.errornorm(uh_proj, uh_fine, norm_type="L2")
+    error_optimal_mesh = fd.errornorm(uh_new_proj, uh_fine, norm_type="L2")
+    df = pd.DataFrame(
+        {
+            "error_og": error_original_mesh,
+            "error_adapt": error_optimal_mesh,
+            "time": dur,
+        },
+        index=[0],
     )
-    error_optimal_mesh = fd.errornorm(
-        uh_new_proj, uh_fine, norm_type="L2"
-    )
-    df = pd.DataFrame({
-        "error_og": error_original_mesh,
-        "error_adapt": error_optimal_mesh,
-        "time": dur,
-    }, index=[0])
-    df.to_csv(
-        os.path.join(
-                problem_log_dir, f"log{i:04d}.csv")
-        )
-    print("error og/optimal:",
-          error_original_mesh, error_optimal_mesh)
-    
+    df.to_csv(os.path.join(problem_log_dir, f"log{i:04d}.csv"))
+    print("error og/optimal:", error_original_mesh, error_optimal_mesh)
 
     # ====  Plot mesh, solution, error ======================
     rows, cols = 3, 3
-    fig, ax = plt.subplots(rows, cols, figsize=(cols*5, rows*5 ), layout='compressed')
+    fig, ax = plt.subplots(
+        rows, cols, figsize=(cols * 5, rows * 5), layout="compressed"
+    )
 
     # High resolution mesh
     fd.triplot(mesh_fine, axes=ax[0, 0])
@@ -303,7 +328,7 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     fd.triplot(mesh_new, axes=ax[0, 2])
     ax[0, 2].set_title(f"Adapted Mesh (MA)")
 
-    cmap = 'seismic'
+    cmap = "seismic"
     # Solution on high resolution mesh
     cb = fd.tripcolor(uh_fine, cmap=cmap, axes=ax[1, 0])
     ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
@@ -317,36 +342,50 @@ def sample_from_loop(uh, uh_grad, hessian, hessian_norm,
     ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
     plt.colorbar(cb)
 
-
     err_orignal_mesh = fd.assemble(uh_proj - uh_fine)
     err_adapted_mesh = fd.assemble(uh_new_proj - uh_fine)
-    err_abs_max_val_ori = max(abs(err_orignal_mesh.dat.data[:].max()), abs(err_orignal_mesh.dat.data[:].min()))
-    err_abs_max_val_adapted = max(abs(err_adapted_mesh.dat.data[:].max()), abs(err_adapted_mesh.dat.data[:].min()))
+    err_abs_max_val_ori = max(
+        abs(err_orignal_mesh.dat.data[:].max()), abs(err_orignal_mesh.dat.data[:].min())
+    )
+    err_abs_max_val_adapted = max(
+        abs(err_adapted_mesh.dat.data[:].max()), abs(err_adapted_mesh.dat.data[:].min())
+    )
     err_abs_max_val = max(err_abs_max_val_ori, err_abs_max_val_adapted)
     err_v_max = err_abs_max_val
     err_v_min = -err_v_max
-    
-    # Error on high resolution mesh
-    cb = fd.tripcolor(fd.assemble(uh_fine - uh_fine), cmap=cmap, axes=ax[2, 0], vmax=err_v_max, vmin=err_v_min)
-    ax[2, 0].set_title(f"Error Map High Resolution")
+
+    # # Error on high resolution mesh
+    # cb = fd.tripcolor(fd.assemble(uh_fine - uh_fine), cmap=cmap, axes=ax[2, 0], vmax=err_v_max, vmin=err_v_min)
+    # ax[2, 0].set_title(f"Error Map High Resolution")
+    # plt.colorbar(cb)
+
+    # Monitor values
+    cb = fd.tripcolor(monitor_values, cmap=cmap, axes=ax[2, 0])
+    ax[2, 0].set_title(f"Monitor Values")
     plt.colorbar(cb)
+
     # Error on orginal low resolution uniform mesh
-    cb = fd.tripcolor(err_orignal_mesh, cmap=cmap, axes=ax[2, 1], vmax=err_v_max, vmin=err_v_min)
-    ax[2, 1].set_title(f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_original_mesh:.5f}")
+    cb = fd.tripcolor(
+        err_orignal_mesh, cmap=cmap, axes=ax[2, 1], vmax=err_v_max, vmin=err_v_min
+    )
+    ax[2, 1].set_title(
+        f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_original_mesh:.5f}"
+    )
     plt.colorbar(cb)
     # Error on adapted mesh
-    cb = fd.tripcolor(err_adapted_mesh, cmap=cmap, axes=ax[2, 2], vmax=err_v_max, vmin=err_v_min)
-    ax[2, 2].set_title(f"Error (u-u_exact) Adapted Mesh (MA)| L2 Norm: {error_optimal_mesh:.5f} | {(error_original_mesh-error_optimal_mesh)/error_original_mesh*100:.2f}%")
+    cb = fd.tripcolor(
+        err_adapted_mesh, cmap=cmap, axes=ax[2, 2], vmax=err_v_max, vmin=err_v_min
+    )
+    ax[2, 2].set_title(
+        f"Error (u-u_exact) Adapted Mesh (MA)| L2 Norm: {error_optimal_mesh:.5f} | {(error_original_mesh-error_optimal_mesh)/error_original_mesh*100:.2f}%"
+    )
     plt.colorbar(cb)
 
     for rr in range(rows):
         for cc in range(cols):
-            ax[rr, cc].set_aspect('equal', 'box')
+            ax[rr, cc].set_aspect("equal", "box")
 
-    fig.savefig(
-        os.path.join(
-            problem_plot_compare_dir, f"plot_{i:04d}.png")
-    )
+    fig.savefig(os.path.join(problem_plot_compare_dir, f"plot_{i:04d}.png"))
     plt.close()
     i += 1
     return
@@ -358,57 +397,59 @@ if __name__ == "__main__":
     mesh = None
     mesh_fine = None
     mesh_new = None
-    if (mesh_type != 0):
+    if mesh_type != 0:
         mesh_gen = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
         mesh = mesh_gen.get_mesh(
-            res=lc,
-            file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
+            res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
+        )
         mesh_new = mesh_gen.get_mesh(
-            res=lc,
-            file_path=os.path.join(problem_mesh_dir, "mesh.msh"))
+            res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
+        )
         mesh_gen_fine = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
         mesh_fine = mesh_gen_fine.get_mesh(
-            res=1e-2,
-            file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh"))
+            res=1e-2, file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh")
+        )
     else:
         mesh = fd.UnitSquareMesh(n_grid, n_grid)
         mesh_new = fd.UnitSquareMesh(n_grid, n_grid)
         mesh_fine = fd.UnitSquareMesh(100, 100)
 
-    df = pd.DataFrame({
-        'sigma': [sigma],
-        'alpha': [alpha],
-        'r_0': [r_0],
-        'x_0': [x_0],
-        'y_0': [y_0],
-        'save_interval': [save_interval],
-        'T': [T],
-        "n_step": [n_step],
-        "dt": [dt],
-        "fail_t": [fail_t],
-        "lc": [lc],
-        "num_fail_cases": [len(fail_t)],
-        "mesh_type": [mesh_type],
-    })
+    df = pd.DataFrame(
+        {
+            "sigma": [sigma],
+            "alpha": [alpha],
+            "r_0": [r_0],
+            "x_0": [x_0],
+            "y_0": [y_0],
+            "save_interval": [save_interval],
+            "T": [T],
+            "n_step": [n_step],
+            "dt": [dt],
+            "fail_t": [fail_t],
+            "lc": [lc],
+            "num_fail_cases": [len(fail_t)],
+            "mesh_type": [mesh_type],
+        }
+    )
 
     df.to_csv(os.path.join(problem_specific_dir, "info.csv"))
 
     # solver defination
     swril_solver = wm.SwirlSolver(
-        mesh, mesh_fine, mesh_new,
-        sigma=sigma, alpha=alpha, r_0=r_0,
+        mesh,
+        mesh_fine,
+        mesh_new,
+        sigma=sigma,
+        alpha=alpha,
+        r_0=r_0,
         x_0=x_0,
         y_0=y_0,
         save_interval=save_interval,
-        T=T, n_step=n_step,
+        T=T,
+        n_step=n_step,
     )
 
-    swril_solver.solve_problem(
-        callback=sample_from_loop,
-        fail_callback=fail_callback
-    )
-
-
+    swril_solver.solve_problem(callback=sample_from_loop, fail_callback=fail_callback)
 
     print("Done!")
 # ====  Data Generation Scripts ======================
