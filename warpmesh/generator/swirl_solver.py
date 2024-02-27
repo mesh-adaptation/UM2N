@@ -456,16 +456,24 @@ class SwirlSolver:
         self.grad_norm.dat.data[:] = 1 / (1 + np.exp(-self.grad_norm.dat.data[:])) - 0.5
         self.grad_norm /= self.grad_norm.vector().max()
 
+        # Interpolate on P0 space and then project back to P1 to induce numerical diffusion
+        # p0_space = fd.FunctionSpace(self.mesh, "CG", 0)
+        # self.f_norm = fd.interpolate(self.f_norm, p0_space).project(self.f_norm)
+        # self.grad_norm = fd.interpolate(self.grad_norm, p0_space).project(self.grad_norm)
+
         # Choose the max values between grad norm and hessian norm according to
         # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
-        self.monitor_values.dat.data[:] = np.maximum(
-            beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
-        )
+        # self.monitor_values.dat.data[:] = np.maximum(
+        #     beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
+        # )
+
+        self.monitor_values.dat.data[:] = (
+            beta * self.f_norm.dat.data[:] + alpha * self.grad_norm.dat.data[:]
+        ) / 2
 
         self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
 
         self.monitor_values.project(1 + self.monitor_values)
-        # self.monitor_values.project(1 + (5 * self.grad_norm))
 
         return self.monitor_values
 

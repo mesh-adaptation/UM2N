@@ -14,28 +14,51 @@ import time
 
 def arg_parse():
     parser = ArgumentParser()
-    parser.add_argument('--mesh_type', type=int, default=2,
-                        help='algorithm used to generate mesh')
-    parser.add_argument('--max_dist', type=int, default=6,
-                        help='max number of distributions used to\
+    parser.add_argument(
+        "--mesh_type", type=int, default=2, help="algorithm used to generate mesh"
+    )
+    parser.add_argument(
+        "--max_dist",
+        type=int,
+        default=6,
+        help="max number of distributions used to\
                             generate the dataset (only works if\
-                                n_dist is not set)')
-    parser.add_argument('--n_dist', type=int, default=None,
-                        help='number of distributions used to\
+                                n_dist is not set)",
+    )
+    parser.add_argument(
+        "--n_dist",
+        type=int,
+        default=None,
+        help="number of distributions used to\
                             generate the dataset (this will disable\
-                                max_dist)')
-    parser.add_argument('--lc', type=float, default=5e-2,
-                        help='the length characteristic of the elements in the\
-                            mesh')
-    parser.add_argument('--field_type', type=str, default="aniso",
-                        help='anisotropic or isotropic data type(aniso/iso)')
+                                max_dist)",
+    )
+    parser.add_argument(
+        "--lc",
+        type=float,
+        default=5e-2,
+        help="the length characteristic of the elements in the\
+                            mesh",
+    )
+    parser.add_argument(
+        "--field_type",
+        type=str,
+        default="aniso",
+        help="anisotropic or isotropic data type(aniso/iso)",
+    )
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument('--boundary_scheme', type=str, default="full",
-                        help='scheme used to generate the dataset (pad/full))')
-    parser.add_argument('--n_samples', type=int, default=100,
-                        help='number of samples generated')
-    parser.add_argument('--rand_seed', type=int, default=63,
-                        help='number of samples generated')
+    parser.add_argument(
+        "--boundary_scheme",
+        type=str,
+        default="full",
+        help="scheme used to generate the dataset (pad/full))",
+    )
+    parser.add_argument(
+        "--n_samples", type=int, default=100, help="number of samples generated"
+    )
+    parser.add_argument(
+        "--rand_seed", type=int, default=63, help="number of samples generated"
+    )
     args_ = parser.parse_args()
     print(args_)
     return args_
@@ -87,24 +110,28 @@ num_test = int(n_samples * p_test)
 num_val = int(n_samples * p_val)
 
 # parameters for dataset challenging level
-sigma_mean_scaler = 1/4 #
-sigma_sigma_scaler = 1/5 # larger, less challenging (because the gaussian is more like a circle)
-sigma_eps = 1/20
+sigma_mean_scaler = 1 / 4  #
+sigma_sigma_scaler = (
+    1 / 5
+)  # larger, less challenging (because the gaussian is more like a circle)
+sigma_eps = 1 / 20
 # =======================================
 
 
-df = pd.DataFrame({
-    'cmin': [c_min],
-    'cmax': [c_max],
-    'sigma_mean_scaler': [sigma_mean_scaler],
-    'sigma_sigma_scaler': [sigma_sigma_scaler],
-    'sigma_eps': [sigma_eps],
-    'data_type': [data_type],
-    'scheme': [scheme],
-    'n_samples': [n_samples],
-    'lc': [lc],
-    'mesh_type': [mesh_type],
-})
+df = pd.DataFrame(
+    {
+        "cmin": [c_min],
+        "cmax": [c_max],
+        "sigma_mean_scaler": [sigma_mean_scaler],
+        "sigma_sigma_scaler": [sigma_sigma_scaler],
+        "sigma_eps": [sigma_eps],
+        "data_type": [data_type],
+        "scheme": [scheme],
+        "n_samples": [n_samples],
+        "lc": [lc],
+        "mesh_type": [mesh_type],
+    }
+)
 
 
 def move_data(target, source, start, num_file):
@@ -118,19 +145,21 @@ def move_data(target, source, start, num_file):
     # copy data from data dir to train dir
     for i in range(start, num_file):
         shutil.copy(
-            os.path.join(source, "data_{}.npy".format(i)),
-            os.path.join(target, "data_{}.npy".format(i))
+            os.path.join(source, f"data_{i:04d}.npy"),
+            os.path.join(target, f"data_{i:04d}.npy"),
         )
 
 
 project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", "helmholtz")  # noqa
+dataset_dir = os.path.join(
+    project_dir, "data", f"dataset_meshtype_{mesh_type}", "helmholtz"
+)  # noqa
 problem_specific_dir = os.path.join(
-        dataset_dir,
-        "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype_{}".format(
-            z_min, z_max, n_dist, max_dist,
-            lc, n_samples,
-            data_type, scheme, mesh_type))
+    dataset_dir,
+    "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype_{}".format(
+        z_min, z_max, n_dist, max_dist, lc, n_samples, data_type, scheme, mesh_type
+    ),
+)
 
 
 problem_data_dir = os.path.join(problem_specific_dir, "data")
@@ -199,18 +228,19 @@ df.to_csv(os.path.join(problem_specific_dir, "info.csv"))
 if __name__ == "__main__":
     print("In build_dataset.py")
     i = 0
-    while (i < n_samples):
+    while i < n_samples:
         try:
             print("Generating Sample: " + str(i))
-            unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(scale=scale_x, mesh_type=mesh_type)  # noqa
+            unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(
+                scale=scale_x, mesh_type=mesh_type
+            )  # noqa
             mesh = unstructure_square_mesh_gen.get_mesh(
-                res=lc, file_path=os.path.join(
-                    problem_mesh_dir, f"mesh_{i:04d}.msh"
-                )
+                res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
             )
             # Generate Random solution field
             rand_u_generator = wm.RandSourceGenerator(
-                use_iso=use_iso, dist_params={
+                use_iso=use_iso,
+                dist_params={
                     "max_dist": max_dist,
                     "n_dist": n_dist,
                     "x_start": 0,
@@ -226,61 +256,71 @@ if __name__ == "__main__":
                     "sigma_mean_scaler": sigma_mean_scaler,
                     "sigma_sigma_scaler": sigma_sigma_scaler,
                     "sigma_eps": sigma_eps,
-                })
-            helmholtz_eq = wm.RandHelmholtzEqGenerator(
-                rand_u_generator)
+                },
+            )
+            helmholtz_eq = wm.RandHelmholtzEqGenerator(rand_u_generator)
             res = helmholtz_eq.discretise(mesh)  # discretise the equation
             dist_params = rand_u_generator.get_dist_params()
             # Solve the equation
-            solver = wm.EquationSolver(params={
-                "function_space": res["function_space"],
-                "LHS": res["LHS"],
-                "RHS": res["RHS"],
-                "bc": res["bc"]
-            })
+            solver = wm.EquationSolver(
+                params={
+                    "function_space": res["function_space"],
+                    "LHS": res["LHS"],
+                    "RHS": res["RHS"],
+                    "bc": res["bc"],
+                }
+            )
             # RHS of helmholtz problem
             f = fd.interpolate(helmholtz_eq.f, helmholtz_eq.function_space)
             # fd.trisurf(f)
             # plt.show()
             uh = solver.solve_eq()
             # Generate Mesh
-            hessian = wm.MeshGenerator(params={
+            hessian = wm.MeshGenerator(
+                params={
                     "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"))  # noqa
+                    "mesh": fd.Mesh(
+                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
+                    ),  # noqa
                 }
             ).get_hessian(mesh)
 
-            hessian_norm = wm.MeshGenerator(params={
+            hessian_norm = wm.MeshGenerator(
+                params={
                     "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"))  # noqa
-                    }
+                    "mesh": fd.Mesh(
+                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
+                    ),  # noqa
+                }
             ).monitor_func(mesh)
 
-            hessian_norm = fd.project(hessian_norm,
-                                      fd.FunctionSpace(mesh, "CG", 1))
+            hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 
             func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-            grad_uh_interpolate = fd.interpolate(
-                fd.grad(uh), func_vec_space)
+            grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
 
-            mesh_gen = wm.MeshGenerator(params={
-                "eq": helmholtz_eq,
-                "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"))  # noqa
-            })
+            mesh_gen = wm.MeshGenerator(
+                params={
+                    "eq": helmholtz_eq,
+                    "mesh": fd.Mesh(
+                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
+                    ),  # noqa
+                }
+            )
 
             start = time.perf_counter()
             new_mesh = mesh_gen.move_mesh()  # noqa
             end = time.perf_counter()
             dur = (end - start) * 1000
 
+            # Get monitor val
+            monitor_val = mesh_gen.get_monitor_val()
+
             # this is the jacobian of x with respect to xi
             jacobian = mesh_gen.get_jacobian()
-            jacobian = fd.project(
-                jacobian, fd.TensorFunctionSpace(new_mesh, "CG", 1)
-            )
+            jacobian = fd.project(jacobian, fd.TensorFunctionSpace(new_mesh, "CG", 1))
             jacobian_det = mesh_gen.get_jacobian_det()
-            jacobian_det = fd.project(
-                jacobian_det, fd.FunctionSpace(new_mesh, "CG", 1))
+            jacobian_det = fd.project(jacobian_det, fd.FunctionSpace(new_mesh, "CG", 1))
 
             # get phi/grad_phi projected to the original mesh
             phi = mesh_gen.get_phi()
@@ -294,37 +334,32 @@ if __name__ == "__main__":
 
             # solve the equation on the new mesh
             new_res = helmholtz_eq.discretise(new_mesh)
-            new_solver = wm.EquationSolver(params={
-                "function_space": new_res["function_space"],
-                "LHS": new_res["LHS"],
-                "RHS": new_res["RHS"],
-                "bc": new_res["bc"]
-            })
+            new_solver = wm.EquationSolver(
+                params={
+                    "function_space": new_res["function_space"],
+                    "LHS": new_res["LHS"],
+                    "RHS": new_res["RHS"],
+                    "bc": new_res["bc"],
+                }
+            )
             uh_new = new_solver.solve_eq()
 
             # process the data for training
             mesh_processor = wm.MeshProcessor(
-                original_mesh=mesh, optimal_mesh=new_mesh,
+                original_mesh=mesh,
+                optimal_mesh=new_mesh,
                 function_space=new_res["function_space"],
                 use_4_edge=True,
                 feature={
                     "uh": uh.dat.data_ro.reshape(-1, 1),
-                    "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(
-                        -1, 2),
-                    "hessian": hessian.dat.data_ro.reshape(
-                        -1, 4),
-                    "hessian_norm": hessian_norm.dat.data_ro.reshape(
-                        -1, 1),
-                    "jacobian": jacobian.dat.data_ro.reshape(
-                        -1, 4),
-                    "jacobian_det": jacobian_det.dat.data_ro.reshape(
-                        -1, 1),
-                    "phi": phi.dat.data_ro.reshape(
-                        -1, 1),
-                    "grad_phi": grad_phi.dat.data_ro.reshape(
-                        -1, 2),
-                    "f": f.dat.data_ro.reshape(
-                        -1, 1),
+                    "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(-1, 2),
+                    "hessian": hessian.dat.data_ro.reshape(-1, 4),
+                    "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
+                    "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
+                    "jacobian_det": jacobian_det.dat.data_ro.reshape(-1, 1),
+                    "phi": phi.dat.data_ro.reshape(-1, 1),
+                    "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
+                    "f": f.dat.data_ro.reshape(-1, 1),
                 },
                 raw_feature={
                     "uh": uh,
@@ -380,42 +415,38 @@ if __name__ == "__main__":
 
             # generate log file
             high_res_mesh = unstructure_square_mesh_gen.get_mesh(
-                res=1e-2, file_path=os.path.join(
-                    problem_mesh_fine_dir, f"mesh_{i:04d}.msh"
-                )
+                res=1e-2,
+                file_path=os.path.join(problem_mesh_fine_dir, f"mesh_{i:04d}.msh"),
             )
-            high_res_function_space = fd.FunctionSpace(
-                high_res_mesh, "CG", 1)
+            high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)
 
             res_high_res = helmholtz_eq.discretise(high_res_mesh)
             u_exact = fd.interpolate(
-                res_high_res["u_exact"], res_high_res["function_space"])
+                res_high_res["u_exact"], res_high_res["function_space"]
+            )
 
             uh_proj = fd.project(uh, high_res_function_space)
             uh_new_proj = fd.project(uh_new, high_res_function_space)
 
-            error_original_mesh = fd.errornorm(
-                u_exact, uh_proj
-            )
-            error_optimal_mesh = fd.errornorm(
-                u_exact, uh_new_proj
-            )
+            error_original_mesh = fd.errornorm(u_exact, uh_proj)
+            error_optimal_mesh = fd.errornorm(u_exact, uh_new_proj)
 
-            df = pd.DataFrame({
-                "error_og": error_original_mesh,
-                "error_adapt": error_optimal_mesh,
-                "time": dur,
-            }, index=[0])
-            df.to_csv(
-                os.path.join(
-                        problem_log_dir, f"log_{i:04d}.csv")
-                )
-            print("error og/optimal:",
-                  error_original_mesh, error_optimal_mesh)
-            
+            df = pd.DataFrame(
+                {
+                    "error_og": error_original_mesh,
+                    "error_adapt": error_optimal_mesh,
+                    "time": dur,
+                },
+                index=[0],
+            )
+            df.to_csv(os.path.join(problem_log_dir, f"log_{i:04d}.csv"))
+            print("error og/optimal:", error_original_mesh, error_optimal_mesh)
+
             # ====  Plot mesh, solution, error ======================
             rows, cols = 3, 3
-            fig, ax = plt.subplots(rows, cols, figsize=(cols*5, rows*5 ), layout='compressed')
+            fig, ax = plt.subplots(
+                rows, cols, figsize=(cols * 5, rows * 5), layout="compressed"
+            )
 
             # High resolution mesh
             fd.triplot(high_res_mesh, axes=ax[0, 0])
@@ -427,7 +458,7 @@ if __name__ == "__main__":
             fd.triplot(new_mesh, axes=ax[0, 2])
             ax[0, 2].set_title(f"Adapted Mesh (MA)")
 
-            cmap = 'seismic'
+            cmap = "seismic"
             # Solution on high resolution mesh
             cb = fd.tripcolor(u_exact, cmap=cmap, axes=ax[1, 0])
             ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
@@ -443,32 +474,51 @@ if __name__ == "__main__":
 
             err_orignal_mesh = fd.assemble(uh_proj - u_exact)
             err_adapted_mesh = fd.assemble(uh_new_proj - u_exact)
-            err_abs_max_val_ori = max(abs(err_orignal_mesh.dat.data[:].max()), abs(err_orignal_mesh.dat.data[:].min()))
-            err_abs_max_val_adapted = max(abs(err_adapted_mesh.dat.data[:].max()), abs(err_adapted_mesh.dat.data[:].min()))
+            err_abs_max_val_ori = max(
+                abs(err_orignal_mesh.dat.data[:].max()),
+                abs(err_orignal_mesh.dat.data[:].min()),
+            )
+            err_abs_max_val_adapted = max(
+                abs(err_adapted_mesh.dat.data[:].max()),
+                abs(err_adapted_mesh.dat.data[:].min()),
+            )
             err_abs_max_val = max(err_abs_max_val_ori, err_abs_max_val_adapted)
             err_v_max = err_abs_max_val
             err_v_min = -err_v_max
-            
+
             # Error on high resolution mesh
-            cb = fd.tripcolor(fd.assemble(u_exact - u_exact), cmap=cmap, axes=ax[2, 0], vmax=err_v_max, vmin=err_v_min)
-            ax[2, 0].set_title(f"Error Map High Resolution (u_exact-u_exact)")
+            cb = fd.tripcolor(monitor_val, cmap=cmap, axes=ax[2, 0])
+            ax[2, 0].set_title(f"Monitor values")
             plt.colorbar(cb)
             # Error on orginal low resolution uniform mesh
-            cb = fd.tripcolor(err_orignal_mesh, cmap=cmap, axes=ax[2, 1], vmax=err_v_max, vmin=err_v_min)
-            ax[2, 1].set_title(f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_original_mesh:.5f}")
+            cb = fd.tripcolor(
+                err_orignal_mesh,
+                cmap=cmap,
+                axes=ax[2, 1],
+                vmax=err_v_max,
+                vmin=err_v_min,
+            )
+            ax[2, 1].set_title(
+                f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_original_mesh:.5f}"
+            )
             plt.colorbar(cb)
             # Error on adapted mesh
-            cb = fd.tripcolor(err_adapted_mesh, cmap=cmap, axes=ax[2, 2], vmax=err_v_max, vmin=err_v_min)
-            ax[2, 2].set_title(f"Error (u-u_exact) Adapted Mesh (MA)| L2 Norm: {error_optimal_mesh:.5f} | {(error_original_mesh-error_optimal_mesh)/error_original_mesh*100:.2f}%")
+            cb = fd.tripcolor(
+                err_adapted_mesh,
+                cmap=cmap,
+                axes=ax[2, 2],
+                vmax=err_v_max,
+                vmin=err_v_min,
+            )
+            ax[2, 2].set_title(
+                f"Error (u-u_exact) Adapted Mesh (MA)| L2 Norm: {error_optimal_mesh:.5f} | {(error_original_mesh-error_optimal_mesh)/error_original_mesh*100:.2f}%"
+            )
             plt.colorbar(cb)
 
             for rr in range(rows):
                 for cc in range(cols):
-                    ax[rr, cc].set_aspect('equal', 'box')
-            fig.savefig(
-                os.path.join(
-                    problem_plot_compare_dir, f"plot_{i:04d}.png")
-            )
+                    ax[rr, cc].set_aspect("equal", "box")
+            fig.savefig(os.path.join(problem_plot_compare_dir, f"plot_{i:04d}.png"))
             plt.close()
 
             i += 1
@@ -483,11 +533,12 @@ if __name__ == "__main__":
 
     move_data(problem_train_dir, problem_data_dir, 0, num_train)
 
-    move_data(problem_test_dir, problem_data_dir,
-              num_train,
-              num_train+num_test)
+    move_data(problem_test_dir, problem_data_dir, num_train, num_train + num_test)
 
-    move_data(problem_val_dir, problem_data_dir,
-              num_train+num_test,
-              num_train+num_test+num_val)
+    move_data(
+        problem_val_dir,
+        problem_data_dir,
+        num_train + num_test,
+        num_train + num_test + num_val,
+    )
 # ====  Data Generation Scripts ======================
