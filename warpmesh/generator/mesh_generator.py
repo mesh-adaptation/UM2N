@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import firedrake as fd
 import movement as mv
 from warpmesh.generator.equation_solver import EquationSolver
@@ -153,6 +154,9 @@ class MeshGenerator:
             + l2_projection[1, 1] ** 2
         )
         hessian_norm /= hessian_norm.vector().max()
+        hessian_norm.dat.data[:] = 1 / (1 + np.exp(-hessian_norm.dat.data[:])) - 0.5
+        hessian_norm /= hessian_norm.vector().max()
+
         monitor_val = 1 + 5 * hessian_norm
         self.monitor_val = fd.Function(function_space)
         self.monitor_val.assign(monitor_val)

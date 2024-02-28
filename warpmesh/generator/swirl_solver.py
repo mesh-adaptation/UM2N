@@ -5,6 +5,7 @@
 import time  # noqa
 
 import firedrake as fd  # noqa
+
 import movement as mv  # noqa
 import warpmesh as wm  # noqa
 import numpy as np
@@ -477,6 +478,121 @@ class SwirlSolver:
 
         return self.monitor_values
 
+    def monitor_function_for_merge(self, mesh, alpha=10, beta=5):
+        self.project_u_()
+        self.solve_u(self.t)
+        self.u_hess.project(self.u_cur)
+
+        self.hessian_prob.solve()
+        self.f_norm.project(
+            self.l2_projection[0, 0] ** 2
+            + self.l2_projection[0, 1] ** 2
+            + self.l2_projection[1, 0] ** 2
+            + self.l2_projection[1, 1] ** 2
+        )
+
+        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+
+        # Normlize the hessian
+        self.f_norm /= self.f_norm.vector().max()
+        # Normlize the grad
+        self.grad_norm /= self.grad_norm.vector().max()
+
+        # Choose the max values between grad norm and hessian norm according to
+        # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
+        self.monitor_values.dat.data[:] = np.maximum(
+            beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
+        )
+
+        # #################
+
+        # V = fd.FunctionSpace(mesh, "CG", 1)
+        # u = fd.TrialFunction(V)
+        # v = fd.TestFunction(V)
+        # function_space = V
+        # # Discretised Eq Definition Start
+        # f = self.monitor_values
+        # N = 40  # As suggested in eq 23
+        # dx = 1 / 35
+        # K = N * dx**2 / 4
+        # RHS = f * v * fd.dx(domain=mesh)
+        # LHS = (K * fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+        # bc = fd.DirichletBC(function_space, f, "on_boundary")
+
+        # monitor_smoothed = fd.Function(function_space)
+        # fd.solve(
+        #     LHS == RHS,
+        #     monitor_smoothed,
+        #     solver_parameters={"ksp_type": "cg", "pc_type": "none"},
+        #     bcs=bc,
+        # )
+
+        # #################
+
+        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.monitor_values.project(1 + self.monitor_values)
+
+        return self.monitor_values
+
+    def monitor_function(self, mesh, alpha=10, beta=5, N=40):
+        self.project_u_()
+        self.solve_u(self.t)
+        self.u_hess.project(self.u_cur)
+
+        self.hessian_prob.solve()
+        self.f_norm.project(
+            self.l2_projection[0, 0] ** 2
+            + self.l2_projection[0, 1] ** 2
+            + self.l2_projection[1, 0] ** 2
+            + self.l2_projection[1, 1] ** 2
+        )
+
+        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+
+        # Normlize the hessian
+        self.f_norm /= self.f_norm.vector().max()
+        # Normlize the grad
+        self.grad_norm /= self.grad_norm.vector().max()
+
+        # Choose the max values between grad norm and hessian norm according to
+        # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
+        self.monitor_values.dat.data[:] = np.maximum(
+            beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
+        )
+
+        # #################
+
+        V = fd.FunctionSpace(mesh, "CG", 1)
+        u = fd.TrialFunction(V)
+        v = fd.TestFunction(V)
+        function_space = V
+        # Discretised Eq Definition Start
+        f = self.monitor_values
+        dx = mesh.cell_sizes.dat.data[:].mean()
+        K = N * dx**2 / 4
+        RHS = f * v * fd.dx(domain=mesh)
+        LHS = (K * fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+        bc = fd.DirichletBC(function_space, f, "on_boundary")
+
+        monitor_smoothed = fd.Function(function_space)
+        fd.solve(
+            LHS == RHS,
+            monitor_smoothed,
+            solver_parameters={"ksp_type": "cg", "pc_type": "none"},
+            bcs=bc,
+        )
+
+        # #################
+
+        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.monitor_values.project(1 + monitor_smoothed)
+
+        return self.monitor_values
+
     def solve_problem(self, callback=None, fail_callback=None):
         print("In solve problem")
         self.t = 0.0
@@ -496,9 +612,7 @@ class SwirlSolver:
                     # mesh movement - calculate the adapted coords
                     start = time.perf_counter()
                     adapter = mv.MongeAmpereMover(
-                        self.mesh,
-                        monitor_function=self.monitor_function,
-                        rtol=1e-3,
+                        self.mesh, monitor_function=self.monitor_function, rtol=1e-3
                     )
                     adapter.move()
                     end = time.perf_counter()
@@ -548,7 +662,7 @@ class SwirlSolver:
                     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
                     uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
                     hessian_norm = self.f_norm
-                    monitor_values = self.monitor_values
+                    monitor_values = adapter.monitor
                     hessian = self.l2_projection
                     phi = adapter.phi
                     phi_grad = adapter.grad_phi
@@ -590,6 +704,9 @@ class SwirlSolver:
                         r_0=self.r_0,
                         t=self.t,
                     )
+                except Exception:
+                    print("fail!!!")
+                    raise Exception
                 except fd.exceptions.ConvergenceError:
                     fail_callback(self.t)
                     pass
