@@ -8,14 +8,14 @@ import sys
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torch_geometric.data import Data
+
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from cluster_utils import get_new_edges  # noqa
+
 # from torch_geometric.loader import DataLoader as geoDataLoader
 
-__all__ = [
-    'MeshDataset', "MeshLoader", "MeshData",
-    "normalise", "AggreateDataset"]
+__all__ = ["MeshDataset", "MeshLoader", "MeshData", "normalise", "AggreateDataset"]
 
 
 class AggreateDataset(Dataset):
@@ -25,6 +25,7 @@ class AggreateDataset(Dataset):
         datasets (list): List of datasets.
         datasets_len (list): Length of each dataset in `datasets`.
     """
+
     def __init__(self, datasets):
         self.datasets = datasets
         self.datasets_len = [len(dataset) for dataset in datasets]
@@ -43,7 +44,7 @@ class AggreateDataset(Dataset):
             tuple: The sample fetched from one of the aggregated datasets.
         """
         dataset_idx = 0
-        while (idx >= self.datasets_len[dataset_idx]):
+        while idx >= self.datasets_len[dataset_idx]:
             idx -= self.datasets_len[dataset_idx]
             dataset_idx += 1
         return self.datasets[dataset_idx][idx]
@@ -58,36 +59,39 @@ class MeshDataset(Dataset):
         conv_feature (list): List of feature names for convolution features.
         file_names (list): List of filenames containing mesh data.
     """
+
     def __init__(
-            self, file_dir,
-            transform=None, target_transform=None,
-            x_feature=[
-                "coord",
-                "bd_mask",
-                "bd_left_mask",
-                "bd_right_mask",
-                "bd_down_mask",
-                "bd_up_mask",
-            ],
-            mesh_feature=[
-                "coord",
-                "u",
-            ],
-            conv_feature=[
-                "conv_uh",
-            ],
-            conv_feature_fix=[
-                "conv_uh_fix",
-            ],
-            load_analytical=False,
-            load_jacobian=False,
-            use_cluster=False,
-            use_run_time_cluster=False,
-            r=0.35,
-            M=25,
-            dist_weight=False,
-            add_nei=True,
-            ):
+        self,
+        file_dir,
+        transform=None,
+        target_transform=None,
+        x_feature=[
+            "coord",
+            "bd_mask",
+            "bd_left_mask",
+            "bd_right_mask",
+            "bd_down_mask",
+            "bd_up_mask",
+        ],
+        mesh_feature=[
+            "coord",
+            "u",
+        ],
+        conv_feature=[
+            "conv_uh",
+        ],
+        conv_feature_fix=[
+            "conv_uh_fix",
+        ],
+        load_analytical=False,
+        load_jacobian=False,
+        use_cluster=False,
+        use_run_time_cluster=False,
+        r=0.35,
+        M=25,
+        dist_weight=False,
+        add_nei=True,
+    ):
         # x feature contains the coordiate related features
         self.x_feature = x_feature
         # mesh feature is used to construct the edge realted features
@@ -98,10 +102,11 @@ class MeshDataset(Dataset):
         self.conv_feature_fix = conv_feature_fix
 
         self.file_dir = file_dir
-        file_path = os.path.join(self.file_dir, 'data_*.npy')
+        file_path = os.path.join(self.file_dir, "data_*.npy")
         self.file_names = glob.glob(file_path)
         self.file_names = sorted(
-            self.file_names, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+            self.file_names, key=lambda x: int(x.split("_")[-1].split(".")[0])
+        )
         self.transform = transform
         self.target_transform = target_transform
         # if True, load the params used to generate the data
@@ -133,7 +138,7 @@ class MeshDataset(Dataset):
         x_list = []
         for key in self.x_feature:
             feat = data.item().get(key)
-            if (len(feat.shape) == 1):
+            if len(feat.shape) == 1:
                 feat = feat.reshape(-1, 1)
             x_list.append(feat)
         x = np.concatenate(x_list, axis=1)
@@ -153,7 +158,7 @@ class MeshDataset(Dataset):
         mesh_list = []
         for key in self.mesh_feature:
             feat = data.item().get(key)
-            if (len(feat.shape) == 1):
+            if len(feat.shape) == 1:
                 feat = feat.reshape(-1, 1)
             mesh_list.append(feat)
         mesh = np.concatenate(mesh_list, axis=1)
@@ -211,60 +216,82 @@ class MeshDataset(Dataset):
         """
         data_path = self.file_names[idx]
         data = np.load(data_path, allow_pickle=True)
-        num_nodes = torch.tensor([data.item().get('x').shape[0]])
+        num_nodes = torch.tensor([data.item().get("x").shape[0]])
 
         # advance version
         train_data = MeshData(
-            x=self.get_x_feature(data),  # noqa: x here is the coordinate related features
-            bd_mask=torch.from_numpy(data.item().get('bd_mask')).int(),
+            x=self.get_x_feature(
+                data
+            ),  # noqa: x here is the coordinate related features
+            bd_mask=torch.from_numpy(data.item().get("bd_mask")).int(),
             conv_feat=self.get_conv_feature(data),
             # conv_feat_fix=self.get_conv_feature_fix(data),
             conv_feat_fix=self.get_conv_feature(data),
             mesh_feat=self.get_mesh_feature(data),
-            edge_index=torch.from_numpy(
-                data.item().get('edge_index_bi')).to(torch.int64),
-            y=torch.from_numpy(data.item().get('y')).float(),
-            face=torch.from_numpy(
-                data.item().get('face_idxs')).to(torch.long).T if data.item().get('face_idxs') is not None else None,  # noqa: E501
-            phi=torch.from_numpy(
-                data.item().get('phi')).float() if data.item().get('phi') is not None else None,  # noqa: E501
-            grad_phi=torch.from_numpy(
-                data.item().get('grad_phi')).float() if data.item().get('grad_phi') is not None else None,  # noqa: E501
-            f=torch.from_numpy(
-                data.item().get('f')).float() if data.item().get('f') is not None else None,  # noqa
+            edge_index=torch.from_numpy(data.item().get("edge_index_bi")).to(
+                torch.int64
+            ),
+            y=torch.from_numpy(data.item().get("y")).float(),
+            face=(
+                torch.from_numpy(data.item().get("face_idxs")).to(torch.long).T
+                if data.item().get("face_idxs") is not None
+                else None
+            ),  # noqa: E501
+            phi=(
+                torch.from_numpy(data.item().get("phi")).float()
+                if data.item().get("phi") is not None
+                else None
+            ),  # noqa: E501
+            grad_phi=(
+                torch.from_numpy(data.item().get("grad_phi")).float()
+                if data.item().get("grad_phi") is not None
+                else None
+            ),  # noqa: E501
+            f=(
+                torch.from_numpy(data.item().get("f")).float()
+                if data.item().get("f") is not None
+                else None
+            ),  # noqa
             node_num=num_nodes,
-            poly_mesh=data.item().get('poly_mesh') if data.item().get('poly_mesh') is not None else False,  # noqa: E501
+            poly_mesh=(
+                data.item().get("poly_mesh")
+                if data.item().get("poly_mesh") is not None
+                else False
+            ),  # noqa: E501
         )
 
         if self.load_analytical:
             train_data.dist_params = {
-                'σ_x': data.item().get('σ_x'),
-                'σ_y': data.item().get('σ_y'),
-                'μ_x': data.item().get('μ_x'),
-                'μ_y': data.item().get('μ_y'),
-                'z': data.item().get('z'),
-                'w': data.item().get('w'),
-                'simple_u': data.item().get('use_iso'),
-                'n_dist': data.item().get('n_dist'),
+                "σ_x": data.item().get("σ_x"),
+                "σ_y": data.item().get("σ_y"),
+                "μ_x": data.item().get("μ_x"),
+                "μ_y": data.item().get("μ_y"),
+                "z": data.item().get("z"),
+                "w": data.item().get("w"),
+                "simple_u": data.item().get("use_iso"),
+                "n_dist": data.item().get("n_dist"),
             }
 
         if self.load_jacobian:
-            train_data.jacobian = torch.from_numpy(
-                data.item().get('jacobian')
-            )
-            train_data.jacobian_det = torch.from_numpy(
-                data.item().get('jacobian_det')
-            )
+            train_data.jacobian = torch.from_numpy(data.item().get("jacobian"))
+            train_data.jacobian_det = torch.from_numpy(data.item().get("jacobian_det"))
 
         if self.transform:
             train_data = self.transform(train_data)
         if self.use_cluster:
-            train_data.edge_index = data.item().get('cluster_edges').to(torch.int64)  # noqa
+            train_data.edge_index = (
+                data.item().get("cluster_edges").to(torch.int64)
+            )  # noqa
         if self.use_run_time_cluster:
             train_data.edge_index = get_new_edges(
-                num_nodes, train_data.x[:, :2],
-                train_data.edge_index, r=self.r, M=self.M,
-                dist_weight=self.dist_weight, add_nei=self.add_nei)
+                num_nodes,
+                train_data.x[:, :2],
+                train_data.edge_index,
+                r=self.r,
+                M=self.M,
+                dist_weight=self.dist_weight,
+                add_nei=self.add_nei,
+            )
         return train_data
 
 
@@ -275,13 +302,14 @@ class MeshData(Data):
     This class is intended to be used as the base class of data samples
     returned by the MeshDataset.
     """
+
     def __cat_dim__(self, key, value, *args, **kwargs):
         # conv_feat is feeded into cnn, so another dim is needed
-        if key == 'conv_feat':
+        if key == "conv_feat":
             return None
-        if key == 'conv_feat_fix':
+        if key == "conv_feat_fix":
             return None
-        if key == 'node_num':
+        if key == "node_num":
             return None
         return super().__cat_dim__(key, value, *args, **kwargs)
 
@@ -289,8 +317,10 @@ class MeshData(Data):
 def MeshLoader(dataset, batch_size=10, shuffle=True):
     def collate_fn(batch):
         return [item for item in batch]
-    return DataLoader(dataset, batch_size=batch_size,
-                      shuffle=shuffle, collate_fn=collate_fn)
+
+    return DataLoader(
+        dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn
+    )
 
 
 def normalise(data):

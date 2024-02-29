@@ -7,7 +7,7 @@ import torch
 import firedrake as fd
 from firedrake.cython.dmcommon import facet_closure_nodes
 
-os.environ['OMP_NUM_THREADS'] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
 __all__ = ["MeshProcessor"]
 
 
@@ -20,10 +20,10 @@ def judge_in_hull(hull_points: np.array, point_to_judge: np.array, scale=1.0):
     for i in range(len(hull_points)):
         if i == len(hull_points) - 1:
             # edge_vector = (hull_points[0, :] - hull_points[i, :])
-            edge_vector = (hull_points[i, :] - hull_points[0, :])
+            edge_vector = hull_points[i, :] - hull_points[0, :]
         else:
             # edge_vector = (hull_points[i + 1, :] - hull_points[i, :])
-            edge_vector = (hull_points[i, :] - hull_points[i + 1, :])
+            edge_vector = hull_points[i, :] - hull_points[i + 1, :]
         if np.cross(edge_vector, point_to_judge - hull_points[i, :]) > 0:
             return False
     return True
@@ -36,11 +36,11 @@ def get_sample_points_in_convex_hull(points: np.array, size=32, scale=0.95):
     print("x_left, x_right, y_low, y_up: ", x_left, x_right, y_low, y_up)
     points_x = np.linspace(x_left, x_right, size)
     points_y = np.linspace(y_low, y_up, size)[::-1]
-    coord_ = np.random.random(size=(size ** 2, 2))
-    fetch_flag = np.zeros(size ** 2, dtype=bool)
+    coord_ = np.random.random(size=(size**2, 2))
+    fetch_flag = np.zeros(size**2, dtype=bool)
     for i in range(size):
         for j in range(size):
-            idx = i*size + j
+            idx = i * size + j
             coord_[idx, 0] = points_x[j]
             coord_[idx, 1] = points_y[i]
             # print(judge_in_hull(points, coord_[idx, :], scale=scale))
@@ -50,7 +50,7 @@ def get_sample_points_in_convex_hull(points: np.array, size=32, scale=0.95):
     return fetch_flag, fetch_coord
 
 
-class MeshProcessor():
+class MeshProcessor:
     """
     MeshProcessor class for pre-processing mesh data, attaching features to
         nodes,
@@ -78,34 +78,39 @@ class MeshProcessor():
     - cell_node_list: The list of nodes for each cell.
     - num_nodes: The number of nodes in each cell.
     """
+
     def __init__(
-            self, original_mesh, optimal_mesh,
-            function_space, use_4_edge=True,
-            poly_mesh=False, num_boundary=4,
-            nu=None,
-            feature={
-                "uh": None,
-                "grad_uh": None,
-            },
-            raw_feature={
-                "uh": None,
-                "hessian_norm": None,
-            },
-            dist_params={
-                "n_dist": None,
-                "σ_x": None,
-                "σ_y": None,
-                "μ_x": None,
-                "μ_y": None,
-                "z": None,
-                "w": None,
-                "use_iso": None,
-            },
-            gauss_list=None,    # used in burgers equation bumps generation
-            swirl_params=None,  # used in swirl test case for init ring gen
-            dur=None,
-            t=None,
-            idx=None,
+        self,
+        original_mesh,
+        optimal_mesh,
+        function_space,
+        use_4_edge=True,
+        poly_mesh=False,
+        num_boundary=4,
+        nu=None,
+        feature={
+            "uh": None,
+            "grad_uh": None,
+        },
+        raw_feature={
+            "uh": None,
+            "hessian_norm": None,
+        },
+        dist_params={
+            "n_dist": None,
+            "σ_x": None,
+            "σ_y": None,
+            "μ_x": None,
+            "μ_y": None,
+            "z": None,
+            "w": None,
+            "use_iso": None,
+        },
+        gauss_list=None,  # used in burgers equation bumps generation
+        swirl_params=None,  # used in swirl test case for init ring gen
+        dur=None,
+        t=None,
+        idx=None,
     ):
         self.use_4_edge = use_4_edge
         self.num_boundary = num_boundary
@@ -121,7 +126,9 @@ class MeshProcessor():
         self.raw_feature = raw_feature
         self.coordinates = self.mesh.coordinates.dat.data_ro  # (num_nodes, 2)
         self.x = self.coordinates
-        self.optimal_coordinates = self.optimal_mesh.coordinates.dat.data_ro  # noqa (num_nodes, 2) 
+        self.optimal_coordinates = (
+            self.optimal_mesh.coordinates.dat.data_ro
+        )  # noqa (num_nodes, 2)
         self.y = self.optimal_coordinates  # (num_nodes, 2), ground truth
         self.cell_node_list = self.function_space.cell_node_list
         self.num_nodes = self.cell_node_list.shape[1]
@@ -148,32 +155,28 @@ class MeshProcessor():
         boundary_idx_list = []
         fun_space = fd.FunctionSpace(self.mesh, "CG", 1)
         for i in range(num_edges):
-            boundary_idx_list.append(
-                facet_closure_nodes(fun_space, [i+1]))
+            boundary_idx_list.append(facet_closure_nodes(fun_space, [i + 1]))
         for i in range(num_edges):
-            if i == num_edges-1:
+            if i == num_edges - 1:
                 corner_idx_list.append(
-                    np.intersect1d(
-                        boundary_idx_list[i],
-                        boundary_idx_list[0]))
+                    np.intersect1d(boundary_idx_list[i], boundary_idx_list[0])
+                )
                 break
             corner_idx_list.append(
-                np.intersect1d(
-                    boundary_idx_list[i],
-                    boundary_idx_list[i+1]))
+                np.intersect1d(boundary_idx_list[i], boundary_idx_list[i + 1])
+            )
         corner_idx = np.hstack(corner_idx_list)
         corner_coordinates = self.coordinates[:][corner_idx, :]
-        sample_flag, sample_coord = get_sample_points_in_convex_hull(
-            corner_coordinates)
+        sample_flag, sample_coord = get_sample_points_in_convex_hull(corner_coordinates)
         # sampling for uh
-        uh_in_polygon = self.raw_feature["uh"].at(
-            sample_coord, tolerance=1e-4)
+        uh_in_polygon = self.raw_feature["uh"].at(sample_coord, tolerance=1e-4)
         uh_sample_buffer = np.zeros((32**2, 1))
         uh_sample_buffer[sample_flag, :] = np.vstack(uh_in_polygon)
         uh_sample_buffer = uh_sample_buffer.reshape(32, 32)
         # sampling for hessian norm
         hessian_in_polygon = self.raw_feature["hessian_norm"].at(
-            sample_coord, tolerance=1e-4)
+            sample_coord, tolerance=1e-4
+        )
         hessian_sample_buffer = np.zeros((32**2, 1))
         hessian_sample_buffer[sample_flag, :] = np.vstack(hessian_in_polygon)
         hessian_sample_buffer = hessian_sample_buffer.reshape(32, 32)
@@ -208,15 +211,10 @@ class MeshProcessor():
                 # (x, y) conv_feat
                 conv_xy_fix[:, i, j] = np.array([conv_x_fix[i], conv_y_fix[j]])
                 conv_uh_fix[:, i, j] = self.raw_feature["uh"].at(
-                    [conv_x_fix[i],
-                     conv_y_fix[j]],
-                    tolerance=1e-3
+                    [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
                 )
-                conv_hessian_norm_fix[:, i, j] = self.raw_feature[
-                    "hessian_norm"].at(
-                    [conv_x_fix[i],
-                     conv_y_fix[j]],
-                    tolerance=1e-3
+                conv_hessian_norm_fix[:, i, j] = self.raw_feature["hessian_norm"].at(
+                    [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
                 )
         self.conv_xy_fix = conv_xy_fix
         self.conv_uh_fix = conv_uh_fix
@@ -250,7 +248,8 @@ class MeshProcessor():
         self.conv_uh = conv_uh_fix
         self.conv_hessian_norm = conv_hessian_norm_fix
         res = np.concatenate(
-            [self.conv_xy, self.conv_uh, self.conv_hessian_norm], axis=0)
+            [self.conv_xy, self.conv_uh, self.conv_hessian_norm], axis=0
+        )
         return res
 
     def attach_feature(self):
@@ -260,7 +259,8 @@ class MeshProcessor():
         in the 'feature' attribute.
         """
         for key in self.feature:
-            if (self.feature[key] is not None):
+            print("key ", key)
+            if self.feature[key] is not None:
                 self.x = np.concatenate([self.x, self.feature[key]], axis=1)
         return
 
@@ -282,9 +282,10 @@ class MeshProcessor():
             "hessian_norm": self.feature["hessian_norm"],
             "jacobian": self.feature["jacobian"],
             "jacobian_det": self.feature["jacobian_det"],
+            "monitor_val": self.feature["monitor_val"],
             "edge_index": self.edge_T,
             "edge_index_bi": self.edge_bi_T,
-            "cluster_edges": None, # this will be added if we use data_transform.py to add cluster edges  # noqa
+            "cluster_edges": None,  # this will be added if we use data_transform.py to add cluster edges  # noqa
             "y": self.y,
             "pos": self.coordinates,
             "scale": scale,
@@ -315,9 +316,9 @@ class MeshProcessor():
             "duration": self.dur,
             "poly_mesh": self.poly_mesh,
             "swirl_params": self.swirl_params,
-            "t": self.t,      # time step when solving burgers eq.
+            "t": self.t,  # time step when solving burgers eq.
             "idx": self.idx,  # index number for picking params for burgers tracer.  # noqa
-            "f": self.feature["f"] if "f" in self.feature else None
+            "f": self.feature["f"] if "f" in self.feature else None,
         }
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)
@@ -342,16 +343,13 @@ class MeshProcessor():
         u, inverse_idxs = torch.unique(edges_hash, return_inverse=True)
 
         edges_packed = torch.stack(
-            [
-                torch.div(u, mesh_node_count, rounding_mode="floor"),
-                u % mesh_node_count
-            ], dim=1)
+            [torch.div(u, mesh_node_count, rounding_mode="floor"), u % mesh_node_count],
+            dim=1,
+        )
 
         self.single_edges = edges_packed
         edges_packed_reverse = edges_packed.clone()[:, [1, 0]]
-        self.edge_bi = torch.cat(
-            [edges_packed,
-             edges_packed_reverse], dim=0)
+        self.edge_bi = torch.cat([edges_packed, edges_packed_reverse], dim=0)
 
         self.edge_T = self.single_edges.T.numpy()
         self.edge_bi_T = self.edge_bi.T.numpy()
@@ -367,29 +365,35 @@ class MeshProcessor():
         x_end = y_end = 1
         num_all_nodes = len(self.mesh.coordinates.dat.data_ro)
         # boundary nodes solved by firedrake
-        self.bd_idx = facet_closure_nodes(
-            self.function_space, "on_boundary")
+        self.bd_idx = facet_closure_nodes(self.function_space, "on_boundary")
 
         # create mask for boundary nodes
         self.bd_mask = np.zeros(num_all_nodes).astype(bool)
         self.bd_mask[self.bd_idx] = True
 
         # boundary nodes solved using location of nodes
-        if (use_4_edge):
-            self.left_bd = (self.coordinates[:, 0] == x_start).astype(int).reshape(-1, 1),  # noqa
-            self.right_bd = (self.coordinates[:, 0] == x_end).astype(int).reshape(-1, 1),  # noqa
-            self.down_bd = (self.coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),  # noqa
-            self.up_bd = (self.coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),  # noqa
+        if use_4_edge:
+            self.left_bd = (
+                (self.coordinates[:, 0] == x_start).astype(int).reshape(-1, 1),
+            )  # noqa
+            self.right_bd = (
+                (self.coordinates[:, 0] == x_end).astype(int).reshape(-1, 1),
+            )  # noqa
+            self.down_bd = (
+                (self.coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),
+            )  # noqa
+            self.up_bd = (
+                (self.coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),
+            )  # noqa
             self.bd_all = np.any(
-                [self.left_bd, self.right_bd, self.down_bd, self.up_bd],
-                axis=0
+                [self.left_bd, self.right_bd, self.down_bd, self.up_bd], axis=0
             )
             self.left_bd = self.left_bd[0]
             self.right_bd = self.right_bd[0]
             self.down_bd = self.down_bd[0]
             self.up_bd = self.up_bd[0]
         # using poly mesh, set 4 edges to None
-        if (self.poly_mesh):
+        if self.poly_mesh:
             self.left_bd = None
             self.right_bd = None
             self.down_bd = None

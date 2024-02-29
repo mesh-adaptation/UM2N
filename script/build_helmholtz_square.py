@@ -360,6 +360,7 @@ if __name__ == "__main__":
                     "phi": phi.dat.data_ro.reshape(-1, 1),
                     "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
                     "f": f.dat.data_ro.reshape(-1, 1),
+                    "monitor_val": monitor_val.dat.data_ro.reshape(-1, 1),
                 },
                 raw_feature={
                     "uh": uh,

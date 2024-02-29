@@ -277,8 +277,9 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
         wm.mkdir_if_not_exist(plot_more_dir)
 
         model = model.to(device)
+        total_num = len(dataset)
         print(f"Total num: {len(dataset)}")
-        for idx in range(start_idx, start_idx + num_samples):
+        for idx in range(start_idx, min(total_num, start_idx + num_samples)):
             # model inference stage
             # print(len(dataset))
             print("IDX", idx)
@@ -739,6 +740,7 @@ if __name__ == "__main__":
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
     run_ids = [run_id_pi_m2t, run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
+    # run_ids = [run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
 
     ds_root_helmholtz = [
         "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
@@ -750,13 +752,13 @@ if __name__ == "__main__":
     ]
 
     ds_root_helmholtz = [
-        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
-        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
-        "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=300_aniso_full_meshtype_2",
+        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=5_aniso_full_meshtype_6",
+        # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
+        # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=300_aniso_full_meshtype_2",
     ]
 
     ds_root_swirl = [
-        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.35_y0_0.35_lc_0.028_ngrid_20_interval_5_meshtype_6"
+        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_20_interval_5_meshtype_6"
     ]
 
     ds_root_burgers = [
@@ -769,7 +771,8 @@ if __name__ == "__main__":
     # ds_roots = [*ds_root_helmholtz, *ds_root_swirl, *ds_root_burgers]
     # ds_roots = [*ds_root_burgers]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
-    ds_roots = [*ds_root_swirl]
+    ds_roots = [*ds_root_helmholtz]
+    # ds_roots = [*ds_root_swirl]
 
     for run_id in run_ids:
         for ds_root in ds_roots:
@@ -779,6 +782,9 @@ if __name__ == "__main__":
             api = wandb.Api()
             run = api.run(f"{entity}/{project_name}/{run_id}")
             config = SimpleNamespace(**run.config)
+
+            # Append the monitor val at the end
+            config.mesh_feat.append("monitor_val")
 
             print("# Evaluation Pipeline Started\n")
             # init

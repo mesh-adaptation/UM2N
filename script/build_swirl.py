@@ -229,6 +229,7 @@ def sample_from_loop(
             "jacobian_det": jacobian_det.dat.data_ro.reshape(-1, 1),
             "phi": phi.dat.data_ro.reshape(-1, 1),
             "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
+            "monitor_val": monitor_values.dat.data_ro.reshape(-1, 1),
         },
         raw_feature={
             "uh": uh,
