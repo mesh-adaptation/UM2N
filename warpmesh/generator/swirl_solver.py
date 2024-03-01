@@ -536,7 +536,7 @@ class SwirlSolver:
 
         return self.monitor_values
 
-    def monitor_function(self, mesh, alpha=10, beta=5, N=40):
+    def monitor_function(self, mesh, alpha=10, beta=5, N=10):
         self.project_u_()
         self.solve_u(self.t)
         self.u_hess.project(self.u_cur)
