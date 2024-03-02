@@ -72,7 +72,8 @@ dt = T / n_step
 
 # mesh setup
 lc = args.lc
-n_grid = args.n_grid
+# n_grid = args.n_grid
+n_grid = int(1 / lc)
 
 # parameters for domain scale
 scale_x = 1
