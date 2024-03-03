@@ -53,6 +53,12 @@ def arg_parse():
         help="number of grids in a mesh (only appliable when\
                                 mesh_type is 0)",
     )
+    parser.add_argument(
+        "--n_monitor_smooth",
+        type=int,
+        default=10,
+        help="number of times for applying a Laplacian smoother for monitor function",
+    )
     args_ = parser.parse_args()
     print(args_)
     return args_
@@ -74,6 +80,9 @@ dt = T / n_step
 lc = args.lc
 # n_grid = args.n_grid
 n_grid = int(1 / lc)
+
+# number of times for applying a Laplacian smoother for monitor function
+n_monitor_smooth = args.n_monitor_smooth
 
 # parameters for domain scale
 scale_x = 1
@@ -116,7 +125,7 @@ dataset_dir = os.path.join(
 )  # noqa
 problem_specific_dir = os.path.join(
     dataset_dir,
-    f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_x0_{x_0}_y0_{y_0}_lc_{lc}_ngrid_{n_grid}_interval_{save_interval}_meshtype_{mesh_type}",
+    f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_x0_{x_0}_y0_{y_0}_lc_{lc}_ngrid_{n_grid}_interval_{save_interval}_meshtype_{mesh_type}_smooth_{n_monitor_smooth}",
 )  # noqa
 
 
@@ -449,6 +458,7 @@ if __name__ == "__main__":
         save_interval=save_interval,
         T=T,
         n_step=n_step,
+        n_monitor_smooth=n_monitor_smooth,
     )
 
     swril_solver.solve_problem(callback=sample_from_loop, fail_callback=fail_callback)

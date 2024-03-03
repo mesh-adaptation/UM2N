@@ -1,6 +1,6 @@
-# Author: Chunyang Wang
+# Author: Chunyang Wang, Mingrui Zhang
 # GitHub Username: chunyang-w
-# Description: A script to solve advection swirl problem in Fig 19.
+# Description: Solve advection swirl problem
 
 import time  # noqa
 
@@ -64,6 +64,7 @@ class SwirlSolver:
         self.mesh_fine = mesh_fine  # fine mesh
         self.mesh_new = mesh_new  # adapted mesh
         self.save_interval = kwargs.pop("save_interval", 5)
+        self.n_monitor_smooth = kwargs.pop("n_monitor_smooth", 10)
         # Init coords setup
         self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
         self.init_coord_fine = (
@@ -536,7 +537,7 @@ class SwirlSolver:
 
         return self.monitor_values
 
-    def monitor_function(self, mesh, alpha=10, beta=5, N=10):
+    def monitor_function(self, mesh, alpha=10, beta=5):
         self.project_u_()
         self.solve_u(self.t)
         self.u_hess.project(self.u_cur)
@@ -573,6 +574,7 @@ class SwirlSolver:
         # Discretised Eq Definition Start
         f = self.monitor_values
         dx = mesh.cell_sizes.dat.data[:].mean()
+        N = self.n_monitor_smooth
         K = N * dx**2 / 4
         RHS = f * v * fd.dx(domain=mesh)
         LHS = (K * fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
@@ -704,12 +706,12 @@ class SwirlSolver:
                         r_0=self.r_0,
                         t=self.t,
                     )
-                except Exception:
-                    print("fail!!!")
-                    raise Exception
                 except fd.exceptions.ConvergenceError:
                     fail_callback(self.t)
                     pass
+                except Exception:
+                    print("fail!!!")
+                    raise Exception
             # time stepping and prep for next solving iter
             self.t += self.dt
             step += 1

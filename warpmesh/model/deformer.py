@@ -12,7 +12,7 @@ import torch.nn as nn
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 
-__all__ = ['RecurrentGATConv']
+__all__ = ["RecurrentGATConv"]
 
 
 class RecurrentGATConv(MessagePassing):
@@ -24,29 +24,37 @@ class RecurrentGATConv(MessagePassing):
         to_coord (nn.Sequential): Output layer for coordinates.
         activation (nn.SELU): Activation function.
     """
-    def __init__(self, coord_size=2,
-                 hidden_size=512,
-                 heads=6, output_type='coord',
-                 concat=False, device='cuda'
 
-                 ):
+    def __init__(
+        self,
+        coord_size=2,
+        hidden_size=512,
+        heads=6,
+        output_type="coord",
+        concat=False,
+        device="cuda",
+    ):
         super(RecurrentGATConv, self).__init__()
-        assert output_type in ['coord', 'phi_grad', 'phi'], f"output type {output_type} is invalid"
+        assert output_type in [
+            "coord",
+            "phi_grad",
+            "phi",
+        ], f"output type {output_type} is invalid"
         self.device = device
         self.output_type = output_type
-        if self.output_type == 'coord' or self.output_type == 'phi_grad':
+        if self.output_type == "coord" or self.output_type == "phi_grad":
             self.output_dim = 2
-        elif output_type == 'phi':
+        elif output_type == "phi":
             self.output_dim = 1
         else:
             raise Exception(f"Output type {output_type} is invalid.")
 
         # GAT layer
         self.to_hidden = GATv2Conv(
-            in_channels=coord_size+hidden_size,
+            in_channels=coord_size + hidden_size,
             out_channels=hidden_size,
             heads=heads,
-            concat=concat
+            concat=concat,
         )
         # output layer
         self.to_output = nn.Sequential(
@@ -55,16 +63,15 @@ class RecurrentGATConv(MessagePassing):
         # activation function
         self.activation = nn.SELU()
 
-
     def forward(self, coord, hidden_state, edge_index, coord_ori, bd_mask, poly_mesh):
         self.bd_mask = bd_mask.squeeze().bool()
         self.poly_mesh = poly_mesh
-        
+
         # Recurrent GAT
         # print(coord.shape, hidden_state.shape)
         extra_sample_ratio = coord.shape[0] // hidden_state.shape[0]
         # print(coord.shape, hidden_state.shape)
-        
+
         in_feat = torch.cat((coord, hidden_state.repeat(extra_sample_ratio, 1)), dim=1)
         # in_feat = torch.cat((coord, hidden_state), dim=1)
         hidden = self.to_hidden(in_feat, edge_index)
@@ -72,13 +79,13 @@ class RecurrentGATConv(MessagePassing):
         output = self.to_output(hidden)
         phix = None
         phiy = None
-        if self.output_type == 'coord':
+        if self.output_type == "coord":
             output_coord = output
             # find boundary
             self.find_boundary(coord_ori)
             # fix boundary
             self.fix_boundary(output_coord)
-        elif self.output_type == 'phi_grad':
+        elif self.output_type == "phi_grad":
             output_coord = output + coord_ori
             # find boundary
             self.find_boundary(coord_ori)
@@ -86,10 +93,17 @@ class RecurrentGATConv(MessagePassing):
             self.fix_boundary(output_coord)
             phix = output[:, 0].view(-1, 1)
             phiy = output[:, 1].view(-1, 1)
-        elif self.output_type == 'phi':
+        elif self.output_type == "phi":
             # Compute the residual to the equation
             grad_seed = torch.ones(output.shape).to(self.device)
-            phi_grad = torch.autograd.grad(output, coord_ori, grad_outputs=grad_seed, retain_graph=True, create_graph=True, allow_unused=False)[0]
+            phi_grad = torch.autograd.grad(
+                output,
+                coord_ori,
+                grad_outputs=grad_seed,
+                retain_graph=True,
+                create_graph=True,
+                allow_unused=False,
+            )[0]
             # print(f"[phi grad] {phi_grad.shape}, [coord_ori] {coord_ori.shape}")
             phix = phi_grad[:, 0]
             phiy = phi_grad[:, 1]
