@@ -199,6 +199,21 @@ def load_model(config, epoch, experiment_dir):
             num_loop=config.num_deformer_loop,
             device=device,
         )
+    elif config.model_used == "M2T":
+        model = wm.M2T(
+            num_transformer_in=config.num_transformer_in,
+            num_transformer_out=config.num_transformer_out,
+            num_transformer_embed_dim=config.num_transformer_embed_dim,
+            num_transformer_heads=config.num_transformer_heads,
+            num_transformer_layers=config.num_transformer_layers,
+            transformer_training_mask=config.transformer_training_mask,
+            transformer_training_mask_ratio_lower_bound=config.transformer_training_mask_ratio_lower_bound,  # noqa
+            transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,  # noqa
+            deform_in_c=config.num_deform_in,
+            deform_out_type=config.deform_out_type,
+            num_loop=config.num_deformer_loop,
+            device=device,
+        )
     else:
         print("Model not found")
     model_file_path = os.path.join(experiment_dir, target_file_name)
@@ -289,7 +304,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
             sample = sample.to(device)
             with torch.no_grad():
                 start = time.perf_counter()
-                if config.model_used == "MRTransformer":
+                if config.model_used == "MRTransformer" or config.model_used == "M2T":
                     # Create mesh query for deformer, seperate from the original mesh as feature for encoder
                     mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
                     mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
@@ -730,7 +745,9 @@ if __name__ == "__main__":
     run_id_m2n_hessian_norm = "1cu4qw9u"  # M2N hessian norm
     run_id_m2n_area_loss_hessian_norm = "u4uxcz1e"  # M2N area loss hessian norm
 
-    epoch = 999
+    run_id_m2t_gatdeformer = "nj32xl4l"
+
+    epoch = 79
 
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
@@ -740,6 +757,7 @@ if __name__ == "__main__":
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
     run_ids = [run_id_pi_m2t, run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
+    run_ids = [run_id_m2t_gatdeformer]
     # run_ids = [run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
 
     ds_root_helmholtz = [

@@ -9,17 +9,30 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing
 from torch_geometric.nn import knn_graph
 
-__all__ = ['train', 'train_unsupervised', 'evaluate', 'evaluate_unsupervised', 'load_model', 'TangleCounter',
-           'count_dataset_tangle', 'get_jacob_det',
-           'get_inversion_diff_loss', 'get_face_area',
-           'count_dataset_tangle', 'get_jacob_det', 'get_face_area',
-           'get_inversion_loss', 'get_inversion_node_loss',
-           'get_area_loss', 'evaluate_repeat_sampling',
-           'count_dataset_tangle_repeat_sampling',
-           'evaluate_repeat', 'get_sample_tangle'
-           ]
+__all__ = [
+    "train",
+    "train_unsupervised",
+    "evaluate",
+    "evaluate_unsupervised",
+    "load_model",
+    "TangleCounter",
+    "count_dataset_tangle",
+    "get_jacob_det",
+    "get_inversion_diff_loss",
+    "get_face_area",
+    "count_dataset_tangle",
+    "get_jacob_det",
+    "get_face_area",
+    "get_inversion_loss",
+    "get_inversion_node_loss",
+    "get_area_loss",
+    "evaluate_repeat_sampling",
+    "count_dataset_tangle_repeat_sampling",
+    "evaluate_repeat",
+    "get_sample_tangle",
+]
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def get_face_area(coord, face):
@@ -34,17 +47,16 @@ def get_face_area(coord, face):
     y = coord[:, 1][face]
 
     area = 0.5 * (
-        x[0, :] * (y[1, :] - y[2, :]) +
-        x[1, :] * (y[2, :] - y[0, :]) +
-        x[2, :] * (y[0, :] - y[1, :])
+        x[0, :] * (y[1, :] - y[2, :])
+        + x[1, :] * (y[2, :] - y[0, :])
+        + x[2, :] * (y[0, :] - y[1, :])
     )
     return area
 
 
-def get_inversion_loss(out_coord, in_coord, face,
-                       batch_size,
-                       scheme="relu",
-                       scaler=100):
+def get_inversion_loss(
+    out_coord, in_coord, face, batch_size, scheme="relu", scaler=100
+):
     """
     Calculates the inversion loss for a batch of meshes.
     Args:
@@ -60,29 +72,25 @@ def get_inversion_loss(out_coord, in_coord, face,
     # restore the sign of the area, ans scale it
     out_area = torch.sign(in_area) * out_area
     # hard penalty, use hard condition to penalize the negative area
-    if (scheme == "hard"):
+    if scheme == "hard":
         # mask for negative area
         neg_mask = out_area < 0
         neg_area = out_area[neg_mask]
         tar_area = in_area[neg_mask]
         # loss should be positive, so we are using -1 here.
-        loss = (-1 * ((neg_area / torch.abs(tar_area)).sum()) / batch_size)
+        loss = -1 * ((neg_area / torch.abs(tar_area)).sum()) / batch_size
     # soft penalty, peanlize the negative area harder than the positive area
-    elif (scheme == "relu"):
-        loss = (torch.nn.ReLU()(
-            -1 * (out_area / torch.abs(in_area))
-            ).sum() / batch_size)
-    elif (scheme == "log"):
+    elif scheme == "relu":
+        loss = torch.nn.ReLU()(-1 * (out_area / torch.abs(in_area))).sum() / batch_size
+    elif scheme == "log":
         epsilon = 1e-8
         loss = (
-            -1 * torch.log(
-                -1 * (out_area / torch.abs(in_area))).sum() + epsilon
-            ) / batch_size
+            -1 * torch.log(-1 * (out_area / torch.abs(in_area))).sum() + epsilon
+        ) / batch_size
     return scaler * loss
 
 
-def get_inversion_diff_loss(out_coord, tar_coord, face,
-                            batch_size, scaler=100):
+def get_inversion_diff_loss(out_coord, tar_coord, face, batch_size, scaler=100):
     """
     Calculates the inversion difference loss for a batch of meshes.
     That is the difference between the output area and the input area,
@@ -101,16 +109,13 @@ def get_inversion_diff_loss(out_coord, tar_coord, face,
     tar_area = scaler * torch.sign(tar_area) * tar_area
     # mask for negative area
     neg_mask = out_area < 0
-    inversion_diff = (
-        tar_area[neg_mask] - out_area[neg_mask]
-    )
+    inversion_diff = tar_area[neg_mask] - out_area[neg_mask]
     # loss should be positive, so we are using -1 here.
-    loss = (inversion_diff.sum() / batch_size)
+    loss = inversion_diff.sum() / batch_size
     return loss
 
 
-def get_inversion_node_loss(out_coord, tar_coord, face, batch_size,
-                            scaler=1000):
+def get_inversion_node_loss(out_coord, tar_coord, face, batch_size, scaler=1000):
     """
     Calculates the loss between the ouput node and input node, for the inverted
     elements. This will penalise the node which are involved in the tangled
@@ -137,11 +142,10 @@ def get_inversion_node_loss(out_coord, tar_coord, face, batch_size,
 
     node_diff = scaler * loss(inv_nodes, tar_nodes)
 
-    loss = (node_diff / batch_size)
+    loss = node_diff / batch_size
     zero = torch.tensor(
-        0.0, device=out_coord.device,
-        dtype=out_coord.dtype,
-        requires_grad=True)
+        0.0, device=out_coord.device, dtype=out_coord.dtype, requires_grad=True
+    )
 
     return loss if len(inv_nodes) > 0 else zero
 
@@ -153,22 +157,17 @@ def get_area_loss(out_coord, tar_coord, face, batch_size, scaler=100):
     out_area = scaler * torch.sign(tar_area) * out_area
     tar_area = scaler * torch.sign(tar_area) * tar_area
     # mask for negative area
-    area_diff = torch.abs(
-        tar_area - out_area
-    )
+    area_diff = torch.abs(tar_area - out_area)
     # area_diff = tar_area - out_area + 100
     # loss should be positive, so we are using -1 here.
-    loss = ((area_diff.sum()) / batch_size)
+    loss = (area_diff.sum()) / batch_size
     return loss
 
 
 def jacobLoss(model, out, data, loss_func):
     jacob_det = get_jacob_det(model, data)
     u_loss = loss_func(out, data.y)
-    jacob_det_loss = loss_func(
-        jacob_det,
-        data.jacobian_det
-    )
+    jacob_det_loss = loss_func(jacob_det, data.jacobian_det)
     # print("using jacobian")
     print("u_loss: ", u_loss.item())
     print("jacob_det_loss: ", jacob_det_loss.item())
@@ -219,8 +218,7 @@ def get_jacob_det(model, in_data):
     jacobian = torch.stack([dXdx, dXdy], dim=1)
 
     determinant = (
-        jacobian[:, 0, 0] * jacobian[:, 1, 1] -
-        jacobian[:, 0, 1] * jacobian[:, 1, 0]
+        jacobian[:, 0, 0] * jacobian[:, 1, 1] - jacobian[:, 0, 1] * jacobian[:, 1, 0]
     )
     return determinant
 
@@ -231,8 +229,9 @@ class TangleCounter(MessagePassing):
     This class is deprecated, do not use this option unless you know what you
     are doing.
     """
+
     def __init__(self, num_feat=10, out=16):
-        super().__init__(aggr='add')
+        super().__init__(aggr="add")
         self.num_tangle = 0
 
     def forward(self, x, x_new, edge_index):
@@ -253,7 +252,6 @@ class TangleCounter(MessagePassing):
         tangle_arr = tangle.reshape(-1)
         self.num_tangle = torch.sum(tangle_arr < 0)
         return tangle
-
 
 
 # def count_dataset_tangle(dataset, model, device, method="inversion"):
@@ -301,7 +299,6 @@ class TangleCounter(MessagePassing):
 #                 num_tangle += Counter(mesh, mesh_new, input_edge).item()
 #         num_tangle = num_tangle / len(dataset)
 #         return num_tangle
-
 
 
 # def count_dataset_tangle(dataset, model, device, method="inversion"):
@@ -358,24 +355,27 @@ class TangleCounter(MessagePassing):
 #         return num_tangle
 
 
-
 def print_parameter_grad(model):
     for name, param in model.named_parameters():
         if param.requires_grad:
             if param.grad is not None:
-                print(f'param name: {name}, grad: {torch.sum(param.grad)}')
+                print(f"param name: {name}, grad: {torch.sum(param.grad)}")
             else:
-                print(f'param name: {name}, grad is None!')
-
+                print(f"param name: {name}, grad is None!")
 
 
 def train(
-        loader, model, optimizer, device, loss_func,
-        use_jacob=False,
-        use_inversion_loss=False,
-        use_inversion_diff_loss=False,
-        use_area_loss=False,
-        scaler=100):
+    loader,
+    model,
+    optimizer,
+    device,
+    loss_func,
+    use_jacob=False,
+    use_inversion_loss=False,
+    use_inversion_diff_loss=False,
+    use_area_loss=False,
+    scaler=100,
+):
     """
     Trains a PyTorch model using the given data loader, optimizer,
         and loss function.
@@ -408,50 +408,48 @@ def train(
         inversion_diff_loss = 0
         area_loss = 0
         # deformation loss
-        deform_loss = 1000*(
-            loss_func(out, data.y) if not use_jacob else
-            jacobLoss(model, out, data, loss_func)
+        deform_loss = 1000 * (
+            loss_func(out, data.y)
+            if not use_jacob
+            else jacobLoss(model, out, data, loss_func)
         )
         # Inversion loss
         if use_inversion_loss:
             inversion_loss = get_inversion_loss(
-                out, data.y, data.face,
-                batch_size=bs, scaler=scaler)
+                out, data.y, data.face, batch_size=bs, scaler=scaler
+            )
         if use_area_loss:
-            area_loss = get_area_loss(
-                out, data.y, data.face, bs, scaler)
+            area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
 
-        loss = (
-            deform_loss +
-            inversion_loss +
-            inversion_diff_loss +
-            area_loss
-        )
+        loss = deform_loss + inversion_loss + inversion_diff_loss + area_loss
         # Jacobian loss
         if use_jacob:
             loss.backward(retain_graph=True)
         else:
             loss.backward()
-        
 
         # print_parameter_grad(model)
 
         optimizer.step()
         total_loss += loss.item()
         total_deform_loss += deform_loss.item()
-        total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
-        total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
+        total_inversion_loss += (
+            inversion_loss.item() if use_inversion_loss else 0
+        )  # noqa
+        total_inversion_diff_loss += (
+            inversion_diff_loss.item() if use_inversion_diff_loss else 0
+        )  # noqa
         total_area_loss += area_loss.item() if use_area_loss else 0
 
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
     }
-    if (use_inversion_loss):
+    if use_inversion_loss:
         res["inversion_loss"] = total_inversion_loss / len(loader)
-    if (use_inversion_diff_loss):
+    if use_inversion_diff_loss:
         res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
-    if (use_area_loss):
+    if use_area_loss:
         res["area_loss"] = total_area_loss / len(loader)
 
     return res
@@ -475,7 +473,11 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
         # For a sample point of interest, we need to do a weighted summation over all other sample points
         # To avoid using a loop, we expand an additonal dim of size sample_num
         original_mesh = torch.cat((ori_mesh_x[bs], ori_mesh_y[bs]), dim=-1)
-        moved_mesh = torch.cat((moved_x[bs], moved_y[bs]), dim=-1).unsqueeze(-2).repeat(1, sample_num, 1)
+        moved_mesh = (
+            torch.cat((moved_x[bs], moved_y[bs]), dim=-1)
+            .unsqueeze(-2)
+            .repeat(1, sample_num, 1)
+        )
         # print(f"new mesh shape {moved_mesh.shape}, original mesh shape {original_mesh.shape}")
         # print((moved_mesh - original_mesh),(moved_mesh - original_mesh).shape)
         # print("check dimension ", (moved_mesh - original_mesh)[:, 0])
@@ -489,23 +491,42 @@ def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
         # print('weight shape ', weight.shape, u[bs].shape)
         # print('weight ', weight, u, u[bs].permute(1, 0) * weight)
         # print(u.shape, weight.shape)
-        u_interpolateds.append(torch.sum(u[bs].permute(1, 0) * weight, dim=-1).unsqueeze(-1))
+        u_interpolateds.append(
+            torch.sum(u[bs].permute(1, 0) * weight, dim=-1).unsqueeze(-1)
+        )
         # print(f"interpolated shape: {u_interpolateds[-1]}")
         # print('inte ', u_interpolated)
     return torch.stack(u_interpolateds, dim=0)
 
 
-def _generate_samples(num_meshes, num_samples_per_mesh, coords, solution, monitor, redundant_sample_ratio=10, device='cuda'):
-    meshes = torch.tensor(np.random.uniform(0, 1, (num_meshes, redundant_sample_ratio * num_samples_per_mesh, 2)), dtype=torch.float).to(device)
+def _generate_samples(
+    num_meshes,
+    num_samples_per_mesh,
+    coords,
+    solution,
+    monitor,
+    redundant_sample_ratio=10,
+    device="cuda",
+):
+    meshes = torch.tensor(
+        np.random.uniform(
+            0, 1, (num_meshes, redundant_sample_ratio * num_samples_per_mesh, 2)
+        ),
+        dtype=torch.float,
+    ).to(device)
     solution_input = solution.repeat(num_meshes, 1, 1)
     monitor_input = monitor.repeat(num_meshes, 1, 1)
-    coords_x = coords[: ,: ,0].unsqueeze(-1).repeat(num_meshes, 1, 1)
-    coords_y = coords[: ,: ,1].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    coords_x = coords[:, :, 0].unsqueeze(-1).repeat(num_meshes, 1, 1)
+    coords_y = coords[:, :, 1].unsqueeze(-1).repeat(num_meshes, 1, 1)
     new_meshes_x = meshes[:, :, 0].unsqueeze(-1)
     new_meshes_y = meshes[:, :, 1].unsqueeze(-1)
 
-    solutions = interpolate(solution_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
-    monitors = interpolate(monitor_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
+    solutions = interpolate(
+        solution_input, coords_x, coords_y, new_meshes_x, new_meshes_y
+    )
+    monitors = interpolate(
+        monitor_input, coords_x, coords_y, new_meshes_x, new_meshes_y
+    )
 
     meshes_ = []
     soluitons_ = []
@@ -514,12 +535,21 @@ def _generate_samples(num_meshes, num_samples_per_mesh, coords, solution, monito
     # resample according to the monitor values
     for bs in range(monitors.shape[0]):
         prob = monitors[bs, :, 0] / torch.sum(monitors[bs, :, 0])
-        index = np.random.choice(a=meshes.shape[1], size=num_samples_per_mesh, replace=False, p=prob.cpu().numpy())
+        index = np.random.choice(
+            a=meshes.shape[1],
+            size=num_samples_per_mesh,
+            replace=False,
+            p=prob.cpu().numpy(),
+        )
         # print(torch.max(prob), torch.min(prob), torch.max(monitors), torch.min(monitors))
         meshes_.append(meshes[bs, index, :])
         soluitons_.append(solutions[bs, index, :])
         monitors_.append(monitors[bs, index, :])
-    return torch.stack(meshes_, dim=0), torch.stack(soluitons_, dim=0), torch.stack(monitors_, dim=0)
+    return (
+        torch.stack(meshes_, dim=0),
+        torch.stack(soluitons_, dim=0),
+        torch.stack(monitors_, dim=0),
+    )
 
 
 def generate_samples(bs, num_samples_per_mesh, data, num_meshes=5, device="cuda"):
@@ -533,13 +563,26 @@ def generate_samples(bs, num_samples_per_mesh, data, num_meshes=5, device="cuda"
         coords = data.mesh_feat[:, :2].view(bs, -1, 2)[b, :, :].view(1, -1, 2)
         solution = data.mesh_feat[:, 2].view(bs, -1, 1)[b, :, :].view(1, -1, 1)
         monitor = data.mesh_feat[:, 3].view(bs, -1, 1)[b, :, :].view(1, -1, 1)
-        meshes, solutions, monitors = _generate_samples(num_meshes=num_meshes, num_samples_per_mesh=num_samples_per_mesh, coords=coords, solution=solution, monitor=monitor, device=device)
+        meshes, solutions, monitors = _generate_samples(
+            num_meshes=num_meshes,
+            num_samples_per_mesh=num_samples_per_mesh,
+            coords=coords,
+            solution=solution,
+            monitor=monitor,
+            device=device,
+        )
         # print(f"output meshes: {meshes.shape} solutions: {solutions.shape} monitor: {monitors.shape}")
         # merge the addtional sampled attributes (mesh, solution, monitor) to a large graph within one sample
-        meshes_collection.append(torch.cat([coords.view(-1, 2), meshes.view(-1, 2)], dim=0)) 
-        solutions_collection.append(torch.cat([solution.view(-1, 1), solutions.view(-1, 1)], dim=0))
-        monitors_collection.append(torch.cat([monitor.view(-1, 1), monitors.view(-1, 1)], dim=0))
-    
+        meshes_collection.append(
+            torch.cat([coords.view(-1, 2), meshes.view(-1, 2)], dim=0)
+        )
+        solutions_collection.append(
+            torch.cat([solution.view(-1, 1), solutions.view(-1, 1)], dim=0)
+        )
+        monitors_collection.append(
+            torch.cat([monitor.view(-1, 1), monitors.view(-1, 1)], dim=0)
+        )
+
     # merge all enhanced sampled samples along the batch size dimension
     meshes_input = torch.stack(meshes_collection, dim=0)
     solutions_input = torch.stack(solutions_collection, dim=0)
@@ -552,36 +595,43 @@ def generate_samples(bs, num_samples_per_mesh, data, num_meshes=5, device="cuda"
 def compute_finite_difference(field):
     # Field: [bs, x_shape, y_shape]
     f_x = torch.zeros_like(field)
-    f_x[:,:-1,:] = torch.diff(field, dim=-2)
-    f_x[:,-1,:] = f_x[:,-2,:]
+    f_x[:, :-1, :] = torch.diff(field, dim=-2)
+    f_x[:, -1, :] = f_x[:, -2, :]
 
     f_y = torch.zeros_like(field)
-    f_y[:,:,:-1] = torch.diff(field, dim=-1)
-    f_y[:,:,-1] = f_y[:,:,-2]
+    f_y[:, :, :-1] = torch.diff(field, dim=-1)
+    f_y[:, :, -1] = f_y[:, :, -2]
 
     inv_dx = field.shape[-2] - 1
     inv_dy = field.shape[-1] - 1
     return f_x * inv_dx, f_y * inv_dy
 
 
-def generate_samples_structured_grid(coords, field, grid_resolution=100, device='cuda'):
+def generate_samples_structured_grid(coords, field, grid_resolution=100, device="cuda"):
     num_meshes = coords.shape[0]
     nx = grid_resolution
     ny = grid_resolution
     x = np.linspace(0, 1, nx)
     y = np.linspace(0, 1, ny)
-    uniform_grid = torch.tensor(np.array(np.meshgrid(x, y)), dtype=torch.float)\
-                    .reshape(1, 2, -1).repeat(num_meshes, 1, 1).permute(0, 2, 1).to(device)
+    uniform_grid = (
+        torch.tensor(np.array(np.meshgrid(x, y)), dtype=torch.float)
+        .reshape(1, 2, -1)
+        .repeat(num_meshes, 1, 1)
+        .permute(0, 2, 1)
+        .to(device)
+    )
 
     field_input = field.view(num_meshes, -1, field.shape[-1])
-    coords_x = coords[: ,: ,0].unsqueeze(-1)
-    coords_y = coords[: ,: ,1].unsqueeze(-1)
+    coords_x = coords[:, :, 0].unsqueeze(-1)
+    coords_y = coords[:, :, 1].unsqueeze(-1)
     new_meshes_x = uniform_grid[:, :, 0].unsqueeze(-1)
     new_meshes_y = uniform_grid[:, :, 1].unsqueeze(-1)
 
     # Interpolate to dense structured grid
     field = interpolate(field_input, coords_x, coords_y, new_meshes_x, new_meshes_y)
-    field_x_, field_y_ = compute_finite_difference(field.view(field.shape[0], grid_resolution, grid_resolution))
+    field_x_, field_y_ = compute_finite_difference(
+        field.view(field.shape[0], grid_resolution, grid_resolution)
+    )
     field_x_ = field_x_.view(num_meshes, -1, 1)
     field_y_ = field_y_.view(num_meshes, -1, 1)
 
@@ -596,12 +646,30 @@ def generate_samples_structured_grid(coords, field, grid_resolution=100, device=
 def construct_graph(sampled_coords, num_neighbors=6, device="cuda"):
     bs = sampled_coords.shape[0]
     num_per_mesh = sampled_coords.shape[1]
-    batch = torch.tensor([x for x in range(bs)]).unsqueeze(-1).repeat(1, num_per_mesh).reshape(-1).to(device)
-    edge_index = knn_graph(sampled_coords.view(-1, 2).to(device), k=num_neighbors, batch=batch, loop=False)
+    batch = (
+        torch.tensor([x for x in range(bs)])
+        .unsqueeze(-1)
+        .repeat(1, num_per_mesh)
+        .reshape(-1)
+        .to(device)
+    )
+    edge_index = knn_graph(
+        sampled_coords.view(-1, 2).to(device), k=num_neighbors, batch=batch, loop=False
+    )
     return edge_index
 
 
-def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs, data, loss_func, finite_difference_grad=False):
+def compute_phi_hessian(
+    mesh_query_x,
+    mesh_query_y,
+    phix,
+    phiy,
+    out_monitor,
+    bs,
+    data,
+    loss_func,
+    finite_difference_grad=False,
+):
     feat_dim = data.mesh_feat.shape[-1]
     node_num = data.mesh_feat.view(bs, -1, feat_dim).shape[1]
     sampled_num = mesh_query_x.shape[0] // bs
@@ -615,14 +683,46 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         if not finite_difference_grad:
             # print(f"phix: {phix.shape}, phiy: {phiy.shape}")
             hessian_seed = torch.ones(phix.shape).to(device)
-            phixx = torch.autograd.grad(phix, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-            phixy = torch.autograd.grad(phix, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-            phiyx = torch.autograd.grad(phiy, mesh_query_x, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
-            phiyy = torch.autograd.grad(phiy, mesh_query_y, grad_outputs=hessian_seed, retain_graph=True, create_graph=True, allow_unused=True)[0]
+            phixx = torch.autograd.grad(
+                phix,
+                mesh_query_x,
+                grad_outputs=hessian_seed,
+                retain_graph=True,
+                create_graph=True,
+                allow_unused=True,
+            )[0]
+            phixy = torch.autograd.grad(
+                phix,
+                mesh_query_y,
+                grad_outputs=hessian_seed,
+                retain_graph=True,
+                create_graph=True,
+                allow_unused=True,
+            )[0]
+            phiyx = torch.autograd.grad(
+                phiy,
+                mesh_query_x,
+                grad_outputs=hessian_seed,
+                retain_graph=True,
+                create_graph=True,
+                allow_unused=True,
+            )[0]
+            phiyy = torch.autograd.grad(
+                phiy,
+                mesh_query_y,
+                grad_outputs=hessian_seed,
+                retain_graph=True,
+                create_graph=True,
+                allow_unused=True,
+            )[0]
         else:
             # TODO: the finite difference method here returns the (u_y, u_x), whose order is different from ad
-            _, _, _, _, phixy, phixx = generate_samples_structured_grid(torch.stack([mesh_query_x, mesh_query_y], dim=-1), phix)
-            _, _, _, _, phiyy, phiyx = generate_samples_structured_grid(torch.stack([mesh_query_x, mesh_query_y], dim=-1), phiy)
+            _, _, _, _, phixy, phixx = generate_samples_structured_grid(
+                torch.stack([mesh_query_x, mesh_query_y], dim=-1), phix
+            )
+            _, _, _, _, phiyy, phiyx = generate_samples_structured_grid(
+                torch.stack([mesh_query_x, mesh_query_y], dim=-1), phiy
+            )
         # print(f"phix grad: {phix_grad.shape}, phiy grad: {phiy_grad.shape}")
         # phixx = phix_grad[:, 0]
         # phixy = phix_grad[:, 1]
@@ -635,7 +735,9 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         # jacobian_x = data.mesh_feat[:, 4].view(bs, node_num, 1)
         # jacobian_y = data.mesh_feat[:, 5].view(bs, node_num, 1)
 
-        hessian_norm = data.mesh_feat[:, 3].view(bs, node_num, 1).repeat(1, sampled_ratio, 1)
+        hessian_norm = (
+            data.mesh_feat[:, 3].view(bs, node_num, 1).repeat(1, sampled_ratio, 1)
+        )
         # solution = data.mesh_feat[:, 1].resahpe(bs, node_num, 1)
         # original_mesh_x = data.mesh_feat[:, 0].view(bs, node_num, 1)
         # original_mesh_y = data.mesh_feat[:, 1].view(bs, node_num, 1)
@@ -646,8 +748,14 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         # print(f"diff x:{torch.abs(original_mesh_x - moved_x).mean()}, diff y:{torch.abs(original_mesh_y - moved_y).mean()}")
         # Interpolate on new moved mesh
         # print(hessian_norm.shape, mesh_query_x.shape, moved_x.shape)
-        hessian_norm_ = interpolate(hessian_norm, mesh_query_x.view(bs, sampled_num, 1), mesh_query_y.view(bs, sampled_num, 1), moved_x, moved_y)
-        enhanced_hessian_norm = hessian_norm_ #+ out_monitor.view(bs, node_num, 1)
+        hessian_norm_ = interpolate(
+            hessian_norm,
+            mesh_query_x.view(bs, sampled_num, 1),
+            mesh_query_y.view(bs, sampled_num, 1),
+            moved_x,
+            moved_y,
+        )
+        enhanced_hessian_norm = hessian_norm_  # + out_monitor.view(bs, node_num, 1)
 
         # =========================== jacobian related attempts ==================
         # jac_x = interpolate(jacobian_x, original_mesh_x, original_mesh_y, moved_x, moved_y)
@@ -664,7 +772,7 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
         # jac_xi_2 = jac_x * phixy + jac_y * (1 + phiyy)
         # print(torch.sum(jac_xi_1), torch.sum(jac_xi_2))
         # monitor = monitor_grad(alpha, jac_xi_1, jac_xi_2) /1000
-        # =========================== 
+        # ===========================
 
         lhs = enhanced_hessian_norm * det_hessian
         rhs = torch.sum(hessian_norm, dim=(1, 2)) / sampled_num
@@ -675,12 +783,18 @@ def compute_phi_hessian(mesh_query_x, mesh_query_y, phix, phiy, out_monitor, bs,
 
         # Convex loss
         # if use_convex_loss:
-        loss_convex = torch.mean(torch.min(torch.tensor(0).type_as(phixx).to(device), 1 + phixx)**2 + torch.min(torch.tensor(0).type_as(phiyy).to(device), 1 + phiyy)**2)
-        return loss_eq_residual, loss_convex, 
+        loss_convex = torch.mean(
+            torch.min(torch.tensor(0).type_as(phixx).to(device), 1 + phixx) ** 2
+            + torch.min(torch.tensor(0).type_as(phiyy).to(device), 1 + phiyy) ** 2
+        )
+        return (
+            loss_eq_residual,
+            loss_convex,
+        )
 
 
 def model_forward(bs, data, model, use_add_random_query=True):
-    # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+    # Create mesh query for deformer, seperate from the original mesh as feature for encoder
     mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
     mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
     mesh_query_x.requires_grad = True
@@ -689,14 +803,20 @@ def model_forward(bs, data, model, use_add_random_query=True):
 
     num_nodes = mesh_query.shape[-2] // bs
     # Generate random mesh queries for unsupervised learning
-    sampled_queries = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, num_meshes=1, data=data, device=device)
-    sampled_queries_edge_index = construct_graph(sampled_queries[:, :, :2], num_neighbors=6)
+    sampled_queries = generate_samples(
+        bs=bs, num_samples_per_mesh=num_nodes, num_meshes=1, data=data, device=device
+    )
+    sampled_queries_edge_index = construct_graph(
+        sampled_queries[:, :, :2], num_neighbors=6
+    )
 
     mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
     mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
     mesh_sampled_queries_x.requires_grad = True
     mesh_sampled_queries_y.requires_grad = True
-    mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
+    mesh_sampled_queries = torch.cat(
+        [mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1
+    ).view(-1, 2)
 
     coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
     coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
@@ -706,43 +826,65 @@ def model_forward(bs, data, model, use_add_random_query=True):
 
     num_nodes = coord_ori.shape[-2] // bs
     input_q = data.mesh_feat[:, :4]
-    input_kv = generate_samples(bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device)
+    input_kv = generate_samples(
+        bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device
+    )
     # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
 
     if not use_add_random_query:
         mesh_sampled_queries = None
         sampled_queries_edge_index = None
 
-    (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_q, mesh_query, mesh_sampled_queries, sampled_queries_edge_index)
+    (output_coord_all, output, out_monitor), (phix, phiy) = model(
+        data,
+        input_q,
+        input_q,
+        mesh_query,
+        mesh_sampled_queries,
+        sampled_queries_edge_index,
+    )
 
     if not use_add_random_query:
         phix = None
         phiy = None
 
     # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
-    output_coord = output_coord_all[:num_nodes*bs]
+    output_coord = output_coord_all[: num_nodes * bs]
     # print(output_coord_all.shape, output_coord.shape)
 
     # mesh_query_x_all = torch.cat([mesh_query_x, mesh_sampled_queries[:, :, 0].view(-1, 1)], dim=0)
     # mesh_query_y_all = torch.cat([mesh_query_y, mesh_sampled_queries[:, :, 1].view(-1, 1)], dim=0)
     mesh_query_x_all = mesh_sampled_queries_x
     mesh_query_y_all = mesh_sampled_queries_y
-    return output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all
+    return (
+        output_coord,
+        output,
+        out_monitor,
+        phix,
+        phiy,
+        mesh_query_x_all,
+        mesh_query_y_all,
+    )
 
 
 def train_unsupervised(
-        loader, model, optimizer, device, loss_func,
-        use_jacob=False,
-        use_inversion_loss=False,
-        use_inversion_diff_loss=False,
-        use_area_loss=False,
-        use_convex_loss=False,
-        use_add_random_query=True,
-        finite_difference_grad=True,
-        weight_area_loss=1,
-        weight_deform_loss=1,
-        weight_eq_residual_loss=1,
-        scaler=100):
+    loader,
+    model,
+    optimizer,
+    device,
+    loss_func,
+    use_jacob=False,
+    use_inversion_loss=False,
+    use_inversion_diff_loss=False,
+    use_area_loss=False,
+    use_convex_loss=False,
+    use_add_random_query=True,
+    finite_difference_grad=True,
+    weight_area_loss=1,
+    weight_deform_loss=1,
+    weight_eq_residual_loss=1,
+    scaler=100,
+):
     """
     Trains a PyTorch model using the given data loader, optimizer,
         and loss function.
@@ -771,9 +913,27 @@ def train_unsupervised(
         optimizer.zero_grad()
         data = batch.to(device)
 
-        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model, use_add_random_query=use_add_random_query)
+        (
+            output_coord,
+            output,
+            out_monitor,
+            phix,
+            phiy,
+            mesh_query_x_all,
+            mesh_query_y_all,
+        ) = model_forward(bs, data, model, use_add_random_query=use_add_random_query)
         if use_add_random_query:
-            loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func, finite_difference_grad=finite_difference_grad)
+            loss_eq_residual, loss_convex = compute_phi_hessian(
+                mesh_query_x_all,
+                mesh_query_y_all,
+                phix,
+                phiy,
+                out_monitor,
+                bs,
+                data,
+                loss_func=loss_func,
+                finite_difference_grad=finite_difference_grad,
+            )
         else:
             loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
 
@@ -787,26 +947,25 @@ def train_unsupervised(
         area_loss = 0
         # deformation loss
         deform_loss = 1000 * (
-            loss_func(output_coord, data.y) if not use_jacob else
-            jacobLoss(model, output_coord, data, loss_func)
+            loss_func(output_coord, data.y)
+            if not use_jacob
+            else jacobLoss(model, output_coord, data, loss_func)
         )
         # Inversion loss
         if use_inversion_loss:
             inversion_loss = get_inversion_loss(
-                output_coord, data.y, data.face,
-                batch_size=bs, scaler=scaler)
+                output_coord, data.y, data.face, batch_size=bs, scaler=scaler
+            )
         # if use_area_loss:
-        area_loss = get_area_loss(
-            output_coord, data.y, data.face, bs, scaler)
-        
+        area_loss = get_area_loss(output_coord, data.y, data.face, bs, scaler)
 
         loss = (
-            weight_deform_loss * deform_loss +
-            inversion_loss +
-            inversion_diff_loss +
-            weight_area_loss * area_loss  + 
-            weight_eq_residual_loss * loss_eq_residual +
-            loss_convex
+            weight_deform_loss * deform_loss
+            + inversion_loss
+            + inversion_diff_loss
+            + weight_area_loss * area_loss
+            + weight_eq_residual_loss * loss_eq_residual
+            + loss_convex
         )
 
         # Jacobian loss
@@ -814,7 +973,7 @@ def train_unsupervised(
             loss.backward(retain_graph=True)
         else:
             loss.backward()
-        
+
         # print_parameter_grad(model)
 
         optimizer.step()
@@ -822,40 +981,48 @@ def train_unsupervised(
         total_eq_residual_loss += loss_eq_residual.item()
         total_convex_loss += loss_convex.item() if use_convex_loss else 0
         total_deform_loss += deform_loss.item()
-        total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0 # noqa
-        total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
+        total_inversion_loss += (
+            inversion_loss.item() if use_inversion_loss else 0
+        )  # noqa
+        total_inversion_diff_loss += (
+            inversion_diff_loss.item() if use_inversion_diff_loss else 0
+        )  # noqa
         total_area_loss += area_loss.item()
 
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
-        "equation_residual": total_eq_residual_loss / len(loader)
+        "equation_residual": total_eq_residual_loss / len(loader),
     }
-    if (use_convex_loss):
+    if use_convex_loss:
         res["convex_loss"] = total_convex_loss / len(loader)
-    if (use_inversion_loss):
+    if use_inversion_loss:
         res["inversion_loss"] = total_inversion_loss / len(loader)
-    if (use_inversion_diff_loss):
+    if use_inversion_diff_loss:
         res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
-    if (use_area_loss):
+    if use_area_loss:
         res["area_loss"] = total_area_loss / len(loader)
 
     return res
 
 
 def evaluate_unsupervised(
-        loader, model, device, loss_func,
-        use_jacob=False,
-        use_inversion_loss=False,
-        use_inversion_diff_loss=False,
-        use_area_loss=False,
-        use_convex_loss=False,
-        use_add_random_query=True,
-        finite_difference_grad=True,
-        weight_area_loss=1,
-        weight_deform_loss=1,
-        weight_eq_residual_loss=1,
-        scaler=100):
+    loader,
+    model,
+    device,
+    loss_func,
+    use_jacob=False,
+    use_inversion_loss=False,
+    use_inversion_diff_loss=False,
+    use_area_loss=False,
+    use_convex_loss=False,
+    use_add_random_query=True,
+    finite_difference_grad=True,
+    weight_area_loss=1,
+    weight_deform_loss=1,
+    weight_eq_residual_loss=1,
+    scaler=100,
+):
     """
     Evaluates a model using the given data loader and loss function.
 
@@ -889,68 +1056,94 @@ def evaluate_unsupervised(
 
         # with torch.no_grad():
 
-        output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model, use_add_random_query=use_add_random_query)
+        (
+            output_coord,
+            output,
+            out_monitor,
+            phix,
+            phiy,
+            mesh_query_x_all,
+            mesh_query_y_all,
+        ) = model_forward(bs, data, model, use_add_random_query=use_add_random_query)
 
         if use_add_random_query:
-            loss_eq_residual, loss_convex = compute_phi_hessian(mesh_query_x_all, mesh_query_y_all, phix, phiy, out_monitor, bs, data, loss_func=loss_func, finite_difference_grad=finite_difference_grad)
+            loss_eq_residual, loss_convex = compute_phi_hessian(
+                mesh_query_x_all,
+                mesh_query_y_all,
+                phix,
+                phiy,
+                out_monitor,
+                bs,
+                data,
+                loss_func=loss_func,
+                finite_difference_grad=finite_difference_grad,
+            )
         else:
             loss_eq_residual, loss_convex = torch.tensor(0.0), torch.tensor(0.0)
-        
+
         if not use_convex_loss:
             loss_convex = torch.tensor(0.0)
 
-        deform_loss =  1000 * (
-            loss_func(output_coord, data.y) if not use_jacob else
-            jacobLoss(model, output_coord, data, loss_func)
+        deform_loss = 1000 * (
+            loss_func(output_coord, data.y)
+            if not use_jacob
+            else jacobLoss(model, output_coord, data, loss_func)
         )
         inversion_loss = 0
         if use_inversion_loss:
             inversion_loss = get_inversion_loss(
-                output_coord, data.y, data.face,
-                batch_size=bs, scaler=scaler)
+                output_coord, data.y, data.face, batch_size=bs, scaler=scaler
+            )
         # if use_area_loss:
-        area_loss = get_area_loss(
-                output_coord, data.y, data.face, bs, scaler)
+        area_loss = get_area_loss(output_coord, data.y, data.face, bs, scaler)
 
         loss = (
-            weight_deform_loss * deform_loss +
-            inversion_loss +
-            inversion_diff_loss +
-            weight_area_loss * area_loss +
-            weight_eq_residual_loss * loss_eq_residual +
-            loss_convex
+            weight_deform_loss * deform_loss
+            + inversion_loss
+            + inversion_diff_loss
+            + weight_area_loss * area_loss
+            + weight_eq_residual_loss * loss_eq_residual
+            + loss_convex
         )
 
         total_loss += loss.item()
         total_eq_residual_loss += loss_eq_residual.item()
         total_convex_loss += loss_convex.item() if use_convex_loss else 0
         total_deform_loss += deform_loss.item()
-        total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
-        total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+        total_inversion_diff_loss += (
+            inversion_diff_loss.item() if use_inversion_diff_loss else 0
+        )  # noqa
+        total_inversion_loss += (
+            inversion_loss.item() if use_inversion_loss else 0
+        )  # noqa
         total_area_loss += area_loss.item()
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
-        "equation_residual": total_eq_residual_loss / len(loader)
+        "equation_residual": total_eq_residual_loss / len(loader),
     }
-    if (use_convex_loss):
+    if use_convex_loss:
         res["convex_loss"] = total_convex_loss / len(loader)
-    if (use_inversion_loss):
+    if use_inversion_loss:
         res["inversion_loss"] = total_inversion_loss / len(loader)
-    if (use_inversion_diff_loss):
+    if use_inversion_diff_loss:
         res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
-    if (use_area_loss):
+    if use_area_loss:
         res["area_loss"] = total_area_loss / len(loader)
     return res
 
 
 def evaluate(
-        loader, model, device, loss_func,
-        use_jacob=False,
-        use_inversion_loss=False,
-        use_inversion_diff_loss=False,
-        use_area_loss=False,
-        scaler=100):
+    loader,
+    model,
+    device,
+    loss_func,
+    use_jacob=False,
+    use_inversion_loss=False,
+    use_inversion_diff_loss=False,
+    use_area_loss=False,
+    scaler=100,
+):
     """
     Evaluates a model using the given data loader and loss function.
 
@@ -981,34 +1174,38 @@ def evaluate(
 
         with torch.no_grad():
             out = model(data)
-            deform_loss = 1000*(
-                loss_func(out, data.y) if not use_jacob else
-                jacobLoss(model, out, data, loss_func)
+            deform_loss = 1000 * (
+                loss_func(out, data.y)
+                if not use_jacob
+                else jacobLoss(model, out, data, loss_func)
             )
             inversion_loss = 0
             if use_inversion_loss:
                 inversion_loss = get_inversion_loss(
-                    out, data.y, data.face,
-                    batch_size=bs, scaler=scaler)
+                    out, data.y, data.face, batch_size=bs, scaler=scaler
+                )
             if use_area_loss:
-                area_loss = get_area_loss(
-                    out, data.y, data.face, bs, scaler)
+                area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
 
             loss = inversion_loss + deform_loss
             total_loss += loss.item()
             total_deform_loss += deform_loss.item()
-            total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
-            total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+            total_inversion_diff_loss += (
+                inversion_diff_loss.item() if use_inversion_diff_loss else 0
+            )  # noqa
+            total_inversion_loss += (
+                inversion_loss.item() if use_inversion_loss else 0
+            )  # noqa
             total_area_loss += area_loss.item() if use_area_loss else 0
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
     }
-    if (use_inversion_loss):
+    if use_inversion_loss:
         res["inversion_loss"] = total_inversion_loss / len(loader)
-    if (use_inversion_diff_loss):
+    if use_inversion_diff_loss:
         res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
-    if (use_area_loss):
+    if use_area_loss:
         res["area_loss"] = total_area_loss / len(loader)
     return res
 
@@ -1040,14 +1237,13 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
     """
     model.eval()
     num_tangle = 0
-    if (method == "inversion"):
-        loader = DataLoader(dataset=dataset, batch_size=1,
-                            shuffle=False)
+    if method == "inversion":
+        loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False)
         bs = loader.batch_size
         for data in loader:
             with torch.no_grad():
                 data = data.to(device)
-                # # Create mesh query for deformer, seperate from the original mesh as feature for encoder 
+                # # Create mesh query for deformer, seperate from the original mesh as feature for encoder
                 # mesh_query_x = data.mesh_feat[:, 0].view(-1, 1).detach().clone()
                 # mesh_query_y = data.mesh_feat[:, 1].view(-1, 1).detach().clone()
                 # mesh_query_x.requires_grad = True
@@ -1065,7 +1261,6 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
                 # mesh_sampled_queries_y.requires_grad = True
                 # mesh_sampled_queries = torch.cat([mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1).view(-1, 2)
 
-
                 # coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
                 # coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
                 # coord_ori_x.requires_grad = True
@@ -1080,7 +1275,15 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
                 # (output_coord_all, output, out_monitor), (phix, phiy) = model(data.to(device), input_q.to(device), input_q.to(device), mesh_query.to(device), mesh_sampled_queries.to(device), sampled_queries_edge_index)
                 # # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
                 # output_data = output_coord_all[:num_nodes*bs]
-                output_coord, output, out_monitor, phix, phiy, mesh_query_x_all, mesh_query_y_all = model_forward(bs, data, model)
+                (
+                    output_coord,
+                    output,
+                    out_monitor,
+                    phix,
+                    phiy,
+                    mesh_query_x_all,
+                    mesh_query_y_all,
+                ) = model_forward(bs, data, model)
 
                 out_area = get_face_area(output_coord, data.face)
                 in_area = get_face_area(data.x[:, :2], data.face)
@@ -1095,7 +1298,7 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
         return num_tangle / len(dataset)
 
     # deprecated, do not use this option unless you know what you are doing
-    elif (method == "msg"):
+    elif method == "msg":
         for i in range(len(dataset)):
             data = dataset[i].to(device)
             with torch.no_grad():
@@ -1110,14 +1313,17 @@ def count_dataset_tangle(dataset, model, device, method="inversion"):
 
 
 def evaluate_repeat_sampling(
-        dataset, model, device, loss_func,
-        use_inversion_loss=False,
-        use_inversion_diff_loss=False,
-        use_area_loss=False,
-        scaler=100,
-        batch_size=5,
-        num_samples=1
-        ):
+    dataset,
+    model,
+    device,
+    loss_func,
+    use_inversion_loss=False,
+    use_inversion_diff_loss=False,
+    use_area_loss=False,
+    scaler=100,
+    batch_size=5,
+    num_samples=1,
+):
     """
     Evaluates a model using the given data loader and loss function.
 
@@ -1137,9 +1343,7 @@ def evaluate_repeat_sampling(
         DataLoader(dataset=dataset, batch_size=bs, shuffle=False)
         for i in range(num_samples)
     ]
-    data_iters = [
-        iter(loader) for loader in loaders
-    ]
+    data_iters = [iter(loader) for loader in loaders]
     total_loss = 0
     total_deform_loss = 0
     total_inversion_loss = 0
@@ -1158,34 +1362,36 @@ def evaluate_repeat_sampling(
             out = [model(data) for data in data_list]
             out = torch.stack(out, dim=0)
             out = torch.mean(out, dim=0)
-            deform_loss = 1000*(
-                loss_func(out, data_list[0].y)
-            )
+            deform_loss = 1000 * (loss_func(out, data_list[0].y))
             if use_area_loss:
                 area_loss = get_area_loss(
-                    out, data_list[0].y, data_list[0].face, bs, scaler)
+                    out, data_list[0].y, data_list[0].face, bs, scaler
+                )
 
             loss = inversion_loss + deform_loss
             total_loss += loss.item()
             total_deform_loss += deform_loss.item()
-            total_inversion_diff_loss += inversion_diff_loss.item() if use_inversion_diff_loss else 0 # noqa
-            total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+            total_inversion_diff_loss += (
+                inversion_diff_loss.item() if use_inversion_diff_loss else 0
+            )  # noqa
+            total_inversion_loss += (
+                inversion_loss.item() if use_inversion_loss else 0
+            )  # noqa
             total_area_loss += area_loss.item() if use_area_loss else 0
     res = {
         "total_loss": total_loss / len(loaders[0]),
         "deform_loss": total_deform_loss / len(loaders[0]),
     }
-    if (use_inversion_loss):
+    if use_inversion_loss:
         res["inversion_loss"] = total_inversion_loss / len(loaders[0])
-    if (use_inversion_diff_loss):
+    if use_inversion_diff_loss:
         res["inversion_diff_loss"] = total_inversion_diff_loss / len(loaders[0])  # noqa
-    if (use_area_loss):
+    if use_area_loss:
         res["area_loss"] = total_area_loss / len(loaders[0])
     return res
 
 
-def count_dataset_tangle_repeat_sampling(
-        dataset, model, device, num_samples=1):
+def count_dataset_tangle_repeat_sampling(dataset, model, device, num_samples=1):
     """
     Computes the average number of tangles in a dataset.
 
@@ -1203,9 +1409,7 @@ def count_dataset_tangle_repeat_sampling(
         DataLoader(dataset=dataset, batch_size=1, shuffle=False)
         for i in range(num_samples)
     ]
-    data_iters = [
-        iter(loader) for loader in loaders
-    ]
+    data_iters = [iter(loader) for loader in loaders]
     for i in range(len(loaders[0])):
         with torch.no_grad():
             data_list = [next(data_iter) for data_iter in data_iters]
@@ -1226,11 +1430,7 @@ def count_dataset_tangle_repeat_sampling(
     return num_tangle / len(dataset)
 
 
-def evaluate_repeat(
-        dataset, model, device, loss_func,
-        scaler=100,
-        num_repeat=1
-        ):
+def evaluate_repeat(dataset, model, device, loss_func, scaler=100, num_repeat=1):
     """
     Evaluates model performance when sampling for different number of times.
     this function will evaluate:
@@ -1272,11 +1472,8 @@ def evaluate_repeat(
             out = torch.stack(out, dim=0)
             out = torch.mean(out, dim=0)
             # calculate the loss
-            deform_loss = 1000*(
-                loss_func(out, data_list[0].y)
-            )
-            area_loss = get_area_loss(
-                out, data_list[0].y, data_list[0].face, 1, scaler)
+            deform_loss = 1000 * (loss_func(out, data_list[0].y))
+            area_loss = get_area_loss(out, data_list[0].y, data_list[0].face, 1, scaler)
 
             loss = inversion_loss + deform_loss
             total_loss += loss.item()
@@ -1295,7 +1492,7 @@ def evaluate_repeat(
         "total_loss": total_loss / len(dataset),
         "deform_loss": total_deform_loss / len(dataset),
         "tangle": num_tangle / len(dataset),
-        "area_loss": total_area_loss / len(dataset)
+        "area_loss": total_area_loss / len(dataset),
     }
 
 
@@ -1313,6 +1510,6 @@ def load_model(model, weight_path, strict=False):
     try:
         model.load_state_dict(torch.load(weight_path), strict=strict)
     except RuntimeError:
-        state_dict = torch.load(weight_path, map_location=torch.device('cpu'))
+        state_dict = torch.load(weight_path, map_location=torch.device("cpu"))
         model.load_state_dict(state_dict, strict=strict)
     return model
