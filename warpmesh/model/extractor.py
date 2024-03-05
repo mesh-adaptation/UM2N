@@ -5,7 +5,7 @@ from torch_geometric.nn import MessagePassing
 import torch
 import torch.nn.functional as F
 
-__all__ = ['LocalFeatExtractor', 'GlobalFeatExtractor']
+__all__ = ["LocalFeatExtractor", "GlobalFeatExtractor"]
 
 
 class LocalFeatExtractor(MessagePassing):
@@ -22,6 +22,7 @@ class LocalFeatExtractor(MessagePassing):
         lin_3 (torch.nn.Linear): Third linear layer.
         activate (torch.nn.SELU): Activation function.
     """
+
     def __init__(self, num_feat=10, out=16):
         """
         Initialize the layer.
@@ -30,13 +31,13 @@ class LocalFeatExtractor(MessagePassing):
             num_feat (int): Number of input features per node.
             out (int): Number of output features per node.
         """
-        super().__init__(aggr='add')
+        super().__init__(aggr="add")
         # 1*distance + 2*feat + 2*coord
-        num_in_feat = 1 + (num_feat-2)*2 + 2
+        num_in_feat = 1 + (num_feat - 2) * 2 + 2
         self.lin_1 = torch.nn.Linear(num_in_feat, 64)
         self.lin_2 = torch.nn.Linear(64, 64)
         # minus 3 because dist, corrd is added back
-        self.lin_3 = torch.nn.Linear(64, out-1)
+        self.lin_3 = torch.nn.Linear(64, out - 1)
         self.activate = torch.nn.SELU()
 
     def forward(self, input, edge_index):
@@ -62,9 +63,10 @@ class LocalFeatExtractor(MessagePassing):
         x_coord_diff = x_j_coord - x_i_coord
         x_coord_dist = torch.norm(x_coord_diff, dim=1, keepdim=True)
 
-        x_edge_feat = torch.cat([
-            x_coord_diff, x_coord_dist,
-            x_i_feat, x_j_feat], dim=1)  # [num_node, feat_dim]
+        x_edge_feat = torch.cat(
+            [x_coord_diff, x_coord_dist, x_i_feat, x_j_feat], dim=1
+        )  # [num_node, feat_dim]
+        print("x_i x_j ", x_i.shape, x_j.shape, "x_edge_feat ", x_edge_feat.shape)
 
         x_edge_feat = self.lin_1(x_edge_feat)
         x_edge_feat = self.activate(x_edge_feat)
@@ -73,8 +75,7 @@ class LocalFeatExtractor(MessagePassing):
         x_edge_feat = self.lin_3(x_edge_feat)
         x_edge_feat = self.activate(x_edge_feat)
 
-        x_edge_feat = torch.cat([
-            x_edge_feat, x_coord_dist], dim=1)
+        x_edge_feat = torch.cat([x_edge_feat, x_coord_dist], dim=1)
 
         return x_edge_feat
 
@@ -90,6 +91,7 @@ class GlobalFeatExtractor(torch.nn.Module):
         dropout (torch.nn.Dropout): Dropout layer.
         final_pool (torch.nn.AdaptiveAvgPool2d): Final pooling layer.
     """
+
     def __init__(self, in_c, out_c, drop_p=0.2, use_drop=True):
         super().__init__()
         """

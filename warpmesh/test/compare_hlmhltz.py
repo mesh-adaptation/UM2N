@@ -29,7 +29,6 @@ def compare_error(
     n_dist = data_in.dist_params["n_dist"].cpu().numpy()[0]
     # print('showing dist_params:', data_in.dist_params)
     # print("data in ", data_in)
-    monitor_val = data_in.mesh_feat[:, -1]
 
     if model_name == "MRTransformer":
         model_name = "M2T"
@@ -228,8 +227,9 @@ def compare_error(
     err_v_min = -err_v_max
 
     # Visualize the monitor values of MA
+    monitor_val = data_in.monitor_val
     monitor_val_vis_holder = fd.Function(ma_res["function_space"])
-    monitor_val_vis_holder.dat.data[:] = monitor_val.detach().cpu().numpy()
+    monitor_val_vis_holder.dat.data[:] = monitor_val[:, 0]
     # Monitor values
     cb = fd.tripcolor(monitor_val_vis_holder, cmap=cmap, axes=ax[2, 0])
     ax[2, 0].set_title(f"Monitor values")
@@ -273,4 +273,5 @@ def compare_error(
         "error_ma_mesh": error_ma_mesh,
         "u_exact": u_exact,
         "plot_more": fig,
+        "plot_data": ax,
     }

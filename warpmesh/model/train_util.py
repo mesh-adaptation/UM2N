@@ -774,7 +774,8 @@ def compute_phi_hessian(
         # monitor = monitor_grad(alpha, jac_xi_1, jac_xi_2) /1000
         # ===========================
 
-        lhs = enhanced_hessian_norm * det_hessian
+        # TODO: here the 1 + 5 * heesian_norm is the monitor function used when generating dataset
+        lhs = (1 + 5 * enhanced_hessian_norm) * det_hessian
         rhs = torch.sum(hessian_norm, dim=(1, 2)) / sampled_num
         rhs = rhs.unsqueeze(-1).repeat(1, sampled_num).unsqueeze(-1)
         loss_eq_residual = 1000 * loss_func(lhs, rhs)

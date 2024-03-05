@@ -14,6 +14,7 @@ import time
 import torch
 import os
 import wandb
+import pickle
 
 import firedrake as fd
 import matplotlib.pyplot as plt  # noqa
@@ -238,6 +239,7 @@ def get_problem_type(ds_root):
     print("ds_root", ds_root)
     ds_type = ds_root.split("/")[-2]
     meshtype = int(ds_root.split("/")[-3].split("_")[-1])
+    # meshtype = 6
     problem_list = ds_type.split("_")
     problem_type = problem_list[0]
     if len(problem_list) == 2:
@@ -286,10 +288,12 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
         log_dir = os.path.join(eval_dir, "log")
         plot_dir = os.path.join(eval_dir, "plot")
         plot_more_dir = os.path.join(eval_dir, "plot_more")
+        plot_data_dir = os.path.join(eval_dir, "plot_data")
         print("log_dir issss", log_dir)
         wm.mkdir_if_not_exist(log_dir)
         wm.mkdir_if_not_exist(plot_dir)
         wm.mkdir_if_not_exist(plot_more_dir)
+        wm.mkdir_if_not_exist(plot_data_dir)
 
         model = model.to(device)
         total_num = len(dataset)
@@ -366,6 +370,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
                     out = output_coord_all[: num_nodes * bs]
                     # (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, input_q, input_q, mesh_query, poly_mesh=True if domain == "poly" else False)
                 elif config.model_used == "M2N":
+                    # print(sample)
                     out = model(sample)
                 elif config.model_used == "MRN":
                     out = model(sample)
@@ -418,6 +423,13 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
             temp_error_model = compare_res["error_model_mesh"]
             temp_error_og = compare_res["error_og_mesh"]
             temp_error_ma = compare_res["error_ma_mesh"]
+
+            plot_data = compare_res["plot_data"]
+            # Save plot data
+            with open(
+                os.path.join(plot_data_dir, f"plot_data_{idx:04d}.pkl"), "wb"
+            ) as p:
+                pickle.dump(plot_data, p)
 
             plot_more = compare_res["plot_more"]
             plot_more.savefig(os.path.join(plot_more_dir, f"plot_{idx:04d}.png"))
@@ -525,6 +537,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
         evaluator.make_log_dir()
         evaluator.make_plot_dir()
         evaluator.make_plot_more_dir()
+        evaluator.make_plot_data_dir()
         model_name = config.model_used
         if config.model_used == "MRTransform":
             model_name = "M2T"
@@ -559,6 +572,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
             evaluator.make_log_dir()
             evaluator.make_plot_dir()
             evaluator.make_plot_more_dir()
+            evaluator.make_plot_data_dir()
 
             eval_res = evaluator.eval_problem()  # noqa
 
@@ -747,7 +761,7 @@ if __name__ == "__main__":
 
     run_id_m2t_gatdeformer = "nj32xl4l"
 
-    epoch = 79
+    epoch = 999
 
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
@@ -757,8 +771,26 @@ if __name__ == "__main__":
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
     run_ids = [run_id_pi_m2t, run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
-    run_ids = [run_id_m2t_gatdeformer]
     # run_ids = [run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
+
+    ####################
+    ## Mini set Area ##
+    ####################
+    run_id_m2n_miniset = "cy82mqh2"
+    run_id_m2n_enhance_miniset = "u34s941u"
+    run_id_MRT_miniset = "oasvyxn1"
+    run_id_PIMRT_miniset_old = "u5ni7dtm"
+    # run_id_PIMRT_miniset = "va500tlg"
+    run_id_PIMRT_miniset = "3xe6n0nz"
+
+    # run_ids = [
+    #     run_id_m2n_miniset,
+    #     run_id_m2n_enhance_miniset,
+    #     run_id_MRT_miniset,
+    #     run_id_PIMRT_miniset,
+    # ]
+
+    run_ids = [run_id_PIMRT_miniset_old]
 
     ds_root_helmholtz = [
         "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
@@ -770,13 +802,19 @@ if __name__ == "__main__":
     ]
 
     ds_root_helmholtz = [
-        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=5_aniso_full_meshtype_6",
-        # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
+        # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=5_aniso_full_meshtype_6",
+        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
         # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=300_aniso_full_meshtype_2",
     ]
 
+    # ds_root_helmholtz = [
+    #     # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=5_aniso_full_meshtype_6",
+    #     "./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6"
+    #     # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=300_aniso_full_meshtype_2",
+    # ]
+
     ds_root_swirl = [
-        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_20_interval_5_meshtype_6"
+        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15"
     ]
 
     ds_root_burgers = [
@@ -789,8 +827,8 @@ if __name__ == "__main__":
     # ds_roots = [*ds_root_helmholtz, *ds_root_swirl, *ds_root_burgers]
     # ds_roots = [*ds_root_burgers]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
-    ds_roots = [*ds_root_helmholtz]
-    # ds_roots = [*ds_root_swirl]
+    # ds_roots = [*ds_root_helmholtz]
+    ds_roots = [*ds_root_swirl]
 
     for run_id in run_ids:
         for ds_root in ds_roots:
@@ -802,9 +840,10 @@ if __name__ == "__main__":
             config = SimpleNamespace(**run.config)
 
             # Append the monitor val at the end
-            config.mesh_feat.append("monitor_val")
+            # config.mesh_feat.append("monitor_val")
 
             print("# Evaluation Pipeline Started\n")
+            print(config)
             # init
             eval_dir = init_dir(
                 config, run_id, epoch, ds_root, problem_type, domain

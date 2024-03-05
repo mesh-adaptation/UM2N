@@ -252,6 +252,11 @@ class MeshDataset(Dataset):
                 if data.item().get("f") is not None
                 else None
             ),  # noqa
+            monitor_val=(
+                torch.from_numpy(data.item().get("monitor_val")).float()
+                if data.item().get("monitor_val") is not None
+                else None
+            ),  # noqa: E501
             node_num=num_nodes,
             poly_mesh=(
                 data.item().get("poly_mesh")

@@ -5,6 +5,7 @@ import firedrake as fd
 import os
 import time
 import torch
+import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -59,6 +60,7 @@ class SwirlEvaluator:
         self.log_path = os.path.join(eval_dir, "log")
         self.plot_path = os.path.join(eval_dir, "plot")
         self.plot_more_path = os.path.join(eval_dir, "plot_more")
+        self.plot_data_path = os.path.join(eval_dir, "plot_data")
         self.save_interval = kwargs.pop("save_interval", 5)
 
         # Init coords setup
@@ -308,6 +310,9 @@ class SwirlEvaluator:
 
     def make_plot_more_dir(self):
         wm.mkdir_if_not_exist(self.plot_more_path)
+
+    def make_plot_data_dir(self):
+        wm.mkdir_if_not_exist(self.plot_data_path)
 
     def eval_problem(self, model_name="model"):
         print("In eval problem")
@@ -619,17 +624,16 @@ class SwirlEvaluator:
                 err_v_max = err_abs_max_val
                 err_v_min = -err_v_max
 
+                # Visualize the monitor values of MA
+                monitor_val = raw_data.get("monitor_val")
+                monitor_val_vis_holder = fd.Function(self.scalar_space)
+                monitor_val_vis_holder.dat.data[:] = monitor_val[:, 0]
+
                 # Error on high resolution mesh
-                cb = fd.tripcolor(
-                    fd.assemble(u_exact - u_exact),
-                    cmap=cmap,
-                    axes=ax[2, 0],
-                    vmax=err_v_max,
-                    vmin=err_v_min,
-                )
-                ax[2, 0].set_title(f"Error Map High Resolution")
+                cb = fd.tripcolor(monitor_val_vis_holder, cmap=cmap, axes=ax[2, 0])
+                ax[2, 0].set_title(f"Monitor Values")
                 plt.colorbar(cb)
-                # Error on orginal low resolution uniform mesh
+                # Monitor values for mesh movement
                 cb = fd.tripcolor(
                     err_orignal_mesh,
                     cmap=cmap,
@@ -671,6 +675,12 @@ class SwirlEvaluator:
                 for rr in range(rows):
                     for cc in range(cols):
                         ax[rr, cc].set_aspect("equal", "box")
+
+                # Save plot data
+                with open(
+                    os.path.join(self.plot_data_path, f"plot_data_{idx:04d}.pkl"), "wb"
+                ) as p:
+                    pickle.dump(ax, p)
 
                 fig.savefig(
                     os.path.join(self.plot_more_path, f"plot_{idx:04d}.png")
