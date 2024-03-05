@@ -1,4 +1,4 @@
-batch_size: 4
+batch_size: 3
 check_tangle_interval: 20
 cluster_r: 0.35
 conv_feat:
