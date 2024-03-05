@@ -112,9 +112,9 @@ num_val = int(n_samples * p_val)
 # parameters for dataset challenging level
 sigma_mean_scaler = 1 / 4  #
 sigma_sigma_scaler = (
-    1 / 5
+    1 / 6
 )  # larger, less challenging (because the gaussian is more like a circle)
-sigma_eps = 1 / 20
+sigma_eps = 1 / 8
 # =======================================
 
 

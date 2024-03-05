@@ -7,11 +7,11 @@
 # Resolution: 0.05, 0.055
 
 # use 2 / 6 / 0
-mesh_type=2
+mesh_type=6
 # training set build
 rand_seed=63
 lcs=(0.05)
-n_samples_train=300
+n_samples_train=50
 
 # helmholtz square case
 for i in "${lcs[@]}"; do

@@ -62,6 +62,7 @@ class SwirlEvaluator:
         self.plot_more_path = os.path.join(eval_dir, "plot_more")
         self.plot_data_path = os.path.join(eval_dir, "plot_data")
         self.save_interval = kwargs.pop("save_interval", 5)
+        self.num_samples_to_eval = kwargs.pop("num_samples_to_eval", 100)
 
         # Init coords setup
         self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
@@ -319,6 +320,7 @@ class SwirlEvaluator:
         self.t = 0.0
         step = 0
         idx = 0
+        eval_cnt = 0
         res = {
             "deform_loss": None,  # nodal position loss
             "tangled_element": None,  # tangled elements on a mesh  # noqa
@@ -694,11 +696,16 @@ class SwirlEvaluator:
                 idx += 1
                 plt.close()
 
+                eval_cnt += 1
+
             # time stepping and prep for next solving iter
             self.t += self.dt
             step += 1
             self.u_fine.assign(self.u_cur_fine)
             self.u_fine_buffer.assign(self.u_cur_fine)
+
+            if eval_cnt >= self.num_samples_to_eval:
+                break
 
         return
 

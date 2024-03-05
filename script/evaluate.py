@@ -532,6 +532,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
             T=T,
             n_step=n_step,
             model_used=config.model_used,
+            num_samples_to_eval=num_samples,
         )
 
         evaluator.make_log_dir()
@@ -773,14 +774,13 @@ if __name__ == "__main__":
     run_ids = [run_id_pi_m2t, run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
     # run_ids = [run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
 
-    ####################
-    ## Mini set Area ##
-    ####################
+    ##########################################
+    ## Mini set Area (train on old dataset) ##
+    ##########################################
     run_id_m2n_miniset = "cy82mqh2"
     run_id_m2n_enhance_miniset = "u34s941u"
     run_id_MRT_miniset = "oasvyxn1"
     run_id_PIMRT_miniset_old = "u5ni7dtm"
-    # run_id_PIMRT_miniset = "va500tlg"
     run_id_PIMRT_miniset = "3xe6n0nz"
 
     # run_ids = [
@@ -790,7 +790,21 @@ if __name__ == "__main__":
     #     run_id_PIMRT_miniset,
     # ]
 
-    run_ids = [run_id_PIMRT_miniset_old]
+    ##########################################
+    ## Mini set Area (train on new dataset) ##
+    ##########################################
+    run_id_m2n_miniset_new = "ebu7ohbn"
+    run_id_m2n_enhance_miniset_new = "l9549fzv"
+    run_id_MRT_miniset_new = "z4k0ut2x"
+    # run_id_PIMRT_miniset_old = "u5ni7dtm"
+    run_id_PIMRT_miniset_new = "jw1gkhwd"
+
+    run_ids = [
+        run_id_m2n_miniset_new,
+        run_id_m2n_enhance_miniset_new,
+        run_id_MRT_miniset_new,
+        run_id_PIMRT_miniset_new,
+    ]
 
     ds_root_helmholtz = [
         "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
@@ -827,8 +841,8 @@ if __name__ == "__main__":
     # ds_roots = [*ds_root_helmholtz, *ds_root_swirl, *ds_root_burgers]
     # ds_roots = [*ds_root_burgers]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
-    # ds_roots = [*ds_root_helmholtz]
-    ds_roots = [*ds_root_swirl]
+    ds_roots = [*ds_root_helmholtz]
+    # ds_roots = [*ds_root_swirl]
 
     for run_id in run_ids:
         for ds_root in ds_roots:
@@ -854,7 +868,7 @@ if __name__ == "__main__":
             # bench_res = benchmark_model(
             #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
             bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=100
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=20
             )
 
             write_sumo(eval_dir, ds_root)

@@ -229,7 +229,7 @@ def compare_error(
     # Visualize the monitor values of MA
     monitor_val = data_in.monitor_val
     monitor_val_vis_holder = fd.Function(ma_res["function_space"])
-    monitor_val_vis_holder.dat.data[:] = monitor_val[:, 0]
+    monitor_val_vis_holder.dat.data[:] = monitor_val[:, 0].detach().cpu().numpy()
     # Monitor values
     cb = fd.tripcolor(monitor_val_vis_holder, cmap=cmap, axes=ax[2, 0])
     ax[2, 0].set_title(f"Monitor values")

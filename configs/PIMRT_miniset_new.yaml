@@ -1,4 +1,4 @@
-batch_size: 10
+batch_size: 4
 check_tangle_interval: 20
 cluster_r: 0.35
 conv_feat:
@@ -7,7 +7,7 @@ conv_feat:
 conv_feat_fix:
 - conv_uh_fix
 count_tangle_method: inversion
-data_root: ./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6
+data_root: ./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_meshtype_6
 inversion_loss_scaler: 10000000000.0
 is_normalise: true
 learning_rate: 5.0e-05
@@ -54,10 +54,10 @@ use_convex_loss: true
 use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false
-use_add_random_query: false
+use_add_random_query: true
 weight_area_loss: 1.0
 weight_deform_loss: 1.0
-weight_eq_residual_loss: 0.0
+weight_eq_residual_loss: 1.0
 weight_decay: 0.1
 finite_difference_grad: false
 freeze_transformer_monitor: false

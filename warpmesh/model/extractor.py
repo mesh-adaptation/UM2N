@@ -66,7 +66,7 @@ class LocalFeatExtractor(MessagePassing):
         x_edge_feat = torch.cat(
             [x_coord_diff, x_coord_dist, x_i_feat, x_j_feat], dim=1
         )  # [num_node, feat_dim]
-        print("x_i x_j ", x_i.shape, x_j.shape, "x_edge_feat ", x_edge_feat.shape)
+        # print("x_i x_j ", x_i.shape, x_j.shape, "x_edge_feat ", x_edge_feat.shape)
 
         x_edge_feat = self.lin_1(x_edge_feat)
         x_edge_feat = self.activate(x_edge_feat)
