@@ -678,11 +678,12 @@ class SwirlEvaluator:
                     for cc in range(cols):
                         ax[rr, cc].set_aspect("equal", "box")
 
-                # Save plot data
-                with open(
-                    os.path.join(self.plot_data_path, f"plot_data_{idx:04d}.pkl"), "wb"
-                ) as p:
-                    pickle.dump(ax, p)
+                # TODO: the saved plot can not be maniplated by another figure
+                # # Save plot data
+                # with open(
+                #     os.path.join(self.plot_data_path, f"plot_data_{idx:04d}.pkl"), "wb"
+                # ) as p:
+                #     pickle.dump(ax, p)
 
                 fig.savefig(
                     os.path.join(self.plot_more_path, f"plot_{idx:04d}.png")

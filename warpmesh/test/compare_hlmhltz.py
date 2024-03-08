@@ -161,6 +161,8 @@ def compare_error(
     # fd.triplot(mesh_model, axes=ax4)
 
     # ====  Plot mesh, solution, error ======================
+    plot_data_dict = {}
+
     rows, cols = 3, 4
     fig, ax = plt.subplots(
         rows, cols, figsize=(cols * 5, rows * 5), layout="compressed"
@@ -179,25 +181,56 @@ def compare_error(
     fd.triplot(mesh_model, axes=ax[0, 3])
     ax[0, 3].set_title(f"Adapted Mesh ({model_name})")
 
+    plot_data_dict["mesh_ma"] = mesh_MA.coordinates.dat.data[:]
+    plot_data_dict["mesh_model"] = mesh_model.coordinates.dat.data[:]
+
     cmap = "seismic"
+
+    u_exact_max = u_exact.dat.data[:].max()
+    u_og_max = uh_og.dat.data[:].max()
+    u_ma_max = uh_ma.dat.data[:].max()
+    u_model_max = uh_model.dat.data[:].max() if uh_model else float("-inf")
+    solution_v_max = max(u_exact_max, u_og_max, u_ma_max, u_model_max)
+
+    u_exact_min = u_exact.dat.data[:].min()
+    u_og_min = uh_og.dat.data[:].min()
+    u_ma_min = uh_ma.dat.data[:].min()
+    u_model_min = uh_model.dat.data[:].min() if uh_model else float("inf")
+    solution_v_min = min(u_exact_min, u_og_min, u_ma_min, u_model_min)
+
     # Solution on high resolution mesh
-    cb = fd.tripcolor(u_exact, cmap=cmap, axes=ax[1, 0])
+    cb = fd.tripcolor(
+        u_exact, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 0]
+    )
     ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
     plt.colorbar(cb)
     # Solution on orginal low resolution uniform mesh
-    cb = fd.tripcolor(uh_og, cmap=cmap, axes=ax[1, 1])
+    cb = fd.tripcolor(
+        uh_og, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 1]
+    )
     ax[1, 1].set_title(f"Solution on uniform Mesh")
     plt.colorbar(cb)
     # Solution on adapted mesh (MA)
-    cb = fd.tripcolor(uh_ma, cmap=cmap, axes=ax[1, 2])
+    cb = fd.tripcolor(
+        uh_ma, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 2]
+    )
     ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
     plt.colorbar(cb)
 
     if uh_model:
         # Solution on adapted mesh (Model)
-        cb = fd.tripcolor(uh_model, cmap=cmap, axes=ax[1, 3])
+        cb = fd.tripcolor(
+            uh_model, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 3]
+        )
         ax[1, 3].set_title(f"Solution on Adapted Mesh ({model_name})")
         plt.colorbar(cb)
+        plot_data_dict["u_model"] = uh_model.dat.data[:]
+
+    plot_data_dict["u_exact"] = u_exact.dat.data[:]
+    plot_data_dict["u_original"] = uh_og.dat.data[:]
+    plot_data_dict["u_ma"] = uh_ma.dat.data[:]
+    plot_data_dict["u_v_max"] = solution_v_max
+    plot_data_dict["u_v_min"] = solution_v_min
 
     err_orignal_mesh = fd.assemble(uh_og_hr - u_exact)
     err_adapted_mesh_ma = fd.assemble(uh_ma_hr - u_exact)
@@ -263,6 +296,19 @@ def compare_error(
         )
         plt.colorbar(cb)
 
+        plot_data_dict["error_map_model"] = err_adapted_mesh_model.dat.data[:]
+        plot_data_dict["error_norm_model"] = error_model_mesh
+
+    plot_data_dict["monitor_values"] = monitor_val_vis_holder.dat.data[:]
+    plot_data_dict["error_map_original"] = err_orignal_mesh.dat.data[:]
+    plot_data_dict["error_map_ma"] = err_adapted_mesh_ma.dat.data[:]
+
+    plot_data_dict["error_norm_original"] = error_og_mesh
+    plot_data_dict["error_norm_ma"] = error_ma_mesh
+
+    # For visualization
+    plot_data_dict["error_v_max"] = err_v_max
+
     for rr in range(rows):
         for cc in range(cols):
             ax[rr, cc].set_aspect("equal", "box")
@@ -273,5 +319,5 @@ def compare_error(
         "error_ma_mesh": error_ma_mesh,
         "u_exact": u_exact,
         "plot_more": fig,
-        "plot_data": ax,
+        "plot_data_dict": plot_data_dict,
     }

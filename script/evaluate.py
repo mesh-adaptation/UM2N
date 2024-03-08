@@ -424,12 +424,13 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
             temp_error_og = compare_res["error_og_mesh"]
             temp_error_ma = compare_res["error_ma_mesh"]
 
-            plot_data = compare_res["plot_data"]
+            plot_data_dict = compare_res["plot_data_dict"]
+
             # Save plot data
             with open(
                 os.path.join(plot_data_dir, f"plot_data_{idx:04d}.pkl"), "wb"
             ) as p:
-                pickle.dump(plot_data, p)
+                pickle.dump(plot_data_dict, p)
 
             plot_more = compare_res["plot_more"]
             plot_more.savefig(os.path.join(plot_more_dir, f"plot_{idx:04d}.png"))
@@ -838,7 +839,7 @@ if __name__ == "__main__":
 
     ds_root_helmholtz = [
         # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=5_aniso_full_meshtype_6",
-        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
+        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
         # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=300_aniso_full_meshtype_2",
     ]
 
@@ -864,11 +865,12 @@ if __name__ == "__main__":
     # ds_roots = [*ds_root_burgers]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = [*ds_root_swirl, *ds_root_helmholtz]
-    ds_roots = [*ds_root_swirl]
+    # ds_roots = [*ds_root_swirl]
+    ds_roots = [*ds_root_helmholtz]
 
     # run_ids = [*run_ids_largeset, *run_ids_miniset_new, *run_ids_old_benchmark]
     # run_ids = [*run_ids_miniset_new]
-    run_ids = ["gywsmly9"]
+    run_ids = [run_id_m2n, run_id_m2n_area_loss_hessian_norm, run_id_m2t]
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
@@ -893,7 +895,7 @@ if __name__ == "__main__":
             # bench_res = benchmark_model(
             #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
             bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=50
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=5
             )
 
             write_sumo(eval_dir, ds_root)
