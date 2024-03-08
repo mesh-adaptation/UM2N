@@ -4,6 +4,7 @@ from torch_geometric.nn import GATv2Conv, MessagePassing
 import torch
 import torch.nn as nn
 from M2N import NetGATDeform
+from extractor import LocalFeatExtractor
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
@@ -46,7 +47,11 @@ class M2TDeformer(MessagePassing):
         else:
             raise Exception(f"Output type {output_type} is invalid.")
 
-        self.gat_deformer = NetGATDeform(in_dim=feature_in_dim)
+        lfe_in_c = 4
+        self.lfe_out_c = 16
+        self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
+        self.gat_deformer = NetGATDeform(in_dim=feature_in_dim + self.lfe_out_c)
+        # self.gat_deformer = NetGATDeform(in_dim=feature_in_dim)
 
         # GAT layer
         self.to_hidden = GATv2Conv(
@@ -62,7 +67,9 @@ class M2TDeformer(MessagePassing):
         # activation function
         self.activation = nn.SELU()
 
-    def forward(self, coord, hidden_state, edge_index, coord_ori, bd_mask, poly_mesh):
+    def forward(
+        self, coord, mesh_feat, hidden_state, edge_index, coord_ori, bd_mask, poly_mesh
+    ):
         self.bd_mask = bd_mask.squeeze().bool()
         self.poly_mesh = poly_mesh
 
@@ -71,14 +78,19 @@ class M2TDeformer(MessagePassing):
         extra_sample_ratio = coord.shape[0] // hidden_state.shape[0]
         # print(coord.shape, hidden_state.shape)
 
-        in_feat = torch.cat((coord, hidden_state.repeat(extra_sample_ratio, 1)), dim=1)
+        local_feat = self.lfe(mesh_feat, edge_index)
+
+        in_feat = torch.cat(
+            [coord, local_feat, hidden_state.repeat(extra_sample_ratio, 1)], dim=1
+        )
+        # in_feat = torch.cat([coord, hidden_state.repeat(extra_sample_ratio, 1)], dim=1)
         # in_feat = torch.cat((coord, hidden_state), dim=1)
-        hidden = self.to_hidden(in_feat, edge_index)
-        hidden = self.activation(hidden)
-        output = self.to_output(hidden)
+        # hidden = self.to_hidden(in_feat, edge_index)
+        # hidden = self.activation(hidden)
+        # output = self.to_output(hidden)
         # print("in feat shape ", in_feat.shape)
 
-        # output = self.gat_deformer(in_feat, edge_index, bd_mask, poly_mesh)
+        output = self.gat_deformer(in_feat, edge_index, bd_mask, poly_mesh)
         phix = None
         phiy = None
         if self.output_type == "coord":

@@ -118,7 +118,29 @@ elif config.model_used == "MRN":
 else:
     raise Exception(f"Model {config.model_used} not implemented.")
 
-# loda from checkpoint
+# =================== load from checkpoint ==========================
+
+import warpmesh as wm
+
+# Load from checkpoint
+entity = "mz-team"
+project_name = "warpmesh"
+run_id = "rud1gsge"
+api = wandb.Api()
+run_loaded = api.run(f"{entity}/{project_name}/{run_id}")
+epoch = 999
+target_file_name = "model_{}.pth".format(epoch)
+model_file = None
+model_store_path = "./fine_tune_model"
+for file in run_loaded.files():
+    if file.name.endswith(target_file_name):
+        model_file = file.download(root=model_store_path, replace=True)
+        target_file_name = file.name
+assert model_file is not None, "Model file not found"
+model_file_path = os.path.join(model_store_path, target_file_name)
+model = wm.load_model(model, model_file_path)
+print("Model checkpoint loaded.")
+# ===================================================================
 
 
 ############### Change This To Dataset folder #################

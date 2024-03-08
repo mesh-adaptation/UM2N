@@ -80,10 +80,11 @@ class M2T(torch.nn.Module):
             num_heads=self.num_heads,
             num_layers=self.num_layers,
         )
-        self.all_feat_c = deform_in_c - 2 + self.num_transformer_out
+        # self.all_feat_c = deform_in_c - 2 + self.num_transformer_out
+        self.all_feat_c = deform_in_c + self.num_transformer_out
         # use a linear layer to transform the input feature to hidden
         # state size
-        self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
+        self.lin = nn.Linear(self.all_feat_c - 2, self.hidden_size)
 
         # Mapping embedding to monitor
         self.to_monitor_1 = nn.Linear(self.hidden_size, self.hidden_size // 8)
@@ -153,7 +154,7 @@ class M2T(torch.nn.Module):
         features = features.view(-1, self.num_transformer_out)
         features = torch.cat([boundary, features], dim=1)
         # print(f"transformer raw features: {features.shape}")
-        features = F.selu(self.lin(features))
+        # features = F.selu(self.lin(features))
 
         if not get_attens:
             return features
@@ -207,7 +208,13 @@ class M2T(torch.nn.Module):
         out_monitor = None
 
         (coord, model_output), (phix, phiy) = self.deformer(
-            coord, hidden, edge_idx, mesh_query, bd_mask, poly_mesh
+            coord,
+            data.mesh_feat[:, 0:4],
+            hidden,
+            edge_idx,
+            mesh_query,
+            bd_mask,
+            poly_mesh,
         )
         if sampled_queries is not None:
             coord_extra = sampled_queries

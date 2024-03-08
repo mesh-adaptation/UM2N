@@ -7,7 +7,7 @@ conv_feat:
 conv_feat_fix:
 - conv_uh_fix
 count_tangle_method: inversion
-data_root: ./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6
+data_root: ./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=300_aniso_full_meshtype_2
 inversion_loss_scaler: 10000000000.0
 is_normalise: true
 learning_rate: 5.0e-05

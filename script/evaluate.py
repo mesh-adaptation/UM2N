@@ -642,7 +642,7 @@ def write_sumo(eval_dir, ds_root):
             "deform_loss": deform_loss / pass_count,
             "time_MA": time_MA,
             "time_model": time_model,
-            "acceleration_ratio": time_MA / time_model,
+            "acceleration_ratio": time_MA / time_model if time_model != 0 else 0,
             "tangle_total": num_tangle,
             "TEpM(tangled Elements per Mesh)": num_tangle / total_count,
             "failed_case": fail_count,
@@ -760,8 +760,6 @@ if __name__ == "__main__":
     run_id_m2n_hessian_norm = "1cu4qw9u"  # M2N hessian norm
     run_id_m2n_area_loss_hessian_norm = "u4uxcz1e"  # M2N area loss hessian norm
 
-    run_id_m2t_gatdeformer = "nj32xl4l"
-
     epoch = 999
 
     # run_ids = ['8ndi2teh', 'x9woqsnn']
@@ -771,8 +769,12 @@ if __name__ == "__main__":
     #            run_id_m2n, run_id_m2n_area_loss, run_id_m2n_hessian_norm, run_id_m2n_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm]
     # run_ids = [run_id_m2n_area_loss_hessian_norm, run_id_mrn_area_loss_hessian_norm, run_id_m2t, run_id_pi_m2t]
-    run_ids = [run_id_pi_m2t, run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
-    # run_ids = [run_id_m2t, run_id_m2n_area_loss_hessian_norm, run_id_m2n]
+    run_ids_old_benchmark = [
+        # run_id_pi_m2t,
+        run_id_m2n_area_loss_hessian_norm,
+        run_id_m2n,
+        run_id_m2t,
+    ]
 
     ##########################################
     ## Mini set Area (train on old dataset) ##
@@ -783,27 +785,46 @@ if __name__ == "__main__":
     run_id_PIMRT_miniset_old = "u5ni7dtm"
     run_id_PIMRT_miniset = "3xe6n0nz"
 
-    # run_ids = [
-    #     run_id_m2n_miniset,
-    #     run_id_m2n_enhance_miniset,
-    #     run_id_MRT_miniset,
-    #     run_id_PIMRT_miniset,
-    # ]
+    run_ids_miniset_old = [
+        run_id_m2n_miniset,
+        run_id_m2n_enhance_miniset,
+        run_id_MRT_miniset,
+        run_id_PIMRT_miniset,
+    ]
 
     ##########################################
     ## Mini set Area (train on new dataset) ##
     ##########################################
-    run_id_m2n_miniset_new = "ebu7ohbn"
-    run_id_m2n_enhance_miniset_new = "l9549fzv"
-    run_id_MRT_miniset_new = "z4k0ut2x"
-    # run_id_PIMRT_miniset_old = "u5ni7dtm"
-    run_id_PIMRT_miniset_new = "jw1gkhwd"
+    run_id_m2n_miniset_new = "jetaq10f"
+    run_id_m2n_enhance_miniset_new = "dglbbrdq"
+    run_id_MRT_miniset_new = "rud1gsge"
+    run_id_PIMRT_miniset_new = "qvnnvt65"
+    run_id_M2T_miniset_new = "m9fqgqnb"  # With edge
+    run_id_M2T_miniset_new = "boj2eks9"  # No edge
 
-    run_ids = [
+    run_ids_miniset_new = [
         run_id_m2n_miniset_new,
         run_id_m2n_enhance_miniset_new,
-        run_id_MRT_miniset_new,
-        run_id_PIMRT_miniset_new,
+        # run_id_M2T_miniset_new,
+        # run_id_MRT_miniset_new,
+        # run_id_PIMRT_miniset_new,
+    ]
+
+    ##########################################
+    ## Large set Area (train on new dataset) ##
+    ##########################################
+    run_id_m2n_largeset = "b4fx4wz5"
+    run_id_m2n_enhance_largeset = "u6zpxaoz"
+    run_id_MRT_largeset = "kgr0nicn"
+    run_id_PIMRT_largeset = "6wkt13wp"
+    run_id_M2T_largeset = "gywsmly9"
+
+    run_ids_largeset = [
+        run_id_m2n_largeset,
+        run_id_m2n_enhance_largeset,
+        run_id_M2T_largeset,
+        run_id_MRT_largeset,
+        run_id_PIMRT_largeset,
     ]
 
     ds_root_helmholtz = [
@@ -828,7 +849,8 @@ if __name__ == "__main__":
     # ]
 
     ds_root_swirl = [
-        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15"
+        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
+        # "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
     ]
 
     ds_root_burgers = [
@@ -841,9 +863,12 @@ if __name__ == "__main__":
     # ds_roots = [*ds_root_helmholtz, *ds_root_swirl, *ds_root_burgers]
     # ds_roots = [*ds_root_burgers]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
-    ds_roots = [*ds_root_helmholtz]
-    # ds_roots = [*ds_root_swirl]
+    # ds_roots = [*ds_root_swirl, *ds_root_helmholtz]
+    ds_roots = [*ds_root_swirl]
 
+    # run_ids = [*run_ids_largeset, *run_ids_miniset_new, *run_ids_old_benchmark]
+    # run_ids = [*run_ids_miniset_new]
+    run_ids = ["gywsmly9"]
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
@@ -868,7 +893,7 @@ if __name__ == "__main__":
             # bench_res = benchmark_model(
             #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
             bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=20
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=50
             )
 
             write_sumo(eval_dir, ds_root)

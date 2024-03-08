@@ -360,7 +360,7 @@ class SwirlEvaluator:
                 self.model = self.model.to(self.device)
                 with torch.no_grad():
                     start = time.perf_counter()
-                    if self.model_used == "MRTransformer":
+                    if self.model_used == "MRTransformer" or self.model_used == "M2T":
                         # Create mesh query for deformer, seperate from the original mesh as feature for encoder
                         mesh_query_x = (
                             sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
