@@ -32,7 +32,8 @@ dataset_path = "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=
 dataset_name = dataset_path.split("/")[-1]
 result_folder = f"./compare_output/{dataset_name}"
 os.makedirs(result_folder, exist_ok=True)
-
+is_generating_video_for_all = False
+fps = 20
 
 info_dict = {}
 info_dict["run_ids"] = run_ids
@@ -85,9 +86,11 @@ for n_v in range(num_vis):
         eval_plot_data_path = os.path.join(eval_exp_path, "plot_data")
         eval_plot_more_path = os.path.join(eval_exp_path, "plot_more")
 
-        # chdir_command = f"cd {eval_plot_more_path}"
-        # video_command = "ti video -f 5"
-        # os.system(f"{chdir_command} && {video_command}")
+        if is_generating_video_for_all:
+            # Generate videos
+            chdir_command = f"cd {eval_plot_more_path}"
+            video_command = f"ti video -f {fps}"
+            os.system(f"{chdir_command} && {video_command}")
 
         eval_plot_data_files = sorted(glob.glob(f"{eval_plot_data_path}/*"))
 
@@ -270,3 +273,9 @@ for n_v in range(num_vis):
             ax[rr, cc].set_aspect("equal", "box")
 
     fig.savefig(f"{result_folder}/compare_ret_{n_v:04d}.png")
+
+
+# Generate video for compare results
+chdir_command = f"cd {result_folder}"
+video_command = f"ti video -f {fps}"
+os.system(f"{chdir_command} && {video_command}")
