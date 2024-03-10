@@ -424,6 +424,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
             temp_error_og = compare_res["error_og_mesh"]
             temp_error_ma = compare_res["error_ma_mesh"]
 
+            compare_res["plot_data_dict"]["deform_loss"] = temp_loss.cpu().numpy()
             plot_data_dict = compare_res["plot_data_dict"]
 
             # Save plot data
@@ -840,6 +841,7 @@ if __name__ == "__main__":
     ds_root_helmholtz = [
         # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=5_aniso_full_meshtype_6",
         "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
+        "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
         # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=300_aniso_full_meshtype_2",
     ]
 
@@ -870,7 +872,9 @@ if __name__ == "__main__":
 
     # run_ids = [*run_ids_largeset, *run_ids_miniset_new, *run_ids_old_benchmark]
     # run_ids = [*run_ids_miniset_new]
-    run_ids = [run_id_m2n, run_id_m2n_area_loss_hessian_norm, run_id_m2t]
+    # run_ids = [run_id_m2n, run_id_m2n_area_loss_hessian_norm, run_id_m2t]
+    # run_ids = [run_id_m2t]
+    run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "gywsmly9"]
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
@@ -895,7 +899,7 @@ if __name__ == "__main__":
             # bench_res = benchmark_model(
             #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
             bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=5
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=100
             )
 
             write_sumo(eval_dir, ds_root)

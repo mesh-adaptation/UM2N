@@ -18,13 +18,13 @@ import firedrake as fd
 # dataset_name = "sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15"
 
 
-# model_names = ["M2N", "M2N", "MRN"]
-model_names = ["M2N", "M2N"]
-run_ids = ["cyzk2mna", "u4uxcz1e"]
+model_names = ["M2N", "M2N", "MRTransformer", "M2T"]
+run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "gywsmly9"]
 run_id_model_mapping = {
     "cyzk2mna": "M2N",
     "u4uxcz1e": "M2N-en",
-    # "99zrohiu": "MRN",
+    "99zrohiu": "MRN",
+    "gywsmly9": "M2T-w-edge",
 }
 trained_epoch = 999
 problem_type = "helmholtz_square"
@@ -32,8 +32,9 @@ dataset_path = "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=
 dataset_name = dataset_path.split("/")[-1]
 result_folder = f"./compare_output/{dataset_name}"
 os.makedirs(result_folder, exist_ok=True)
+result_folder_abs_path = os.path.abspath(result_folder)
 is_generating_video_for_all = False
-fps = 20
+fps = 5
 
 info_dict = {}
 info_dict["run_ids"] = run_ids
@@ -46,7 +47,7 @@ info_dict["dataset_path"] = dataset_path
 with open(f"{result_folder}/models_info" + ".yaml", "w") as file:
     yaml.dump(info_dict, file, default_flow_style=False)
 
-num_vis = 5
+num_vis = 2
 rows = 3
 cols = 3 + len(run_ids)
 for n_v in range(num_vis):
@@ -60,9 +61,9 @@ for n_v in range(num_vis):
     model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
     high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
 
-    u_og = fd.Function(model_function_space)
-    u_ma = fd.Function(model_function_space)
-    u_model = fd.Function(model_function_space)
+    u_og = fd.Function(fd.FunctionSpace(mesh_og, "CG", 1))
+    u_ma = fd.Function(fd.FunctionSpace(mesh_MA, "CG", 1))
+    u_model = fd.Function(fd.FunctionSpace(mesh_model, "CG", 1))
     monitor_values = fd.Function(model_function_space)
 
     # u exact lives in high res function space
@@ -160,9 +161,12 @@ for n_v in range(num_vis):
         show_name = run_id_model_mapping[run_id]
 
         mesh_model.coordinates.dat.data[:] = plot_data_dict["mesh_model"]
+        deform_loss = plot_data_dict["deform_loss"]
         # Adapted mesh (Model)
         fd.triplot(mesh_model, axes=ax[0, 3 + cnt])
-        ax[0, 3 + cnt].set_title(f"Adapted Mesh ({show_name})")
+        ax[0, 3 + cnt].set_title(
+            f"Adapted Mesh ({show_name}) | Deform loss: {deform_loss:.2f}"
+        )
         # Solution on adapted mesh (Model)
         cb = fd.tripcolor(
             u_model,
@@ -273,9 +277,11 @@ for n_v in range(num_vis):
             ax[rr, cc].set_aspect("equal", "box")
 
     fig.savefig(f"{result_folder}/compare_ret_{n_v:04d}.png")
+    plt.close()
 
 
 # Generate video for compare results
-chdir_command = f"cd {result_folder}"
+print(result_folder_abs_path)
+chdir_command = f"cd {result_folder_abs_path}"
 video_command = f"ti video -f {fps}"
 os.system(f"{chdir_command} && {video_command}")
