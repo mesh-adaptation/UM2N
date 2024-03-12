@@ -2,6 +2,9 @@ import os
 import pickle
 import glob
 import yaml
+
+# import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import firedrake as fd
 
@@ -47,7 +50,14 @@ info_dict["dataset_path"] = dataset_path
 with open(f"{result_folder}/models_info" + ".yaml", "w") as file:
     yaml.dump(info_dict, file, default_flow_style=False)
 
-num_vis = 2
+# Stats
+ret_dict = {}
+ret_dict["ma"] = {"error": [], "error_reduction": []}
+ret_dict["original"] = {"error": []}
+for run_id in run_ids:
+    ret_dict[run_id] = {"error": [], "deform_loss": [], "error_reduction": []}
+
+num_vis = 5
 rows = 3
 cols = 3 + len(run_ids)
 for n_v in range(num_vis):
@@ -192,6 +202,13 @@ for n_v in range(num_vis):
 
         cnt += 1
 
+        ret_dict[run_id]["name"] = show_name
+        ret_dict[run_id]["error"].append(error_model_mesh)
+        ret_dict[run_id]["deform_loss"].append(deform_loss)
+        ret_dict[run_id]["error_reduction"].append(
+            (error_og_mesh - error_model_mesh) / error_og_mesh * 100
+        )
+
     # Fill the first three columns
     plot_data_dict = plot_data_dicts[run_ids[0]]
 
@@ -279,6 +296,42 @@ for n_v in range(num_vis):
     fig.savefig(f"{result_folder}/compare_ret_{n_v:04d}.png")
     plt.close()
 
+    ret_dict["ma"]["error"].append(error_ma_mesh)
+    ret_dict["ma"]["error_reduction"].append(
+        (error_og_mesh - error_ma_mesh) / error_og_mesh * 100
+    )
+    ret_dict["original"]["error"].append(error_og_mesh)
+
+
+# Compute the stats
+ret_dict["original"]["error_avg"] = np.mean(ret_dict["original"]["error"])
+ret_dict["original"]["error_sum"] = np.sum(ret_dict["original"]["error"])
+
+ret_dict["ma"]["error_avg"] = np.mean(ret_dict["ma"]["error"])
+ret_dict["ma"]["error_reduction_avg"] = np.mean(ret_dict["ma"]["error_reduction"])
+ret_dict["ma"]["error_reduction_std"] = np.std(ret_dict["ma"]["error_reduction"])
+ret_dict["ma"]["error_reduction_sum_avg"] = (
+    ret_dict["original"]["error_sum"]
+    - np.sum(ret_dict["ma"]["error"]) / ret_dict["original"]["error_sum"]
+)
+
+for run_id in run_ids:
+    ret_dict[run_id]["error_avg"] = np.mean(ret_dict[run_id]["error"])
+    ret_dict[run_id]["error_reduction_avg"] = np.mean(
+        ret_dict[run_id]["error_reduction"]
+    )
+    ret_dict[run_id]["error_reduction_std"] = np.std(
+        ret_dict[run_id]["error_reduction"]
+    )
+    ret_dict[run_id]["error_reduction_sum_avg"] = (
+        ret_dict["original"]["error_sum"]
+        - np.sum(ret_dict[run_id]["error"]) / ret_dict["original"]["error_sum"]
+    )
+
+ret_file = f"{result_folder}/ret_stat.pkl"
+with open(ret_file, "wb") as file:
+    pickle.dump(ret_dict, file)
+print(f"Write the results into {ret_file}.")
 
 # Generate video for compare results
 print(result_folder_abs_path)
