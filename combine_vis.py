@@ -31,109 +31,222 @@ run_id_model_mapping = {
 }
 trained_epoch = 999
 problem_type = "helmholtz_square"
-dataset_path = "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"
-dataset_name = dataset_path.split("/")[-1]
-result_folder = f"./compare_output/{dataset_name}"
-os.makedirs(result_folder, exist_ok=True)
-result_folder_abs_path = os.path.abspath(result_folder)
-is_generating_video_for_all = False
-fps = 5
+# dataset_path = "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"
+# dataset_path = "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6"
+# dataset_path = "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2"
+# dataset_path = "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2"
 
-info_dict = {}
-info_dict["run_ids"] = run_ids
-info_dict["names"] = run_id_model_mapping
-info_dict["epoch"] = trained_epoch
-info_dict["problem_type"] = problem_type
-info_dict["dataset_name"] = dataset_name
-info_dict["dataset_path"] = dataset_path
-# Write the dictionary to a YAML file
-with open(f"{result_folder}/models_info" + ".yaml", "w") as file:
-    yaml.dump(info_dict, file, default_flow_style=False)
+dataset_paths = [
+    # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
+    "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
+    # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2",
+    # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
+]
 
-# Stats
-ret_dict = {}
-ret_dict["ma"] = {"error": [], "error_reduction": []}
-ret_dict["original"] = {"error": []}
-for run_id in run_ids:
-    ret_dict[run_id] = {"error": [], "deform_loss": [], "error_reduction": []}
+for dataset_path in dataset_paths:
+    dataset_name = dataset_path.split("/")[-1]
+    result_folder = f"./compare_output/{dataset_name}"
+    os.makedirs(result_folder, exist_ok=True)
+    result_folder_abs_path = os.path.abspath(result_folder)
+    is_generating_video_for_all = False
+    fps = 5
 
-num_vis = 5
-rows = 3
-cols = 3 + len(run_ids)
-for n_v in range(num_vis):
-    print(f"=== Visualizing number {n_v} of {dataset_name} ===")
-    # Load mesh for visualization
-    mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
-    mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
-    mesh_fine = fd.Mesh(os.path.join(dataset_path, "mesh_fine", f"mesh_{n_v:04d}.msh"))
-    mesh_model = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
+    info_dict = {}
+    info_dict["run_ids"] = run_ids
+    info_dict["names"] = run_id_model_mapping
+    info_dict["epoch"] = trained_epoch
+    info_dict["problem_type"] = problem_type
+    info_dict["dataset_name"] = dataset_name
+    info_dict["dataset_path"] = dataset_path
+    # Write the dictionary to a YAML file
+    with open(f"{result_folder}/models_info" + ".yaml", "w") as file:
+        yaml.dump(info_dict, file, default_flow_style=False)
 
-    model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
-    high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
+    # Stats
+    ret_dict = {}
+    ret_dict["ma"] = {"error": [], "error_reduction": []}
+    ret_dict["original"] = {"error": []}
+    for run_id in run_ids:
+        ret_dict[run_id] = {"error": [], "deform_loss": [], "error_reduction": []}
 
-    u_og = fd.Function(fd.FunctionSpace(mesh_og, "CG", 1))
-    u_ma = fd.Function(fd.FunctionSpace(mesh_MA, "CG", 1))
-    u_model = fd.Function(fd.FunctionSpace(mesh_model, "CG", 1))
-    monitor_values = fd.Function(model_function_space)
+    num_vis = 100
+    rows = 3
+    cols = 3 + len(run_ids)
+    for n_v in range(num_vis):
+        print(f"=== Visualizing number {n_v} of {dataset_name} ===")
+        # Load mesh for visualization
+        mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
+        mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
+        mesh_fine = fd.Mesh(
+            os.path.join(dataset_path, "mesh_fine", f"mesh_{n_v:04d}.msh")
+        )
+        mesh_model = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
 
-    # u exact lives in high res function space
-    u_exact = fd.Function(high_res_function_space)
-    error_map_original = fd.Function(high_res_function_space)
-    error_map_ma = fd.Function(high_res_function_space)
-    error_map_model = fd.Function(high_res_function_space)
+        model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
+        high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
 
-    fig, ax = plt.subplots(
-        rows, cols, figsize=(cols * 5, rows * 5), layout="compressed"
-    )
-    cnt = 0
+        u_og = fd.Function(fd.FunctionSpace(mesh_og, "CG", 1))
+        u_ma = fd.Function(fd.FunctionSpace(mesh_MA, "CG", 1))
+        u_model = fd.Function(fd.FunctionSpace(mesh_model, "CG", 1))
+        monitor_values = fd.Function(model_function_space)
 
-    plot_data_dicts = {}
-    for model_name, run_id in zip(model_names, run_ids):
-        show_name = run_id_model_mapping[run_id]
-        print(f"model name: {show_name}, run id: {run_id}")
-        eval_ret_path = f"./eval/{model_name}_{trained_epoch}_{run_id}/{problem_type}/{dataset_name}"
-        # print(eval_ret_path)
-        eval_exp_path = sorted(glob.glob(f"{eval_ret_path}/*"))[-1]
-        eval_plot_data_path = os.path.join(eval_exp_path, "plot_data")
-        eval_plot_more_path = os.path.join(eval_exp_path, "plot_more")
+        # u exact lives in high res function space
+        u_exact = fd.Function(high_res_function_space)
+        error_map_original = fd.Function(high_res_function_space)
+        error_map_ma = fd.Function(high_res_function_space)
+        error_map_model = fd.Function(high_res_function_space)
 
-        if is_generating_video_for_all:
-            # Generate videos
-            chdir_command = f"cd {eval_plot_more_path}"
-            video_command = f"ti video -f {fps}"
-            os.system(f"{chdir_command} && {video_command}")
+        fig, ax = plt.subplots(
+            rows, cols, figsize=(cols * 5, rows * 5), layout="compressed"
+        )
+        cnt = 0
 
-        eval_plot_data_files = sorted(glob.glob(f"{eval_plot_data_path}/*"))
+        plot_data_dicts = {}
+        for model_name, run_id in zip(model_names, run_ids):
+            show_name = run_id_model_mapping[run_id]
+            print(f"model name: {show_name}, run id: {run_id}")
+            eval_ret_path = f"./eval/{model_name}_{trained_epoch}_{run_id}/{problem_type}/{dataset_name}"
+            # print(eval_ret_path)
+            eval_exp_path = sorted(glob.glob(f"{eval_ret_path}/*"))[-1]
+            eval_plot_data_path = os.path.join(eval_exp_path, "plot_data")
+            eval_plot_more_path = os.path.join(eval_exp_path, "plot_more")
 
-        with open(eval_plot_data_files[n_v], "rb") as f:
-            plot_data_dict = pickle.load(f)
-        plot_data_dicts[run_id] = plot_data_dict
+            if is_generating_video_for_all:
+                # Generate videos
+                chdir_command = f"cd {eval_plot_more_path}"
+                video_command = f"ti video -f {fps}"
+                os.system(f"{chdir_command} && {video_command}")
 
-    error_v_max = None
-    solution_v_max = None
-    solution_v_min = None
+            eval_plot_data_files = sorted(glob.glob(f"{eval_plot_data_path}/*"))
 
-    for model_name, run_id in zip(model_names, run_ids):
-        plot_data_dict = plot_data_dicts[run_id]
-        if not error_v_max:
-            error_v_max = plot_data_dict["error_v_max"]
-        else:
-            error_v_max = max(error_v_max, plot_data_dict["error_v_max"])
+            with open(eval_plot_data_files[n_v], "rb") as f:
+                plot_data_dict = pickle.load(f)
+            plot_data_dicts[run_id] = plot_data_dict
 
-        if not solution_v_max:
-            solution_v_max = plot_data_dict["u_v_max"]
-        else:
-            solution_v_max = max(solution_v_max, plot_data_dict["u_v_max"])
+        error_v_max = None
+        solution_v_max = None
+        solution_v_min = None
 
-        if not solution_v_min:
-            solution_v_min = plot_data_dict["u_v_min"]
-        else:
-            solution_v_min = max(solution_v_min, plot_data_dict["u_v_min"])
+        for model_name, run_id in zip(model_names, run_ids):
+            plot_data_dict = plot_data_dicts[run_id]
+            if not error_v_max:
+                error_v_max = plot_data_dict["error_v_max"]
+            else:
+                error_v_max = max(error_v_max, plot_data_dict["error_v_max"])
 
-    # Visualize all
-    # Load all data first because we need a fair vmax and vmin
-    for model_name, run_id in zip(model_names, run_ids):
-        plot_data_dict = plot_data_dicts[run_id]
+            if not solution_v_max:
+                solution_v_max = plot_data_dict["u_v_max"]
+            else:
+                solution_v_max = max(solution_v_max, plot_data_dict["u_v_max"])
+
+            if not solution_v_min:
+                solution_v_min = plot_data_dict["u_v_min"]
+            else:
+                solution_v_min = max(solution_v_min, plot_data_dict["u_v_min"])
+
+        # Visualize all
+        # Load all data first because we need a fair vmax and vmin
+        for model_name, run_id in zip(model_names, run_ids):
+            plot_data_dict = plot_data_dicts[run_id]
+
+            u_exact_data = plot_data_dict["u_exact"]
+            u_exact.dat.data[:] = u_exact_data
+
+            u_og_data = plot_data_dict["u_original"]
+            u_og.dat.data[:] = u_og_data
+
+            u_ma_data = plot_data_dict["u_ma"]
+            u_ma.dat.data[:] = u_ma_data
+
+            # u_model exists if no mesh tangling
+            if "u_model" in plot_data_dict:
+                u_model_data = plot_data_dict["u_model"]
+                u_model.dat.data[:] = u_model_data
+
+            error_map_original_data = plot_data_dict["error_map_original"]
+            error_map_original.dat.data[:] = error_map_original_data
+
+            error_map_ma_data = plot_data_dict["error_map_ma"]
+            error_map_ma.dat.data[:] = error_map_ma_data
+
+            if "error_map_model" in plot_data_dict:
+                error_map_model_data = plot_data_dict["error_map_model"]
+                error_map_model.dat.data[:] = error_map_model_data
+
+            error_og_mesh = plot_data_dict["error_norm_original"]
+            error_ma_mesh = plot_data_dict["error_norm_ma"]
+
+            if "error_norm_model" in plot_data_dict:
+                error_model_mesh = plot_data_dict["error_norm_model"]
+            else:
+                error_model_mesh = -1
+
+            cmap = "seismic"
+            show_name = run_id_model_mapping[run_id]
+
+            mesh_model.coordinates.dat.data[:] = plot_data_dict["mesh_model"]
+            deform_loss = plot_data_dict["deform_loss"]
+            # Adapted mesh (Model)
+            fd.triplot(mesh_model, axes=ax[0, 3 + cnt])
+            ax[0, 3 + cnt].set_title(
+                f"Adapted Mesh ({show_name}) | Deform loss: {deform_loss:.2f}"
+            )
+
+            if error_model_mesh != -1:
+                # Solution on adapted mesh (Model)
+                cb = fd.tripcolor(
+                    u_model,
+                    cmap=cmap,
+                    vmax=solution_v_max,
+                    vmin=solution_v_min,
+                    axes=ax[1, 3 + cnt],
+                )
+                plt.colorbar(cb)
+            ax[1, 3 + cnt].set_title(f"Solution on Adapted Mesh ({show_name})")
+
+            if error_model_mesh != -1:
+                # Error map (Model)
+                cb = fd.tripcolor(
+                    error_map_model,
+                    cmap=cmap,
+                    vmax=error_v_max,
+                    vmin=-error_v_max,
+                    axes=ax[2, 3 + cnt],
+                )
+                plt.colorbar(cb)
+            ax[2, 3 + cnt].set_title(
+                f"Error (u-u_exact) {model_name}| L2 Norm: {error_model_mesh:.5f} | {(error_og_mesh-error_model_mesh)/error_og_mesh*100:.2f}%"
+            )
+
+            cnt += 1
+
+            ret_dict[run_id]["name"] = show_name
+            if error_model_mesh == -1:
+                ret_dict[run_id]["error"].append(np.nan)
+            else:
+                ret_dict[run_id]["error"].append(error_model_mesh)
+            ret_dict[run_id]["deform_loss"].append(float(deform_loss))
+
+            if error_model_mesh == -1:
+                ret_dict[run_id]["error_reduction"].append(np.nan)
+            else:
+                ret_dict[run_id]["error_reduction"].append(
+                    (error_og_mesh - error_model_mesh) / error_og_mesh
+                )
+
+        # Fill the first three columns
+        plot_data_dict = plot_data_dicts[run_ids[0]]
+
+        mesh_ma_data = plot_data_dict["mesh_ma"]
+        mesh_MA.coordinates.dat.data[:] = mesh_ma_data
+        monitor_values_data = plot_data_dict["monitor_values"]
+        monitor_values.dat.data[:] = monitor_values_data
+
+        err_map_orignal_data = plot_data_dict["error_map_original"]
+        error_map_original.dat.data[:] = err_map_orignal_data
+
+        err_map_ma_data = plot_data_dict["error_map_ma"]
+        error_map_ma.dat.data[:] = err_map_ma_data
 
         u_exact_data = plot_data_dict["u_exact"]
         u_exact.dat.data[:] = u_exact_data
@@ -144,197 +257,109 @@ for n_v in range(num_vis):
         u_ma_data = plot_data_dict["u_ma"]
         u_ma.dat.data[:] = u_ma_data
 
-        # u_model exists if no mesh tangling
-        if "u_model" in plot_data_dict:
-            u_model_data = plot_data_dict["u_model"]
-            u_model.dat.data[:] = u_model_data
+        # High resolution mesh
+        fd.triplot(mesh_fine, axes=ax[0, 0])
+        ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
+        # Orginal low resolution uniform mesh
+        fd.triplot(mesh_og, axes=ax[0, 1])
+        ax[0, 1].set_title(f"Original uniform Mesh")
+        # Adapted mesh (MA)
+        fd.triplot(mesh_MA, axes=ax[0, 2])
+        ax[0, 2].set_title(f"Adapted Mesh (MA)")
 
-        error_map_original_data = plot_data_dict["error_map_original"]
-        error_map_original.dat.data[:] = error_map_original_data
-
-        error_map_ma_data = plot_data_dict["error_map_ma"]
-        error_map_ma.dat.data[:] = error_map_ma_data
-
-        if "error_map_model" in plot_data_dict:
-            error_map_model_data = plot_data_dict["error_map_model"]
-            error_map_model.dat.data[:] = error_map_model_data
-
-        error_og_mesh = plot_data_dict["error_norm_original"]
-        error_ma_mesh = plot_data_dict["error_norm_ma"]
-
-        if "error_norm_model" in plot_data_dict:
-            error_model_mesh = plot_data_dict["error_norm_model"]
-        else:
-            error_model_mesh = -1
-
-        cmap = "seismic"
-        show_name = run_id_model_mapping[run_id]
-
-        mesh_model.coordinates.dat.data[:] = plot_data_dict["mesh_model"]
-        deform_loss = plot_data_dict["deform_loss"]
-        # Adapted mesh (Model)
-        fd.triplot(mesh_model, axes=ax[0, 3 + cnt])
-        ax[0, 3 + cnt].set_title(
-            f"Adapted Mesh ({show_name}) | Deform loss: {deform_loss:.2f}"
-        )
-        # Solution on adapted mesh (Model)
+        # Solution on high resolution mesh
         cb = fd.tripcolor(
-            u_model,
-            cmap=cmap,
-            vmax=solution_v_max,
-            vmin=solution_v_min,
-            axes=ax[1, 3 + cnt],
+            u_exact, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 0]
         )
-        ax[1, 3 + cnt].set_title(f"Solution on Adapted Mesh ({show_name})")
+        ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
         plt.colorbar(cb)
-        # Error map (Model)
+        # Solution on orginal low resolution uniform mesh
         cb = fd.tripcolor(
-            error_map_model,
+            u_og, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 1]
+        )
+        ax[1, 1].set_title(f"Solution on uniform Mesh")
+        plt.colorbar(cb)
+        # Solution on adapted mesh (MA)
+        cb = fd.tripcolor(
+            u_ma, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 2]
+        )
+        ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
+        plt.colorbar(cb)
+
+        # Monitor values
+        cb = fd.tripcolor(monitor_values, cmap=cmap, axes=ax[2, 0])
+        ax[2, 0].set_title(f"Monitor values")
+        plt.colorbar(cb)
+
+        # Error on orginal low resolution uniform mesh
+        cb = fd.tripcolor(
+            error_map_original,
             cmap=cmap,
+            axes=ax[2, 1],
             vmax=error_v_max,
             vmin=-error_v_max,
-            axes=ax[2, 3 + cnt],
         )
-        ax[2, 3 + cnt].set_title(
-            f"Error (u-u_exact) {model_name}| L2 Norm: {error_model_mesh:.5f} | {(error_og_mesh-error_model_mesh)/error_og_mesh*100:.2f}%"
+        ax[2, 1].set_title(
+            f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_og_mesh:.5f}"
+        )
+        plt.colorbar(cb)
+        # Error on adapted mesh (MA)
+        cb = fd.tripcolor(
+            error_map_ma,
+            cmap=cmap,
+            axes=ax[2, 2],
+            vmax=error_v_max,
+            vmin=-error_v_max,
+        )
+        ax[2, 2].set_title(
+            f"Error (u-u_exact) MA| L2 Norm: {error_ma_mesh:.5f} | {(error_og_mesh-error_ma_mesh)/error_og_mesh*100:.2f}%"
         )
         plt.colorbar(cb)
 
-        cnt += 1
+        for rr in range(rows):
+            for cc in range(cols):
+                ax[rr, cc].set_aspect("equal", "box")
 
-        ret_dict[run_id]["name"] = show_name
-        ret_dict[run_id]["error"].append(error_model_mesh)
-        ret_dict[run_id]["deform_loss"].append(deform_loss)
-        ret_dict[run_id]["error_reduction"].append(
-            (error_og_mesh - error_model_mesh) / error_og_mesh * 100
+        fig.savefig(f"{result_folder}/compare_ret_{n_v:04d}.png")
+        plt.close()
+
+        ret_dict["ma"]["error"].append(error_ma_mesh)
+        ret_dict["ma"]["error_reduction"].append(
+            (error_og_mesh - error_ma_mesh) / error_og_mesh
         )
+        ret_dict["original"]["error"].append(error_og_mesh)
 
-    # Fill the first three columns
-    plot_data_dict = plot_data_dicts[run_ids[0]]
+    # Compute the stats
+    ret_dict["original"]["error_avg"] = np.mean(ret_dict["original"]["error"])
+    ret_dict["original"]["error_sum"] = np.sum(ret_dict["original"]["error"])
 
-    mesh_ma_data = plot_data_dict["mesh_ma"]
-    mesh_MA.coordinates.dat.data[:] = mesh_ma_data
-    monitor_values_data = plot_data_dict["monitor_values"]
-    monitor_values.dat.data[:] = monitor_values_data
+    ret_dict["ma"]["error_avg"] = np.mean(ret_dict["ma"]["error"])
+    ret_dict["ma"]["error_reduction_avg"] = np.mean(ret_dict["ma"]["error_reduction"])
+    ret_dict["ma"]["error_reduction_std"] = np.std(ret_dict["ma"]["error_reduction"])
+    ret_dict["ma"]["error_reduction_sum_avg"] = (
+        ret_dict["original"]["error_sum"] - np.sum(ret_dict["ma"]["error"])
+    ) / ret_dict["original"]["error_sum"]
 
-    err_map_orignal_data = plot_data_dict["error_map_original"]
-    error_map_original.dat.data[:] = err_map_orignal_data
+    for run_id in run_ids:
+        ret_dict[run_id]["tangled_num"] = np.sum(np.isnan(ret_dict[run_id]["error"]))
+        ret_dict[run_id]["error_avg"] = np.nanmean(ret_dict[run_id]["error"])
+        ret_dict[run_id]["error_reduction_avg"] = np.nanmean(
+            ret_dict[run_id]["error_reduction"]
+        )
+        ret_dict[run_id]["error_reduction_std"] = np.nanstd(
+            ret_dict[run_id]["error_reduction"]
+        )
+        ret_dict[run_id]["error_reduction_sum_avg"] = (
+            ret_dict["original"]["error_sum"] - np.nansum(ret_dict[run_id]["error"])
+        ) / ret_dict["original"]["error_sum"]
 
-    err_map_ma_data = plot_data_dict["error_map_ma"]
-    error_map_ma.dat.data[:] = err_map_ma_data
+    ret_file = f"{result_folder}/ret_stat.pkl"
+    with open(ret_file, "wb") as file:
+        pickle.dump(ret_dict, file)
+    print(f"Write the results into {ret_file}.")
 
-    u_exact_data = plot_data_dict["u_exact"]
-    u_exact.dat.data[:] = u_exact_data
-
-    u_og_data = plot_data_dict["u_original"]
-    u_og.dat.data[:] = u_og_data
-
-    u_ma_data = plot_data_dict["u_ma"]
-    u_ma.dat.data[:] = u_ma_data
-
-    # High resolution mesh
-    fd.triplot(mesh_fine, axes=ax[0, 0])
-    ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
-    # Orginal low resolution uniform mesh
-    fd.triplot(mesh_og, axes=ax[0, 1])
-    ax[0, 1].set_title(f"Original uniform Mesh")
-    # Adapted mesh (MA)
-    fd.triplot(mesh_MA, axes=ax[0, 2])
-    ax[0, 2].set_title(f"Adapted Mesh (MA)")
-
-    # Solution on high resolution mesh
-    cb = fd.tripcolor(
-        u_exact, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 0]
-    )
-    ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
-    plt.colorbar(cb)
-    # Solution on orginal low resolution uniform mesh
-    cb = fd.tripcolor(
-        u_og, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 1]
-    )
-    ax[1, 1].set_title(f"Solution on uniform Mesh")
-    plt.colorbar(cb)
-    # Solution on adapted mesh (MA)
-    cb = fd.tripcolor(
-        u_ma, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 2]
-    )
-    ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
-    plt.colorbar(cb)
-
-    # Monitor values
-    cb = fd.tripcolor(monitor_values, cmap=cmap, axes=ax[2, 0])
-    ax[2, 0].set_title(f"Monitor values")
-    plt.colorbar(cb)
-
-    # Error on orginal low resolution uniform mesh
-    cb = fd.tripcolor(
-        error_map_original,
-        cmap=cmap,
-        axes=ax[2, 1],
-        vmax=error_v_max,
-        vmin=-error_v_max,
-    )
-    ax[2, 1].set_title(f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_og_mesh:.5f}")
-    plt.colorbar(cb)
-    # Error on adapted mesh (MA)
-    cb = fd.tripcolor(
-        error_map_ma,
-        cmap=cmap,
-        axes=ax[2, 2],
-        vmax=error_v_max,
-        vmin=-error_v_max,
-    )
-    ax[2, 2].set_title(
-        f"Error (u-u_exact) MA| L2 Norm: {error_ma_mesh:.5f} | {(error_og_mesh-error_ma_mesh)/error_og_mesh*100:.2f}%"
-    )
-    plt.colorbar(cb)
-
-    for rr in range(rows):
-        for cc in range(cols):
-            ax[rr, cc].set_aspect("equal", "box")
-
-    fig.savefig(f"{result_folder}/compare_ret_{n_v:04d}.png")
-    plt.close()
-
-    ret_dict["ma"]["error"].append(error_ma_mesh)
-    ret_dict["ma"]["error_reduction"].append(
-        (error_og_mesh - error_ma_mesh) / error_og_mesh * 100
-    )
-    ret_dict["original"]["error"].append(error_og_mesh)
-
-
-# Compute the stats
-ret_dict["original"]["error_avg"] = np.mean(ret_dict["original"]["error"])
-ret_dict["original"]["error_sum"] = np.sum(ret_dict["original"]["error"])
-
-ret_dict["ma"]["error_avg"] = np.mean(ret_dict["ma"]["error"])
-ret_dict["ma"]["error_reduction_avg"] = np.mean(ret_dict["ma"]["error_reduction"])
-ret_dict["ma"]["error_reduction_std"] = np.std(ret_dict["ma"]["error_reduction"])
-ret_dict["ma"]["error_reduction_sum_avg"] = (
-    ret_dict["original"]["error_sum"]
-    - np.sum(ret_dict["ma"]["error"]) / ret_dict["original"]["error_sum"]
-)
-
-for run_id in run_ids:
-    ret_dict[run_id]["error_avg"] = np.mean(ret_dict[run_id]["error"])
-    ret_dict[run_id]["error_reduction_avg"] = np.mean(
-        ret_dict[run_id]["error_reduction"]
-    )
-    ret_dict[run_id]["error_reduction_std"] = np.std(
-        ret_dict[run_id]["error_reduction"]
-    )
-    ret_dict[run_id]["error_reduction_sum_avg"] = (
-        ret_dict["original"]["error_sum"]
-        - np.sum(ret_dict[run_id]["error"]) / ret_dict["original"]["error_sum"]
-    )
-
-ret_file = f"{result_folder}/ret_stat.pkl"
-with open(ret_file, "wb") as file:
-    pickle.dump(ret_dict, file)
-print(f"Write the results into {ret_file}.")
-
-# Generate video for compare results
-print(result_folder_abs_path)
-chdir_command = f"cd {result_folder_abs_path}"
-video_command = f"ti video -f {fps}"
-os.system(f"{chdir_command} && {video_command}")
+    # Generate video for compare results
+    print(result_folder_abs_path)
+    chdir_command = f"cd {result_folder_abs_path}"
+    video_command = f"ti video -f {fps}"
+    os.system(f"{chdir_command} && {video_command}")
