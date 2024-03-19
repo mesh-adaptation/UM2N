@@ -30,18 +30,19 @@ run_id_model_mapping = {
     "gywsmly9": "M2T-w-edge",
 }
 trained_epoch = 999
-problem_type = "helmholtz_square"
-# dataset_path = "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"
-# dataset_path = "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6"
-# dataset_path = "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2"
-# dataset_path = "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2"
+# problem_type = "helmholtz_square"
+problem_type = "swirl_square"
 
 dataset_paths = [
-    "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
-    # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
-    "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2",
-    "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
+    "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15"
 ]
+
+# dataset_paths = [
+#     "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
+#     # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
+#     "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2",
+#     "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
+# ]
 
 for dataset_path in dataset_paths:
     dataset_name = dataset_path.split("/")[-1]
@@ -74,13 +75,23 @@ for dataset_path in dataset_paths:
     cols = 3 + len(run_ids)
     for n_v in range(num_vis):
         print(f"=== Visualizing number {n_v} of {dataset_name} ===")
-        # Load mesh for visualization
-        mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
-        mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
-        mesh_fine = fd.Mesh(
-            os.path.join(dataset_path, "mesh_fine", f"mesh_{n_v:04d}.msh")
-        )
-        mesh_model = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
+        if problem_type == "helmholtz_square":
+            # Load mesh for visualization
+            mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
+            mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh"))
+            mesh_fine = fd.Mesh(
+                os.path.join(dataset_path, "mesh_fine", f"mesh_{n_v:04d}.msh")
+            )
+            mesh_model = fd.Mesh(
+                os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh")
+            )
+        elif problem_type == "swirl_square":
+            mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
+            mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
+            mesh_fine = fd.Mesh(os.path.join(dataset_path, "mesh_fine", f"mesh.msh"))
+            mesh_model = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
+        else:
+            raise Exception(f"{problem_type} not implemented.")
 
         model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
         high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
@@ -175,6 +186,8 @@ for dataset_path in dataset_paths:
 
             error_og_mesh = plot_data_dict["error_norm_original"]
             error_ma_mesh = plot_data_dict["error_norm_ma"]
+
+            # print("error og and error ma ", error_og_mesh, error_ma_mesh)
 
             if "error_norm_model" in plot_data_dict:
                 error_model_mesh = plot_data_dict["error_norm_model"]

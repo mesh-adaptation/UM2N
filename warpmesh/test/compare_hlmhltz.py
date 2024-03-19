@@ -116,7 +116,7 @@ def compare_error(
         )
         uh_model = model_solver.solve_eq()
 
-    fig, plot_data_dict = wm.plot_comapre(
+    fig, plot_data_dict = wm.plot_compare(
         mesh_fine,
         mesh,
         mesh_MA,

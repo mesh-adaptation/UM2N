@@ -37,7 +37,17 @@ class SwirlEvaluator:
     """
 
     def __init__(
-        self, mesh, mesh_fine, mesh_new, dataset, model, eval_dir, ds_root, **kwargs
+        self,
+        mesh,
+        mesh_coarse,
+        mesh_fine,
+        mesh_new,
+        mesh_model,
+        dataset,
+        model,
+        eval_dir,
+        ds_root,
+        **kwargs,
     ):  # noqa
         """
         Init the problem:
@@ -47,11 +57,11 @@ class SwirlEvaluator:
         self.device = kwargs.pop("device", "cuda")
         self.model_used = kwargs.pop("model_used", "MRTransformer")
         # mesh vars
-        self.mesh_coarse = mesh
-        self.mesh = mesh  # coarse mesh
+        self.mesh_coarse = mesh_coarse  # coarse mesh
+        self.mesh = mesh  # mesh buffer for solving equations
         self.mesh_fine = mesh_fine  # fine mesh
-        self.mesh_new = mesh_new  # adapted mesh
-        self.mesh_model = mesh  # adapted mesh by model
+        self.mesh_new = mesh_new  # adapted mesh by MA
+        self.mesh_model = mesh_model  # adapted mesh by model
         # evaluation vars
         self.dataset = dataset  # dataset containing all data
         self.model = model  # the NN model
@@ -434,11 +444,18 @@ class SwirlEvaluator:
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1000
 
+                # calculate solution on fine mesh
+                function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
+                self.solve_u_fine(self.t)
+                self.u_fine = fd.Function(function_space_fine).project(
+                    self.u_cur_fine
+                )  # noqa
+
                 # calculate solution on original mesh
                 self.mesh.coordinates.dat.data[:] = self.init_coord
                 self.project_u_()
                 self.solve_u(self.t)
-                function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+                function_space = fd.FunctionSpace(self.mesh_coarse, "CG", 1)
                 self.uh = fd.Function(function_space).project(self.u_cur)
 
                 # calculate solution on adapted mesh
@@ -452,16 +469,19 @@ class SwirlEvaluator:
                     self.u_cur
                 )  # noqa
 
-                # error measuring
-                u_exact, u_og, u_ma, error_og, error_adapt = self.get_error()
-                print(f"error_og: {error_og}, \terror_adapt: {error_adapt}")
+                # calculate solution on model output mesh
+                self.adapt_coord = out.detach().cpu().numpy()
+                self.mesh.coordinates.dat.data[:] = self.adapt_coord
+                self.mesh_model.coordinates.dat.data[:] = self.adapt_coord
+                self.project_u_()
+                self.solve_u(self.t)
+                function_space_model = fd.FunctionSpace(
+                    self.mesh_model, "CG", 1
+                )  # noqa
+                self.uh_model = fd.Function(function_space_model).project(
+                    self.u_cur
+                )  # noqa
 
-                res["error_og"] = error_og
-                res["error_ma"] = error_adapt
-
-                print("inspect out type: ", type(out.detach().cpu().numpy()))
-
-                u_model = None
                 # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
                 num_tangle = wm.get_sample_tangle(
                     out, sample.x[:, :2], sample.face
@@ -473,10 +493,176 @@ class SwirlEvaluator:
                     res["error_model"] = -1
                 else:  # mesh is valid, perform evaluation: 1.
                     res["tangled_element"] = num_tangle
-                    # perform PDE error analysis on model generated mesh
-                    self.adapt_coord = out.detach().cpu().numpy()
-                    _, _, u_model, _, error_model = self.get_error()
-                    res["error_model"] = error_model
+
+                self.mesh_model.coordinates.dat.data[:] = out.detach().cpu().numpy()
+                fig, plot_data_dict = wm.plot_compare(
+                    self.mesh_fine,
+                    self.mesh_coarse,
+                    self.mesh_new,
+                    self.mesh_model,
+                    self.u_fine,
+                    self.uh,
+                    self.uh_new,
+                    self.uh_model,
+                    raw_data.get("monitor_val")[:, 0],
+                    num_tangle,
+                    model_name,
+                )
+                plot_data_dict["deform_loss"] = res["deform_loss"]
+
+                # # ====  Plot mesh, solution, error ======================
+                # rows, cols = 3, 4
+                # fig, ax = plt.subplots(
+                #     rows, cols, figsize=(cols * 5, rows * 5), layout="compressed"
+                # )
+
+                # # High resolution mesh
+                # fd.triplot(self.mesh_fine, axes=ax[0, 0])
+                # ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
+                # # Orginal low resolution uniform mesh
+                # fd.triplot(self.mesh_coarse, axes=ax[0, 1])
+                # ax[0, 1].set_title(f"Original uniform Mesh")
+                # # Adapted mesh (MA)
+                # fd.triplot(self.mesh_new, axes=ax[0, 2])
+                # ax[0, 2].set_title(f"Adapted Mesh (MA)")
+                # # Adapted mesh (Model)
+                # self.mesh_model.coordinates.dat.data[:] = out.detach().cpu().numpy()
+                # fd.triplot(self.mesh_model, axes=ax[0, 3])
+                # ax[0, 3].set_title(f"Adapted Mesh ({model_name})")
+
+                # cmap = "seismic"
+                # # Solution on high resolution mesh
+                # cb = fd.tripcolor(u_exact, cmap=cmap, axes=ax[1, 0])
+                # ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
+                # plt.colorbar(cb)
+                # # Solution on orginal low resolution uniform mesh
+                # cb = fd.tripcolor(u_og, cmap=cmap, axes=ax[1, 1])
+                # ax[1, 1].set_title(f"Solution on uniform Mesh")
+                # plt.colorbar(cb)
+                # # Solution on adapted mesh (MA)
+                # cb = fd.tripcolor(u_ma, cmap=cmap, axes=ax[1, 2])
+                # ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
+                # plt.colorbar(cb)
+
+                # if u_model:
+                #     # Solution on adapted mesh (Model)
+                #     cb = fd.tripcolor(u_model, cmap=cmap, axes=ax[1, 3])
+                #     ax[1, 3].set_title(f"Solution on Adapted Mesh ({model_name})")
+                #     plt.colorbar(cb)
+
+                # err_orignal_mesh = fd.assemble(u_og - u_exact)
+                # err_adapted_mesh_ma = fd.assemble(u_ma - u_exact)
+
+                # if u_model:
+                #     err_adapted_mesh_model = fd.assemble(u_model - u_exact)
+                #     err_abs_max_val_adapted_mesh_model = max(
+                #         abs(err_adapted_mesh_model.dat.data[:].max()),
+                #         abs(err_adapted_mesh_model.dat.data[:].min()),
+                #     )
+                # else:
+                #     err_abs_max_val_adapted_mesh_model = 0.0
+
+                # err_abs_max_val_ori = max(
+                #     abs(err_orignal_mesh.dat.data[:].max()),
+                #     abs(err_orignal_mesh.dat.data[:].min()),
+                # )
+                # err_abs_max_val_adapted_ma = max(
+                #     abs(err_adapted_mesh_ma.dat.data[:].max()),
+                #     abs(err_adapted_mesh_ma.dat.data[:].min()),
+                # )
+
+                # err_abs_max_val = max(
+                #     max(err_abs_max_val_ori, err_abs_max_val_adapted_ma),
+                #     err_abs_max_val_adapted_mesh_model,
+                # )
+                # err_v_max = err_abs_max_val
+                # err_v_min = -err_v_max
+
+                # # Visualize the monitor values of MA
+                # monitor_val = raw_data.get("monitor_val")
+                # monitor_val_vis_holder = fd.Function(self.scalar_space)
+                # monitor_val_vis_holder.dat.data[:] = monitor_val[:, 0]
+
+                # # Error on high resolution mesh
+                # cb = fd.tripcolor(monitor_val_vis_holder, cmap=cmap, axes=ax[2, 0])
+                # ax[2, 0].set_title(f"Monitor Values")
+                # plt.colorbar(cb)
+                # # Monitor values for mesh movement
+                # cb = fd.tripcolor(
+                #     err_orignal_mesh,
+                #     cmap=cmap,
+                #     axes=ax[2, 1],
+                #     vmax=err_v_max,
+                #     vmin=err_v_min,
+                # )
+                # ax[2, 1].set_title(
+                #     f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_og:.5f}"
+                # )
+                # plt.colorbar(cb)
+                # # Error on adapted mesh (MA)
+                # cb = fd.tripcolor(
+                #     err_adapted_mesh_ma,
+                #     cmap=cmap,
+                #     axes=ax[2, 2],
+                #     vmax=err_v_max,
+                #     vmin=err_v_min,
+                # )
+                # ax[2, 2].set_title(
+                #     f"Error (u-u_exact) MA| L2 Norm: {error_adapt:.5f} | {(error_og-error_adapt)/error_og*100:.2f}%"
+                # )
+                # plt.colorbar(cb)
+
+                # if u_model:
+                #     # Error on adapted mesh (Model)
+                #     cb = fd.tripcolor(
+                #         err_adapted_mesh_model,
+                #         cmap=cmap,
+                #         axes=ax[2, 3],
+                #         vmax=err_v_max,
+                #         vmin=err_v_min,
+                #     )
+                #     ax[2, 3].set_title(
+                #         f"Error (u-u_exact) {model_name}| L2 Norm: {error_model:.5f} | {(error_og-error_model)/error_og*100:.2f}%"
+                #     )
+                #     plt.colorbar(cb)
+
+                # for rr in range(rows):
+                #     for cc in range(cols):
+                #         ax[rr, cc].set_aspect("equal", "box")
+
+                fig.savefig(
+                    os.path.join(self.plot_more_path, f"plot_{idx:04d}.png")
+                )  # noqa
+
+                # Save plot data
+                with open(
+                    os.path.join(self.plot_data_path, f"plot_data_{idx:04d}.pkl"), "wb"
+                ) as p:
+                    pickle.dump(plot_data_dict, p)
+
+                # ======================== Legacy plotting ========================
+                # # error measuring
+                # (
+                #     u_fine,
+                #     u_og_fine,
+                #     u_ma_fine,
+                #     u_og_coarse,
+                #     u_ma_coarse,
+                #     error_og,
+                #     error_adapt,
+                # ) = self.get_error()
+
+                error_model = plot_data_dict["error_norm_model"]
+                error_og = plot_data_dict["error_norm_original"]
+                error_ma = plot_data_dict["error_norm_ma"]
+
+                print(f"error_og: {error_og}, \terror_ma: {error_ma}")
+
+                res["error_og"] = error_og
+                res["error_ma"] = error_ma
+                res["error_model"] = error_model
+
+                print("inspect out type: ", type(out.detach().cpu().numpy()))
 
                 # get time_MA by reading log file
                 res["time_consumption_MA"] = get_log_og(
@@ -517,176 +703,6 @@ class SwirlEvaluator:
                 )
                 plot_fig.savefig(
                     os.path.join(self.plot_path, f"plot_{idx:04d}.png")
-                )  # noqa
-
-                # # more detailed plot - 3d plot and 2d plot with mesh
-                # fig = plt.figure(figsize=(8, 8))
-
-                # # 3D plot of MA solution
-                # ax1 = fig.add_subplot(2, 2, 1, projection='3d')
-                # ax1.set_title('MA Solution (3D)')
-                # fd.trisurf(self.uh_new, axes=ax1)
-
-                # # 3D plot of model solution
-                # if (num_tangle == 0):
-                #     self.adapt_coord = out.detach().cpu().numpy()
-                #     self.mesh.coordinates.dat.data[:] = self.adapt_coord
-                #     self.mesh_new.coordinates.dat.data[:] = self.adapt_coord
-                #     self.project_u_()
-                #     self.solve_u(self.t)
-                #     function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)  # noqa
-                #     uh_model = fd.Function(function_space_new).project(self.u_cur)  # noqa
-                #     ax2 = fig.add_subplot(2, 2, 2, projection='3d')
-                #     ax2.set_title('Model Solution (3D)')
-                #     fd.trisurf(uh_model, axes=ax2)
-
-                #     # 2d plot and mesh for Model
-                #     ax4 = fig.add_subplot(2, 2, 4)
-                #     ax4.set_title('Soultion on Model Mesh')
-                #     fd.tripcolor(
-                #         uh_model, cmap='coolwarm', axes=ax4)
-                #     self.mesh_new.coordinates.dat.data[:] = out.detach().cpu().numpy()  # noqa
-                #     fd.triplot(self.mesh_new, axes=ax4)
-
-                # # 2d plot and mesh for MA
-                # ax3 = fig.add_subplot(2, 2, 3)
-                # ax3.set_title('Soultion on MA Mesh')
-                # fd.tripcolor(
-                #     self.uh_new, cmap='coolwarm', axes=ax3)
-                # self.mesh_new.coordinates.dat.data[:] = sample.y.cpu()
-                # fd.triplot(self.mesh_new, axes=ax3)
-
-                # fig.savefig(os.path.join(self.plot_more_path, f"plot_{idx}.png"))  # noqa
-
-                # ====  Plot mesh, solution, error ======================
-                rows, cols = 3, 4
-                fig, ax = plt.subplots(
-                    rows, cols, figsize=(cols * 5, rows * 5), layout="compressed"
-                )
-
-                # High resolution mesh
-                fd.triplot(self.mesh_fine, axes=ax[0, 0])
-                ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
-                # Orginal low resolution uniform mesh
-                fd.triplot(self.mesh_coarse, axes=ax[0, 1])
-                ax[0, 1].set_title(f"Original uniform Mesh")
-                # Adapted mesh (MA)
-                fd.triplot(self.mesh_new, axes=ax[0, 2])
-                ax[0, 2].set_title(f"Adapted Mesh (MA)")
-                # Adapted mesh (Model)
-                self.mesh_model.coordinates.dat.data[:] = out.detach().cpu().numpy()
-                fd.triplot(self.mesh_model, axes=ax[0, 3])
-                ax[0, 3].set_title(f"Adapted Mesh ({model_name})")
-
-                cmap = "seismic"
-                # Solution on high resolution mesh
-                cb = fd.tripcolor(u_exact, cmap=cmap, axes=ax[1, 0])
-                ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
-                plt.colorbar(cb)
-                # Solution on orginal low resolution uniform mesh
-                cb = fd.tripcolor(u_og, cmap=cmap, axes=ax[1, 1])
-                ax[1, 1].set_title(f"Solution on uniform Mesh")
-                plt.colorbar(cb)
-                # Solution on adapted mesh (MA)
-                cb = fd.tripcolor(u_ma, cmap=cmap, axes=ax[1, 2])
-                ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
-                plt.colorbar(cb)
-
-                if u_model:
-                    # Solution on adapted mesh (Model)
-                    cb = fd.tripcolor(u_model, cmap=cmap, axes=ax[1, 3])
-                    ax[1, 3].set_title(f"Solution on Adapted Mesh ({model_name})")
-                    plt.colorbar(cb)
-
-                err_orignal_mesh = fd.assemble(u_og - u_exact)
-                err_adapted_mesh_ma = fd.assemble(u_ma - u_exact)
-
-                if u_model:
-                    err_adapted_mesh_model = fd.assemble(u_model - u_exact)
-                    err_abs_max_val_adapted_mesh_model = max(
-                        abs(err_adapted_mesh_model.dat.data[:].max()),
-                        abs(err_adapted_mesh_model.dat.data[:].min()),
-                    )
-                else:
-                    err_abs_max_val_adapted_mesh_model = 0.0
-
-                err_abs_max_val_ori = max(
-                    abs(err_orignal_mesh.dat.data[:].max()),
-                    abs(err_orignal_mesh.dat.data[:].min()),
-                )
-                err_abs_max_val_adapted_ma = max(
-                    abs(err_adapted_mesh_ma.dat.data[:].max()),
-                    abs(err_adapted_mesh_ma.dat.data[:].min()),
-                )
-
-                err_abs_max_val = max(
-                    max(err_abs_max_val_ori, err_abs_max_val_adapted_ma),
-                    err_abs_max_val_adapted_mesh_model,
-                )
-                err_v_max = err_abs_max_val
-                err_v_min = -err_v_max
-
-                # Visualize the monitor values of MA
-                monitor_val = raw_data.get("monitor_val")
-                monitor_val_vis_holder = fd.Function(self.scalar_space)
-                monitor_val_vis_holder.dat.data[:] = monitor_val[:, 0]
-
-                # Error on high resolution mesh
-                cb = fd.tripcolor(monitor_val_vis_holder, cmap=cmap, axes=ax[2, 0])
-                ax[2, 0].set_title(f"Monitor Values")
-                plt.colorbar(cb)
-                # Monitor values for mesh movement
-                cb = fd.tripcolor(
-                    err_orignal_mesh,
-                    cmap=cmap,
-                    axes=ax[2, 1],
-                    vmax=err_v_max,
-                    vmin=err_v_min,
-                )
-                ax[2, 1].set_title(
-                    f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_og:.5f}"
-                )
-                plt.colorbar(cb)
-                # Error on adapted mesh (MA)
-                cb = fd.tripcolor(
-                    err_adapted_mesh_ma,
-                    cmap=cmap,
-                    axes=ax[2, 2],
-                    vmax=err_v_max,
-                    vmin=err_v_min,
-                )
-                ax[2, 2].set_title(
-                    f"Error (u-u_exact) MA| L2 Norm: {error_adapt:.5f} | {(error_og-error_adapt)/error_og*100:.2f}%"
-                )
-                plt.colorbar(cb)
-
-                if u_model:
-                    # Error on adapted mesh (Model)
-                    cb = fd.tripcolor(
-                        err_adapted_mesh_model,
-                        cmap=cmap,
-                        axes=ax[2, 3],
-                        vmax=err_v_max,
-                        vmin=err_v_min,
-                    )
-                    ax[2, 3].set_title(
-                        f"Error (u-u_exact) {model_name}| L2 Norm: {error_model:.5f} | {(error_og-error_model)/error_og*100:.2f}%"
-                    )
-                    plt.colorbar(cb)
-
-                for rr in range(rows):
-                    for cc in range(cols):
-                        ax[rr, cc].set_aspect("equal", "box")
-
-                # TODO: the saved plot can not be maniplated by another figure
-                # # Save plot data
-                # with open(
-                #     os.path.join(self.plot_data_path, f"plot_data_{idx:04d}.pkl"), "wb"
-                # ) as p:
-                #     pickle.dump(ax, p)
-
-                fig.savefig(
-                    os.path.join(self.plot_more_path, f"plot_{idx:04d}.png")
                 )  # noqa
 
                 # plotting (visulisation during sovling)
@@ -732,12 +748,22 @@ class SwirlEvaluator:
         self.mesh.coordinates.dat.data[:] = self.init_coord
         self.project_u_()
         self.solve_u(self.t)
+
+        function_space_coarse = fd.FunctionSpace(self.mesh, "CG", 1)
+        # u_og_2_coarse = fd.project(self.u_cur, function_space_coarse)
+        u_og_2_coarse = fd.Function(function_space_coarse).project(self.u_cur)  # noqa
         u_og_2_fine = fd.project(self.u_cur, function_space_fine)
 
         # solve on coarse adapt mesh
         self.mesh.coordinates.dat.data[:] = self.adapt_coord
         self.project_u_()
         self.solve_u(self.t)
+
+        function_space_coarse = fd.FunctionSpace(self.mesh, "CG", 1)
+        # u_adapt_2_coarse = fd.project(self.u_cur, function_space_coarse)
+        u_adapt_2_coarse = fd.Function(function_space_coarse).project(
+            self.u_cur
+        )  # noqa
         u_adapt_2_fine = fd.project(self.u_cur, function_space_fine)
 
         # error calculation
@@ -747,7 +773,17 @@ class SwirlEvaluator:
         # put mesh to init state
         self.mesh.coordinates.dat.data[:] = self.init_coord
 
-        return u_fine, u_og_2_fine, u_adapt_2_fine, error_og, error_adapt
+        # u_fine_raw_data = u_fine.dat.data[:]
+        return (
+            u_fine,
+            u_og_2_fine,
+            u_adapt_2_fine,
+            u_og_2_coarse,
+            u_adapt_2_coarse,
+            error_og,
+            error_adapt,
+        )
+        # return u_fine_raw_data, u_og_raw_data, u_adapt_raw_data, error_og, error_adapt
 
     def plot_res(self):
         fig = plt.figure(figsize=(15, 10))

@@ -507,11 +507,15 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
 
         if n_grid is None:
             mesh = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
+            mesh_coarse = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_new = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
+            mesh_model = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_fine = fd.Mesh(os.path.join(ds_root, "mesh_fine", "mesh.msh"))
         else:
             mesh = fd.UnitSquareMesh(n_grid, n_grid)
+            mesh_coarse = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_new = fd.UnitSquareMesh(n_grid, n_grid)
+            mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_fine = fd.UnitSquareMesh(100, 100)
 
         # fd.triplot(mesh)
@@ -519,8 +523,10 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
 
         evaluator = wm.SwirlEvaluator(
             mesh,
+            mesh_coarse,
             mesh_fine,
             mesh_new,
+            mesh_model,
             dataset,
             model,
             eval_dir,
@@ -869,14 +875,15 @@ if __name__ == "__main__":
     # ds_roots = [*ds_root_burgers]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = [*ds_root_swirl, *ds_root_helmholtz]
-    # ds_roots = [*ds_root_swirl]
-    ds_roots = [*ds_root_helmholtz]
+    ds_roots = [*ds_root_swirl]
+    # ds_roots = [*ds_root_helmholtz]
 
     # run_ids = [*run_ids_largeset, *run_ids_miniset_new, *run_ids_old_benchmark]
     # run_ids = [*run_ids_miniset_new]
     # run_ids = [run_id_m2n, run_id_m2n_area_loss_hessian_norm, run_id_m2t]
     # run_ids = [run_id_m2t]
     run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "gywsmly9"]
+    run_ids = ["cyzk2mna"]
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
@@ -901,7 +908,7 @@ if __name__ == "__main__":
             # bench_res = benchmark_model(
             #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
             bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=100
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=2
             )
 
             write_sumo(eval_dir, ds_root)

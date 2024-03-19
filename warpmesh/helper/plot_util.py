@@ -96,7 +96,11 @@ def plot_compare(
     if uh_model:
         # Solution on adapted mesh (Model)
         cb = fd.tripcolor(
-            uh_model, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 3]
+            uh_model,
+            cmap=cmap,
+            vmax=solution_v_max,
+            vmin=solution_v_min,
+            axes=ax[1, 3],
         )
         ax[1, 3].set_title(f"Solution on Adapted Mesh ({model_name})")
         plt.colorbar(cb)
