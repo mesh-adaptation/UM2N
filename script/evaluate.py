@@ -883,7 +883,6 @@ if __name__ == "__main__":
     # run_ids = [run_id_m2n, run_id_m2n_area_loss_hessian_norm, run_id_m2t]
     # run_ids = [run_id_m2t]
     run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "gywsmly9"]
-    run_ids = ["cyzk2mna"]
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
@@ -908,7 +907,7 @@ if __name__ == "__main__":
             # bench_res = benchmark_model(
             #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
             bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=2
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=50
             )
 
             write_sumo(eval_dir, ds_root)

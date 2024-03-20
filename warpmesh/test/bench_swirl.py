@@ -444,12 +444,13 @@ class SwirlEvaluator:
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1000
 
-                # calculate solution on fine mesh
-                function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
-                self.solve_u_fine(self.t)
-                self.u_fine = fd.Function(function_space_fine).project(
-                    self.u_cur_fine
-                )  # noqa
+                # TODO: do not uncomment this, there are accumulation errors
+                # # calculate solution on fine mesh
+                # function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
+                # self.solve_u_fine(self.t)
+                # self.u_fine = fd.Function(function_space_fine).project(
+                #     self.u_cur_fine
+                # )  # noqa
 
                 # calculate solution on original mesh
                 self.mesh.coordinates.dat.data[:] = self.init_coord
