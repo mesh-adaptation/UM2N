@@ -496,12 +496,20 @@ class SwirlEvaluator:
                     res["tangled_element"] = num_tangle
 
                 self.mesh_model.coordinates.dat.data[:] = out.detach().cpu().numpy()
+
+                # solve on fine mesh
+                function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
+                # self.solve_u_fine(self.t)
+                u_fine = fd.Function(function_space_fine).project(
+                    self.u_cur_fine
+                )  # noqa
+
                 fig, plot_data_dict = wm.plot_compare(
                     self.mesh_fine,
                     self.mesh_coarse,
                     self.mesh_new,
                     self.mesh_model,
-                    self.u_fine,
+                    u_fine,
                     self.uh,
                     self.uh_new,
                     self.uh_model,
@@ -509,6 +517,7 @@ class SwirlEvaluator:
                     num_tangle,
                     model_name,
                 )
+                res["deform_loss"] = 1000 * torch.nn.L1Loss()(out, sample.y).item()
                 plot_data_dict["deform_loss"] = res["deform_loss"]
 
                 # # ====  Plot mesh, solution, error ======================
@@ -672,7 +681,7 @@ class SwirlEvaluator:
                 print(res)
 
                 # metric calculation
-                res["deform_loss"] = 1000 * torch.nn.L1Loss()(out, sample.y).item()
+                # res["deform_loss"] = 1000 * torch.nn.L1Loss()(out, sample.y).item()
                 res["time_consumption_model"] = dur_ms
 
                 res["acceration_ratio"] = (

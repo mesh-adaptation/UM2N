@@ -70,7 +70,7 @@ for dataset_path in dataset_paths:
     for run_id in run_ids:
         ret_dict[run_id] = {"error": [], "deform_loss": [], "error_reduction": []}
 
-    num_vis = 100
+    num_vis = 10
     rows = 3
     cols = 3 + len(run_ids)
     for n_v in range(num_vis):
@@ -94,12 +94,13 @@ for dataset_path in dataset_paths:
             raise Exception(f"{problem_type} not implemented.")
 
         model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
+        ma_function_space = fd.FunctionSpace(mesh_MA, "CG", 1)
         high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
 
         u_og = fd.Function(fd.FunctionSpace(mesh_og, "CG", 1))
         u_ma = fd.Function(fd.FunctionSpace(mesh_MA, "CG", 1))
         u_model = fd.Function(fd.FunctionSpace(mesh_model, "CG", 1))
-        monitor_values = fd.Function(model_function_space)
+        monitor_values = fd.Function(ma_function_space)
 
         # u exact lives in high res function space
         u_exact = fd.Function(high_res_function_space)
@@ -201,9 +202,12 @@ for dataset_path in dataset_paths:
             deform_loss = plot_data_dict["deform_loss"]
             # Adapted mesh (Model)
             fd.triplot(mesh_model, axes=ax[0, 3 + cnt])
-            ax[0, 3 + cnt].set_title(
-                f"Adapted Mesh ({show_name}) | Deform loss: {deform_loss:.2f}"
-            )
+            if deform_loss is not None:
+                ax[0, 3 + cnt].set_title(
+                    f"Adapted Mesh ({show_name}) | Deform loss: {deform_loss:.2f}"
+                )
+            else:
+                ax[0, 3 + cnt].set_title(f"Adapted Mesh ({show_name})")
 
             if error_model_mesh != -1:
                 # Solution on adapted mesh (Model)
@@ -238,7 +242,11 @@ for dataset_path in dataset_paths:
                 ret_dict[run_id]["error"].append(np.nan)
             else:
                 ret_dict[run_id]["error"].append(error_model_mesh)
-            ret_dict[run_id]["deform_loss"].append(float(deform_loss))
+
+            if deform_loss is not None:
+                ret_dict[run_id]["deform_loss"].append(float(deform_loss))
+            else:
+                ret_dict[run_id]["deform_loss"].append(None)
 
             if error_model_mesh == -1:
                 ret_dict[run_id]["error_reduction"].append(np.nan)
