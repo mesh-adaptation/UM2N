@@ -99,6 +99,7 @@ elif config.model_used == "M2T":
         transformer_training_mask_ratio_upper_bound=config.transformer_training_mask_ratio_upper_bound,
         deform_in_c=config.num_deform_in,
         deform_out_type=config.deform_out_type,
+        local_feature_dim_in=config.num_lfe_in,
         num_loop=config.num_deformer_loop,
         device=device,
     )
@@ -120,26 +121,41 @@ else:
 
 # =================== load from checkpoint ==========================
 
-import warpmesh as wm
+if hasattr(config, "use_pre_train") and config.use_pre_train:
+    import warpmesh as wm
 
-# Load from checkpoint
-entity = "mz-team"
-project_name = "warpmesh"
-run_id = "rud1gsge"
-api = wandb.Api()
-run_loaded = api.run(f"{entity}/{project_name}/{run_id}")
-epoch = 999
-target_file_name = "model_{}.pth".format(epoch)
-model_file = None
-model_store_path = "./fine_tune_model"
-for file in run_loaded.files():
-    if file.name.endswith(target_file_name):
-        model_file = file.download(root=model_store_path, replace=True)
-        target_file_name = file.name
-assert model_file is not None, "Model file not found"
-model_file_path = os.path.join(model_store_path, target_file_name)
-model = wm.load_model(model, model_file_path)
-print("Model checkpoint loaded.")
+    # Load from checkpoint
+    entity = "mz-team"
+    project_name = "warpmesh"
+    # run_id = "rud1gsge"
+    run_id = "kgr0nicn"
+    # run_id = "99zrohiu"
+    api = wandb.Api()
+    run_loaded = api.run(f"{entity}/{project_name}/{run_id}")
+    epoch = 999
+    target_file_name = "model_{}.pth".format(epoch)
+    model_file = None
+    model_store_path = "./fine_tune_model"
+    for file in run_loaded.files():
+        if file.name.endswith(target_file_name):
+            model_file = file.download(root=model_store_path, replace=True)
+            target_file_name = file.name
+    assert model_file is not None, "Model file not found"
+    model_file_path = os.path.join(model_store_path, target_file_name)
+
+    # # TODO: ad hoc solution for removing the mlp in
+    # pretrained_dict = torch.load(model_file_path)
+    # model_dict = model.state_dict()
+    # pretrained_dict = {
+    #     k: v
+    #     for k, v in pretrained_dict.items()
+    #     if (k in model_dict and k != "transformer_encoder.mlp_in.layers.0.weight")
+    # }
+    # model_dict.update(pretrained_dict)
+    # model.load_state_dict(model_dict)
+
+    model = wm.load_model(model, model_file_path, strict=False)
+    print(f"Model {run_id} checkpoint loaded.")
 # ===================================================================
 
 

@@ -22,20 +22,26 @@ import firedrake as fd
 
 
 model_names = ["M2N", "M2N", "MRTransformer", "M2T"]
-run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "gywsmly9"]
+run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "ig1np6kx"]
 run_id_model_mapping = {
     "cyzk2mna": "M2N",
     "u4uxcz1e": "M2N-en",
     "99zrohiu": "MRN",
-    "gywsmly9": "M2T-w-edge",
+    "ig1np6kx": "M2T-w-edge",
 }
 trained_epoch = 999
 # problem_type = "helmholtz_square"
 problem_type = "swirl_square"
 
 dataset_paths = [
-    "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15"
+    "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
+    "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
+    "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
 ]
+
+# dataset_paths = [
+#     "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15"
+# ]
 
 # dataset_paths = [
 #     "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
@@ -50,7 +56,7 @@ for dataset_path in dataset_paths:
     os.makedirs(result_folder, exist_ok=True)
     result_folder_abs_path = os.path.abspath(result_folder)
     is_generating_video_for_all = False
-    fps = 5
+    fps = 10
 
     info_dict = {}
     info_dict["run_ids"] = run_ids
@@ -59,6 +65,7 @@ for dataset_path in dataset_paths:
     info_dict["problem_type"] = problem_type
     info_dict["dataset_name"] = dataset_name
     info_dict["dataset_path"] = dataset_path
+    mesh_type = int(dataset_name.split("meshtype_")[-1][0])
     # Write the dictionary to a YAML file
     with open(f"{result_folder}/models_info" + ".yaml", "w") as file:
         yaml.dump(info_dict, file, default_flow_style=False)
@@ -70,7 +77,7 @@ for dataset_path in dataset_paths:
     for run_id in run_ids:
         ret_dict[run_id] = {"error": [], "deform_loss": [], "error_reduction": []}
 
-    num_vis = 10
+    num_vis = 50
     rows = 3
     cols = 3 + len(run_ids)
     for n_v in range(num_vis):
@@ -86,10 +93,19 @@ for dataset_path in dataset_paths:
                 os.path.join(dataset_path, "mesh", f"mesh_{n_v:04d}.msh")
             )
         elif problem_type == "swirl_square":
-            mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
-            mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
-            mesh_fine = fd.Mesh(os.path.join(dataset_path, "mesh_fine", f"mesh.msh"))
-            mesh_model = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
+            if mesh_type == 0:
+                n_grid = int(dataset_name.split("ngrid_")[-1][:2])
+                mesh_og = fd.UnitSquareMesh(n_grid, n_grid)
+                mesh_MA = fd.UnitSquareMesh(n_grid, n_grid)
+                mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
+                mesh_fine = fd.UnitSquareMesh(100, 100)
+            else:
+                mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
+                mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
+                mesh_fine = fd.Mesh(
+                    os.path.join(dataset_path, "mesh_fine", f"mesh.msh")
+                )
+                mesh_model = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
         else:
             raise Exception(f"{problem_type} not implemented.")
 
@@ -100,7 +116,8 @@ for dataset_path in dataset_paths:
         u_og = fd.Function(fd.FunctionSpace(mesh_og, "CG", 1))
         u_ma = fd.Function(fd.FunctionSpace(mesh_MA, "CG", 1))
         u_model = fd.Function(fd.FunctionSpace(mesh_model, "CG", 1))
-        monitor_values = fd.Function(ma_function_space)
+        # monitor_values = fd.Function(ma_function_space)
+        monitor_values = fd.Function(model_function_space)
 
         # u exact lives in high res function space
         u_exact = fd.Function(high_res_function_space)

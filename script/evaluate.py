@@ -825,7 +825,9 @@ if __name__ == "__main__":
     run_id_m2n_enhance_largeset = "u6zpxaoz"
     run_id_MRT_largeset = "kgr0nicn"
     run_id_PIMRT_largeset = "6wkt13wp"
-    run_id_M2T_largeset = "gywsmly9"
+    run_id_M2T_largeset = "gywsmly9"  # pre-train using "rud1gsge"
+    run_id_M2T_largeset = "ig1np6kx"  # pre-train using "kgr0nicn"
+    run_id_M2T_largeset = "72esorfm"  # pre-train using "99zrohiu"
 
     run_ids_largeset = [
         run_id_m2n_largeset,
@@ -861,7 +863,8 @@ if __name__ == "__main__":
 
     ds_root_swirl = [
         "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
-        # "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
+        "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
+        "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
     ]
 
     ds_root_burgers = [
@@ -885,6 +888,11 @@ if __name__ == "__main__":
     run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "gywsmly9"]
     # run_ids = ["99zrohiu", "gywsmly9"]
     # run_ids = ["cyzk2mna"]
+    # run_ids = ["u4uxcz1e", "99zrohiu", "gywsmly9"]
+    # run_ids = ["ig1np6kx"]
+    run_ids = ["99zrohiu", "ig1np6kx"]
+    # run_ids = ["u4uxcz1e"]
+
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
@@ -896,6 +904,7 @@ if __name__ == "__main__":
 
             # Append the monitor val at the end
             # config.mesh_feat.append("monitor_val")
+            config.mesh_feat = ["coord", "u", "monitor_val"]
 
             print("# Evaluation Pipeline Started\n")
             print(config)
@@ -909,7 +918,7 @@ if __name__ == "__main__":
             # bench_res = benchmark_model(
             #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
             bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=5
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=50
             )
 
             write_sumo(eval_dir, ds_root)

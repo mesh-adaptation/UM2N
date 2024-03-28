@@ -513,6 +513,7 @@ class SwirlEvaluator:
                     self.uh,
                     self.uh_new,
                     self.uh_model,
+                    raw_data.get("hessian_norm")[:, 0],
                     raw_data.get("monitor_val")[:, 0],
                     num_tangle,
                     model_name,
@@ -643,6 +644,7 @@ class SwirlEvaluator:
                 fig.savefig(
                     os.path.join(self.plot_more_path, f"plot_{idx:04d}.png")
                 )  # noqa
+                plt.close(fig)
 
                 # Save plot data
                 with open(

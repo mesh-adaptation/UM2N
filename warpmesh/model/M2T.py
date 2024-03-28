@@ -43,6 +43,7 @@ class M2T(torch.nn.Module):
         transformer_training_mask_ratio_upper_bound=0.9,
         deform_in_c=7,
         deform_out_type="coord",
+        local_feature_dim_in=4,
         num_loop=3,
         device="cuda",
     ):
@@ -93,6 +94,7 @@ class M2T(torch.nn.Module):
 
         self.deformer = M2TDeformer(
             feature_in_dim=self.all_feat_c,
+            local_feature_dim_in=local_feature_dim_in,
             coord_size=2,
             hidden_size=self.hidden_size,
             heads=6,
@@ -209,7 +211,8 @@ class M2T(torch.nn.Module):
 
         (coord, model_output), (phix, phiy) = self.deformer(
             coord,
-            data.mesh_feat[:, 0:4],
+            # data.mesh_feat[:, 0:4],
+            data.mesh_feat,
             hidden,
             edge_idx,
             mesh_query,

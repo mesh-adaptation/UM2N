@@ -13,6 +13,7 @@ def plot_compare(
     uh_og,
     uh_ma,
     uh_model,
+    hessian_norm,
     monitor_val,
     num_tangle,
     model_name,
@@ -21,6 +22,7 @@ def plot_compare(
     # Construct function space
     high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
     ma_function_space = fd.FunctionSpace(mesh_MA, "CG", 1)
+    model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
 
     # projections
     uh_model_hr = None
@@ -44,9 +46,20 @@ def plot_compare(
         rows, cols, figsize=(cols * 5, rows * 5), layout="compressed"
     )
 
+    cmap = "seismic"
+
+    # Visualize the hessian norm on MA mesh
+    hessian_norm_vis_holder = fd.Function(ma_function_space)
+    hessian_norm_vis_holder.dat.data[:] = hessian_norm  # [:, 0].detach().cpu().numpy()
+    # Hessian norm values
+    cb = fd.tripcolor(hessian_norm_vis_holder, cmap=cmap, axes=ax[0, 0])
+    ax[0, 0].set_title(f"Hessian norm")
+    plt.colorbar(cb)
+
     # High resolution mesh
-    fd.triplot(mesh_fine, axes=ax[0, 0])
-    ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
+    # fd.triplot(mesh_fine, axes=ax[0, 0])
+    # ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
+
     # Orginal low resolution uniform mesh
     fd.triplot(mesh, axes=ax[0, 1])
     ax[0, 1].set_title(f"Original uniform Mesh")
@@ -59,8 +72,6 @@ def plot_compare(
 
     plot_data_dict["mesh_ma"] = mesh_MA.coordinates.dat.data[:]
     plot_data_dict["mesh_model"] = mesh_model.coordinates.dat.data[:]
-
-    cmap = "seismic"
 
     u_exact_max = u_exact.dat.data[:].max()
     u_og_max = uh_og.dat.data[:].max()

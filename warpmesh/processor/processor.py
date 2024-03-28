@@ -173,6 +173,15 @@ class MeshProcessor:
         uh_sample_buffer = np.zeros((32**2, 1))
         uh_sample_buffer[sample_flag, :] = np.vstack(uh_in_polygon)
         uh_sample_buffer = uh_sample_buffer.reshape(32, 32)
+
+        # sampling for grad uh norm
+        grad_uh_norm_in_polygon = self.raw_feature["grad_uh_norm"].at(
+            sample_coord, tolerance=1e-4
+        )
+        grad_uh_norm_sample_buffer = np.zeros((32**2, 1))
+        grad_uh_norm_sample_buffer[sample_flag, :] = np.vstack(grad_uh_norm_in_polygon)
+        grad_uh_norm_sample_buffer = grad_uh_norm_sample_buffer.reshape(32, 32)
+
         # sampling for hessian norm
         hessian_in_polygon = self.raw_feature["hessian_norm"].at(
             sample_coord, tolerance=1e-4
@@ -180,11 +189,25 @@ class MeshProcessor:
         hessian_sample_buffer = np.zeros((32**2, 1))
         hessian_sample_buffer[sample_flag, :] = np.vstack(hessian_in_polygon)
         hessian_sample_buffer = hessian_sample_buffer.reshape(32, 32)
+
+        # sampleing for monitor val
+        monitor_val_in_polygon = self.raw_feature["monitor_val"].at(
+            sample_coord, tolerance=1e-4
+        )
+        monitor_val_sample_buffer = np.zeros((32**2, 1))
+        monitor_val_sample_buffer[sample_flag, :] = np.vstack(monitor_val_in_polygon)
+        monitor_val_sample_buffer = monitor_val_sample_buffer.reshape(32, 32)
+
         # On poly mesh, we define conv_fix and conv as the same
         self.conv_uh = uh_sample_buffer[np.newaxis, :, :]
         self.conv_uh_fix = uh_sample_buffer[np.newaxis, :, :]
+        self.conv_grad_uh_norm = grad_uh_norm_sample_buffer[np.newaxis, :, :]
+        self.conv_grad_uh_norm_fix = grad_uh_norm_sample_buffer[np.newaxis, :, :]
+
         self.conv_hessian_norm = hessian_sample_buffer[np.newaxis, :, :]
         self.conv_hessian_norm_fix = hessian_sample_buffer[np.newaxis, :, :]
+        self.conv_monitor_val = monitor_val_sample_buffer[np.newaxis, :, :]
+        self.conv_monitor_val_fix = monitor_val_sample_buffer[np.newaxis, :, :]
         self.conv_xy = None
         self.conv_xy_fix = None
         return
@@ -205,7 +228,9 @@ class MeshProcessor:
         conv_y_fix = np.linspace(y_start, y_end, fix_reso_y)
         conv_xy_fix = np.zeros((2, fix_reso_x, fix_reso_y))
         conv_uh_fix = np.zeros((1, len(conv_x_fix), len(conv_y_fix)))
+        conv_grad_uh_norm_fix = np.zeros((1, len(conv_x_fix), len(conv_y_fix)))
         conv_hessian_norm_fix = np.zeros((1, len(conv_x_fix), len(conv_y_fix)))
+        conv_monitor_val_fix = np.zeros((1, len(conv_x_fix), len(conv_y_fix)))
         for i in range(len(conv_x_fix)):
             for j in range(len(conv_y_fix)):
                 # (x, y) conv_feat
@@ -213,12 +238,20 @@ class MeshProcessor:
                 conv_uh_fix[:, i, j] = self.raw_feature["uh"].at(
                     [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
                 )
+                conv_grad_uh_norm_fix[:, i, j] = self.raw_feature["grad_uh_norm"].at(
+                    [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
+                )
                 conv_hessian_norm_fix[:, i, j] = self.raw_feature["hessian_norm"].at(
+                    [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
+                )
+                conv_monitor_val_fix[:, i, j] = self.raw_feature["monitor_val"].at(
                     [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
                 )
         self.conv_xy_fix = conv_xy_fix
         self.conv_uh_fix = conv_uh_fix
+        self.conv_grad_uh_norm_fix = conv_grad_uh_norm_fix
         self.conv_hessian_norm_fix = conv_hessian_norm_fix
+        self.conv_monitor_val_fix = conv_monitor_val_fix
 
         # dynamic resolution sampling (sampled at mesh nodes) （disabled from 18th Jan 2024 for efficient concern）  # noqa
         # x_coords_unique = np.unique(coords[:, 0])
@@ -246,9 +279,18 @@ class MeshProcessor:
         #             tolerance=1e-4)
         self.conv_xy = conv_xy_fix
         self.conv_uh = conv_uh_fix
+        self.conv_grad_uh_norm = conv_grad_uh_norm_fix
         self.conv_hessian_norm = conv_hessian_norm_fix
+        self.conv_monitor_val = conv_monitor_val_fix
         res = np.concatenate(
-            [self.conv_xy, self.conv_uh, self.conv_hessian_norm], axis=0
+            [
+                self.conv_xy,
+                self.conv_uh,
+                self.conv_grad_uh_norm,
+                self.conv_hessian_norm,
+                self.conv_monitor_val,
+            ],
+            axis=0,
         )
         return res
 
@@ -276,6 +318,7 @@ class MeshProcessor:
             "coord": self.coordinates,
             "u": self.feature["uh"],
             "grad_u": self.feature["grad_uh"],
+            "grad_u_norm": self.feature["grad_uh_norm"],
             "hessian": self.feature["hessian"],
             "phi": self.feature["phi"],
             "grad_phi": self.feature["grad_phi"],
@@ -298,10 +341,14 @@ class MeshProcessor:
             "bd_up_mask": self.up_bd,
             "conv_xy": self.conv_xy,
             "conv_uh": self.conv_uh,
+            "conv_grad_uh_norm": self.conv_grad_uh_norm,
             "conv_hessian_norm": self.conv_hessian_norm,
+            "conv_monitor_val": self.conv_monitor_val,
             "conv_xy_fix": self.conv_xy_fix,
             "conv_uh_fix": self.conv_uh_fix,
+            "conv_grad_uh_norm_fix": self.conv_grad_uh_norm_fix,
             "conv_hessian_norm_fix": self.conv_hessian_norm_fix,
+            "conv_monitor_val_fix": self.conv_monitor_val_fix,
             "σ_x": self.dist_params["σ_x"],
             "σ_y": self.dist_params["σ_y"],
             "μ_x": self.dist_params["μ_x"],

@@ -25,6 +25,7 @@ class M2TDeformer(MessagePassing):
     def __init__(
         self,
         feature_in_dim,
+        local_feature_dim_in,
         coord_size=2,
         hidden_size=512,
         heads=6,
@@ -47,7 +48,7 @@ class M2TDeformer(MessagePassing):
         else:
             raise Exception(f"Output type {output_type} is invalid.")
 
-        lfe_in_c = 4
+        lfe_in_c = local_feature_dim_in
         self.lfe_out_c = 16
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
         self.gat_deformer = NetGATDeform(in_dim=feature_in_dim + self.lfe_out_c)

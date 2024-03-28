@@ -803,21 +803,6 @@ def model_forward(bs, data, model, use_add_random_query=True):
     mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
 
     num_nodes = mesh_query.shape[-2] // bs
-    # Generate random mesh queries for unsupervised learning
-    sampled_queries = generate_samples(
-        bs=bs, num_samples_per_mesh=num_nodes, num_meshes=1, data=data, device=device
-    )
-    sampled_queries_edge_index = construct_graph(
-        sampled_queries[:, :, :2], num_neighbors=6
-    )
-
-    mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
-    mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
-    mesh_sampled_queries_x.requires_grad = True
-    mesh_sampled_queries_y.requires_grad = True
-    mesh_sampled_queries = torch.cat(
-        [mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1
-    ).view(-1, 2)
 
     coord_ori_x = data.mesh_feat[:, 0].view(-1, 1)
     coord_ori_y = data.mesh_feat[:, 1].view(-1, 1)
@@ -825,16 +810,44 @@ def model_forward(bs, data, model, use_add_random_query=True):
     coord_ori_y.requires_grad = True
     coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
 
-    num_nodes = coord_ori.shape[-2] // bs
-    input_q = data.mesh_feat[:, :4]
-    input_kv = generate_samples(
-        bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device
-    )
+    if use_add_random_query:
+        # Generate random mesh queries for unsupervised learning
+        sampled_queries = generate_samples(
+            bs=bs,
+            num_samples_per_mesh=num_nodes,
+            num_meshes=1,
+            data=data,
+            device=device,
+        )
+        sampled_queries_edge_index = construct_graph(
+            sampled_queries[:, :, :2], num_neighbors=6
+        )
+
+        mesh_sampled_queries_x = sampled_queries[:, :, 0].view(-1, 1).detach()
+        mesh_sampled_queries_y = sampled_queries[:, :, 1].view(-1, 1).detach()
+        mesh_sampled_queries_x.requires_grad = True
+        mesh_sampled_queries_y.requires_grad = True
+        mesh_sampled_queries = torch.cat(
+            [mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1
+        ).view(-1, 2)
+
+        num_nodes = coord_ori.shape[-2] // bs
+        input_kv = generate_samples(
+            bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device
+        )
+    else:
+        mesh_sampled_queries = None
+        input_kv = None
+        sampled_queries_edge_index = None
+
+    # input_q = data.mesh_feat[:, :4]
+    input_q = data.mesh_feat
+
     # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
 
-    if not use_add_random_query:
-        mesh_sampled_queries = None
-        sampled_queries_edge_index = None
+    # if not use_add_random_query:
+    #     mesh_sampled_queries = None
+    #     sampled_queries_edge_index = None
 
     (output_coord_all, output, out_monitor), (phix, phiy) = model(
         data,
@@ -855,8 +868,12 @@ def model_forward(bs, data, model, use_add_random_query=True):
 
     # mesh_query_x_all = torch.cat([mesh_query_x, mesh_sampled_queries[:, :, 0].view(-1, 1)], dim=0)
     # mesh_query_y_all = torch.cat([mesh_query_y, mesh_sampled_queries[:, :, 1].view(-1, 1)], dim=0)
-    mesh_query_x_all = mesh_sampled_queries_x
-    mesh_query_y_all = mesh_sampled_queries_y
+    if use_add_random_query:
+        mesh_query_x_all = mesh_sampled_queries_x
+        mesh_query_y_all = mesh_sampled_queries_y
+    else:
+        mesh_query_x_all = mesh_query_x
+        mesh_query_y_all = mesh_query_y
     return (
         output_coord,
         output,

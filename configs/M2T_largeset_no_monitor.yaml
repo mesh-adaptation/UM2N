@@ -14,7 +14,6 @@ learning_rate: 1.0e-03
 mesh_feat:
 - coord
 - u
-- hessian_norm
 model_used: M2T
 multi_scale_check_interval: 50
 n_grids:
@@ -29,8 +28,8 @@ num_deform_out: 1
 num_deformer_loop: 1
 num_epochs: 1000
 num_gfe_in: 2
-num_lfe_in: 4
-num_transformer_in: 4
+num_lfe_in: 3
+num_transformer_in: 3
 num_transformer_out: 16
 num_transformer_embed_dim: 64
 num_transformer_heads: 4
@@ -47,7 +46,6 @@ project: warpmesh
 save_interval: 20
 train_boundary_scheme: full
 train_data_set_type: aniso
-use_pre_train: True
 use_area_loss: true
 use_cluster: false
 use_convex_loss: true

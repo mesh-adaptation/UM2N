@@ -292,12 +292,34 @@ if __name__ == "__main__":
                         os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
                     ),  # noqa
                 }
+            ).get_hessian_norm(mesh)
+            hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
+
+            # Get monitor val
+            monitor_val = wm.MeshGenerator(
+                params={
+                    "eq": helmholtz_eq,
+                    "mesh": fd.Mesh(
+                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
+                    ),  # noqa
+                }
             ).monitor_func(mesh)
 
-            hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
+            grad_uh_norm = wm.MeshGenerator(
+                params={
+                    "eq": helmholtz_eq,
+                    "mesh": fd.Mesh(
+                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
+                    ),  # noqa
+                }
+            ).get_grad_norm(mesh)
 
             func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
             grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
+
+            grad_norm = fd.function(res["function_space"])
+            grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
+            grad_norm /= grad_norm.vector().max()
 
             mesh_gen = wm.MeshGenerator(
                 params={
@@ -314,7 +336,7 @@ if __name__ == "__main__":
             dur = (end - start) * 1000
 
             # Get monitor val
-            monitor_val = mesh_gen.get_monitor_val()
+            # monitor_val = mesh_gen.get_monitor_val()
 
             # this is the jacobian of x with respect to xi
             jacobian = mesh_gen.get_jacobian()
@@ -353,6 +375,7 @@ if __name__ == "__main__":
                 feature={
                     "uh": uh.dat.data_ro.reshape(-1, 1),
                     "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(-1, 2),
+                    "grad_uh_norm": grad_uh_norm.dat.data_ro.reshape(-1, 1),
                     "hessian": hessian.dat.data_ro.reshape(-1, 4),
                     "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
                     "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
