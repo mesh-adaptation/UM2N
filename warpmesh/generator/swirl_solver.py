@@ -595,6 +595,63 @@ class SwirlSolver:
 
         return self.monitor_values
 
+    def monitor_function_on_coarse_mesh(self, mesh, alpha=10, beta=5):
+        self.project_u_()
+        self.solve_u(self.t)
+        self.u_hess.project(self.u_cur)
+
+        self.hessian_prob.solve()
+        self.f_norm.project(
+            self.l2_projection[0, 0] ** 2
+            + self.l2_projection[0, 1] ** 2
+            + self.l2_projection[1, 0] ** 2
+            + self.l2_projection[1, 1] ** 2
+        )
+
+        func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
+        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+
+        # Normlize the hessian
+        self.f_norm /= self.f_norm.vector().max()
+        # Normlize the grad
+        self.grad_norm /= self.grad_norm.vector().max()
+
+        monitor_values = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
+        # Choose the max values between grad norm and hessian norm according to
+        # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
+        monitor_values.dat.data[:] = np.maximum(
+            beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
+        )
+
+        # #################
+
+        V = fd.FunctionSpace(mesh, "CG", 1)
+        u = fd.TrialFunction(V)
+        v = fd.TestFunction(V)
+        function_space = V
+        # Discretised Eq Definition Start
+        f = monitor_values
+        dx = mesh.cell_sizes.dat.data[:].mean()
+        N = self.n_monitor_smooth
+        K = N * dx**2 / 4
+        RHS = f * v * fd.dx(domain=mesh)
+        LHS = (K * fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+        bc = fd.DirichletBC(function_space, f, "on_boundary")
+
+        monitor_smoothed = fd.Function(function_space)
+        fd.solve(
+            LHS == RHS,
+            monitor_smoothed,
+            solver_parameters={"ksp_type": "cg", "pc_type": "none"},
+            bcs=bc,
+        )
+
+        # #################
+        monitor_values.project(1 + monitor_smoothed)
+
+        return monitor_values
+
     def solve_problem(self, callback=None, fail_callback=None):
         print("In solve problem")
         self.t = 0.0
@@ -609,6 +666,11 @@ class SwirlSolver:
             if ((step + 1) % self.save_interval == 0) or (step == 0):
                 print(f"---- getting samples: step: {step}, t: {self.t:.5f}")
                 try:
+
+                    monitor_values = self.monitor_function_on_coarse_mesh(self.mesh)
+                    hessian_norm = self.f_norm
+                    grad_u_norm = self.grad_norm
+
                     # # TODO: Starting the mesh movement from last adapted mesh (This is not working currently)
                     # self.mesh.coordinates.dat.data[:] = self.adapt_coord_prev
                     # mesh movement - calculate the adapted coords
@@ -663,8 +725,8 @@ class SwirlSolver:
 
                     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
                     uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
-                    hessian_norm = self.f_norm
-                    monitor_values = adapter.monitor
+                    # hessian_norm = self.f_norm
+                    # monitor_values = adapter.monitor
                     hessian = self.l2_projection
                     phi = adapter.phi
                     phi_grad = adapter.grad_phi
@@ -685,6 +747,7 @@ class SwirlSolver:
                     callback(
                         uh=self.uh,
                         uh_grad=uh_grad,
+                        grad_u_norm=grad_u_norm,
                         hessian_norm=hessian_norm,
                         monitor_values=monitor_values,
                         hessian=hessian,

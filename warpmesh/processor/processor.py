@@ -238,9 +238,10 @@ class MeshProcessor:
                 conv_uh_fix[:, i, j] = self.raw_feature["uh"].at(
                     [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
                 )
-                conv_grad_uh_norm_fix[:, i, j] = self.raw_feature["grad_uh_norm"].at(
-                    [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
-                )
+                if "grad_uh_norm" in self.raw_feature:
+                    conv_grad_uh_norm_fix[:, i, j] = self.raw_feature[
+                        "grad_uh_norm"
+                    ].at([conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3)
                 conv_hessian_norm_fix[:, i, j] = self.raw_feature["hessian_norm"].at(
                     [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
                 )

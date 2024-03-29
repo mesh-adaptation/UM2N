@@ -863,8 +863,8 @@ if __name__ == "__main__":
 
     ds_root_swirl = [
         "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
-        "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
-        "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
+        # "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
+        # "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
     ]
 
     ds_root_burgers = [
@@ -890,8 +890,8 @@ if __name__ == "__main__":
     # run_ids = ["cyzk2mna"]
     # run_ids = ["u4uxcz1e", "99zrohiu", "gywsmly9"]
     # run_ids = ["ig1np6kx"]
-    run_ids = ["99zrohiu", "ig1np6kx"]
-    # run_ids = ["u4uxcz1e"]
+    run_ids = ["99zrohiu", "ig1np6kx", "u4uxcz1e"]
+    run_ids = ["99zrohiu"]
 
     for run_id in run_ids:
         for ds_root in ds_roots:

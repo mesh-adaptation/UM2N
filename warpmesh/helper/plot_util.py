@@ -20,6 +20,7 @@ def plot_compare(
 ):
 
     # Construct function space
+    coarse_res_function_space = fd.FunctionSpace(mesh, "CG", 1)
     high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
     ma_function_space = fd.FunctionSpace(mesh_MA, "CG", 1)
     model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
@@ -151,7 +152,7 @@ def plot_compare(
     err_v_min = -err_v_max
 
     # Visualize the monitor values of MA
-    monitor_val_vis_holder = fd.Function(ma_function_space)
+    monitor_val_vis_holder = fd.Function(coarse_res_function_space)
     monitor_val_vis_holder.dat.data[:] = monitor_val  # [:, 0].detach().cpu().numpy()
     # Monitor values
     cb = fd.tripcolor(monitor_val_vis_holder, cmap=cmap, axes=ax[2, 0])
@@ -188,7 +189,7 @@ def plot_compare(
 
         plot_data_dict["error_map_model"] = err_adapted_mesh_model.dat.data[:]
 
-    plot_data_dict["monitor_values"] = monitor_val_vis_holder.dat.data[:]
+    plot_data_dict["monitor_values"] = monitor_val  # monitor_val_vis_holder.dat.data[:]
     plot_data_dict["error_map_original"] = err_orignal_mesh.dat.data[:]
     plot_data_dict["error_map_ma"] = err_adapted_mesh_ma.dat.data[:]
 

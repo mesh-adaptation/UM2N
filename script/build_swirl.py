@@ -200,6 +200,7 @@ def sample_from_loop(
     uh,
     uh_grad,
     hessian,
+    grad_u_norm,
     hessian_norm,
     monitor_values,
     phi,
@@ -233,6 +234,7 @@ def sample_from_loop(
         feature={
             "uh": uh.dat.data_ro.reshape(-1, 1),
             "grad_uh": uh_grad.dat.data_ro.reshape(-1, 2),
+            "grad_uh_norm": grad_u_norm.dat.data_ro.reshape(-1, 1),
             "hessian": hessian.dat.data_ro.reshape(-1, 4),
             "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
             "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
@@ -243,7 +245,9 @@ def sample_from_loop(
         },
         raw_feature={
             "uh": uh,
+            "grad_uh_norm": grad_u_norm,
             "hessian_norm": hessian_norm,
+            "monitor_val": monitor_values,
             "jacobian": jacobian,
             "jacobian_det": jacobian_det,
         },

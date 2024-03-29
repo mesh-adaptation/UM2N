@@ -35,8 +35,8 @@ problem_type = "swirl_square"
 
 dataset_paths = [
     "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
-    "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
-    "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
+    # "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
+    # "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
 ]
 
 # dataset_paths = [
@@ -109,6 +109,7 @@ for dataset_path in dataset_paths:
         else:
             raise Exception(f"{problem_type} not implemented.")
 
+        og_function_space = fd.FunctionSpace(mesh_og, "CG", 1)
         model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
         ma_function_space = fd.FunctionSpace(mesh_MA, "CG", 1)
         high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
@@ -117,7 +118,7 @@ for dataset_path in dataset_paths:
         u_ma = fd.Function(fd.FunctionSpace(mesh_MA, "CG", 1))
         u_model = fd.Function(fd.FunctionSpace(mesh_model, "CG", 1))
         # monitor_values = fd.Function(ma_function_space)
-        monitor_values = fd.Function(model_function_space)
+        monitor_values = fd.Function(og_function_space)
 
         # u exact lives in high res function space
         u_exact = fd.Function(high_res_function_space)
@@ -273,7 +274,7 @@ for dataset_path in dataset_paths:
                 )
 
         # Fill the first three columns
-        plot_data_dict = plot_data_dicts[run_ids[0]]
+        plot_data_dict = plot_data_dicts[run_ids[-1]]
 
         mesh_ma_data = plot_data_dict["mesh_ma"]
         mesh_MA.coordinates.dat.data[:] = mesh_ma_data
