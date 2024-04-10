@@ -113,7 +113,7 @@ class MeshGenerator:
         )
         uh = solver.solve_eq()
         self.uh = uh
-        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+        func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
         uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
         return uh_grad
 
@@ -121,7 +121,7 @@ class MeshGenerator:
         res = self.eq.discretise(mesh)
         uh_grad = self.get_gradient(mesh)
 
-        grad_norm = fd.function(res["function_space"])
+        grad_norm = fd.Function(res["function_space"])
         grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
         grad_norm /= grad_norm.vector().max()
 
@@ -177,47 +177,17 @@ class MeshGenerator:
         hessian_norm /= hessian_norm.vector().max()
         return hessian_norm
 
-    # def monitor_func(self, mesh):
-    #     """
-    #     Computes the monitor function value based on the Hessian of the
-    #     Helmholtz equation.
+    def monitor_func(self, mesh):
+        """
+        Computes the monitor function value based on the Hessian of the
+        Helmholtz equation.
 
-    #     Parameters:
-    #     - mesh: The mesh on which to compute the monitor function.
+        Parameters:
+        - mesh: The mesh on which to compute the monitor function.
 
-    #     Returns:
-    #     - The monitor function value.
-    #     """
-    #     res = self.eq.discretise(mesh)
-    #     function_space = res["function_space"]
-    #     hessian_norm = fd.Function(function_space)
-    #     l2_projection = self.get_hessian(mesh)
-    #     hessian_norm.project(
-    #         l2_projection[0, 0] ** 2
-    #         + l2_projection[0, 1] ** 2
-    #         + l2_projection[1, 0] ** 2
-    #         + l2_projection[1, 1] ** 2
-    #     )
-    #     hessian_norm /= hessian_norm.vector().max()
-
-    #     monitor_val = 1 + 5 * hessian_norm
-    #     self.monitor_val = fd.Function(function_space)
-    #     self.monitor_val.assign(monitor_val)
-    #     return monitor_val
-
-    def monitor_func(self, mesh, alpha=10, beta=5):
-        # self.project_u_()
-        # self.solve_u(self.t)
-        # self.u_hess.project(self.u_cur)
-
-        # self.hessian_prob.solve()
-        # self.f_norm.project(
-        #     self.l2_projection[0, 0] ** 2
-        #     + self.l2_projection[0, 1] ** 2
-        #     + self.l2_projection[1, 0] ** 2
-        #     + self.l2_projection[1, 1] ** 2
-        # )
-
+        Returns:
+        - The monitor function value.
+        """
         res = self.eq.discretise(mesh)
         function_space = res["function_space"]
         hessian_norm = fd.Function(function_space)
@@ -228,47 +198,79 @@ class MeshGenerator:
             + l2_projection[1, 0] ** 2
             + l2_projection[1, 1] ** 2
         )
+        hessian_norm /= hessian_norm.vector().max()
 
-        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
-
-        # Normlize the hessian
-        self.hessian_norm /= self.hessian_norm.vector().max()
-        # Normlize the grad
-        self.grad_norm /= self.grad_norm.vector().max()
-
+        monitor_val = 1 + 5 * hessian_norm
         self.monitor_val = fd.Function(function_space)
-        # Choose the max values between grad norm and hessian norm according to
-        # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
-        self.monitor_val.dat.data[:] = np.maximum(
-            beta * self.hessian_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
-        )
-
-        # #################
-
-        V = fd.FunctionSpace(mesh, "CG", 1)
-        u = fd.TrialFunction(V)
-        v = fd.TestFunction(V)
-        function_space = V
-        # Discretised Eq Definition Start
-        f = self.monitor_val
-        dx = mesh.cell_sizes.dat.data[:].mean()
-        N = self.n_monitor_smooth
-        K = N * dx**2 / 4
-        RHS = f * v * fd.dx(domain=mesh)
-        LHS = (K * fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
-        bc = fd.DirichletBC(function_space, f, "on_boundary")
-
-        monitor_smoothed = fd.Function(function_space)
-        fd.solve(
-            LHS == RHS,
-            monitor_smoothed,
-            solver_parameters={"ksp_type": "cg", "pc_type": "none"},
-            bcs=bc,
-        )
-
-        # #################
-        monitor_val = 1 + monitor_smoothed
         self.monitor_val.assign(monitor_val)
-        return monitor_val
+        return self.monitor_val
+
+    # def monitor_func(self, mesh, alpha=10, beta=5):
+    #     # self.project_u_()
+    #     # self.solve_u(self.t)
+    #     # self.u_hess.project(self.u_cur)
+
+    #     # self.hessian_prob.solve()
+    #     # self.f_norm.project(
+    #     #     self.l2_projection[0, 0] ** 2
+    #     #     + self.l2_projection[0, 1] ** 2
+    #     #     + self.l2_projection[1, 0] ** 2
+    #     #     + self.l2_projection[1, 1] ** 2
+    #     # )
+
+    #     res = self.eq.discretise(mesh)
+    #     function_space = res["function_space"]
+    #     hessian_norm = fd.Function(function_space)
+    #     l2_projection = self.get_hessian(mesh)
+    #     hessian_norm.project(
+    #         l2_projection[0, 0] ** 2
+    #         + l2_projection[0, 1] ** 2
+    #         + l2_projection[1, 0] ** 2
+    #         + l2_projection[1, 1] ** 2
+    #     )
+
+    #     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+    #     uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
+
+    #     self.grad_norm = fd.Function(function_space)
+    #     self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+
+    #     # Normlize the hessian
+    #     self.hessian_norm /= self.hessian_norm.vector().max()
+    #     # Normlize the grad
+    #     self.grad_norm /= self.grad_norm.vector().max()
+
+    #     self.monitor_val = fd.Function(function_space)
+    #     # Choose the max values between grad norm and hessian norm according to
+    #     # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
+    #     self.monitor_val.dat.data[:] = np.maximum(
+    #         beta * self.hessian_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
+    #     )
+
+    #     # #################
+
+    #     V = fd.FunctionSpace(mesh, "CG", 1)
+    #     u = fd.TrialFunction(V)
+    #     v = fd.TestFunction(V)
+    #     function_space = V
+    #     # Discretised Eq Definition Start
+    #     f = self.monitor_val
+    #     dx = mesh.cell_sizes.dat.data[:].mean()
+    #     N = self.n_monitor_smooth
+    #     K = N * dx**2 / 4
+    #     RHS = f * v * fd.dx(domain=mesh)
+    #     LHS = (K * fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+    #     bc = fd.DirichletBC(function_space, f, "on_boundary")
+
+    #     monitor_smoothed = fd.Function(function_space)
+    #     fd.solve(
+    #         LHS == RHS,
+    #         monitor_smoothed,
+    #         solver_parameters={"ksp_type": "cg", "pc_type": "none"},
+    #         bcs=bc,
+    #     )
+
+    #     # #################
+    #     monitor_val = 1 + monitor_smoothed
+    #     self.monitor_val.assign(monitor_val)
+    #     return monitor_val

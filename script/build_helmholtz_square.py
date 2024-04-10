@@ -305,21 +305,22 @@ if __name__ == "__main__":
                 }
             ).monitor_func(mesh)
 
-            grad_uh_norm = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(
-                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
-                    ),  # noqa
-                }
-            ).get_grad_norm(mesh)
+            # grad_uh_norm = wm.MeshGenerator(
+            #     params={
+            #         "eq": helmholtz_eq,
+            #         "mesh": fd.Mesh(
+            #             os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
+            #         ),  # noqa
+            #     }
+            # ).get_grad_norm(mesh)
 
             func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
             grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
 
-            grad_norm = fd.function(res["function_space"])
+            grad_norm = fd.Function(res["function_space"])
             grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
             grad_norm /= grad_norm.vector().max()
+            grad_uh_norm = grad_norm
 
             mesh_gen = wm.MeshGenerator(
                 params={
@@ -388,6 +389,7 @@ if __name__ == "__main__":
                 raw_feature={
                     "uh": uh,
                     "hessian_norm": hessian_norm,
+                    "monitor_val": monitor_val,
                     "jacobian": jacobian,
                     "jacobian_det": jacobian_det,
                 },

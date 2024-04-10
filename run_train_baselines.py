@@ -128,7 +128,8 @@ if hasattr(config, "use_pre_train") and config.use_pre_train:
     entity = "mz-team"
     project_name = "warpmesh"
     # run_id = "rud1gsge"
-    run_id = "kgr0nicn"
+    # run_id = "kgr0nicn"
+    run_id = "j8s7l3kw"  # MRN train on monitor val only
     # run_id = "99zrohiu"
     api = wandb.Api()
     run_loaded = api.run(f"{entity}/{project_name}/{run_id}")

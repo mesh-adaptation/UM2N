@@ -11,7 +11,7 @@ mesh_type=2
 # training set build
 rand_seed=63
 lcs=(0.05 0.055)
-n_samples_train=(400)
+n_samples_train=(300)
 
 # helmholtz square case
 for i in "${lcs[@]}"; do

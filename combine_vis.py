@@ -22,13 +22,22 @@ import firedrake as fd
 
 
 model_names = ["M2N", "M2N", "MRTransformer", "M2T"]
-run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "ig1np6kx"]
+# run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "ig1np6kx"]
+# run_id_model_mapping = {
+#     "cyzk2mna": "M2N",
+#     "u4uxcz1e": "M2N-en",
+#     "99zrohiu": "MRN",
+#     "ig1np6kx": "M2T-w-edge",
+# }
+
+run_ids = ["cyzk2mna", "4u40se08", "j8s7l3kw", "32gs384i"]
 run_id_model_mapping = {
     "cyzk2mna": "M2N",
-    "u4uxcz1e": "M2N-en",
-    "99zrohiu": "MRN",
-    "ig1np6kx": "M2T-w-edge",
+    "4u40se08": "M2N-en",
+    "j8s7l3kw": "MRN",
+    "32gs384i": "M2T-w-edge",
 }
+
 trained_epoch = 999
 # problem_type = "helmholtz_square"
 problem_type = "swirl_square"
