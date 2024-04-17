@@ -200,10 +200,10 @@ class MeshGenerator:
         )
         hessian_norm /= hessian_norm.vector().max()
 
-        monitor_val = 1 + 5 * hessian_norm
-        self.monitor_val = fd.Function(function_space)
-        self.monitor_val.assign(monitor_val)
-        return self.monitor_val
+        raw_monitor_val = 1 + 5 * hessian_norm
+        monitor_val = fd.Function(function_space)
+        monitor_val.assign(raw_monitor_val)
+        return monitor_val
 
     # def monitor_func(self, mesh, alpha=10, beta=5):
     #     # self.project_u_()

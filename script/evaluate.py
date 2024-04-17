@@ -926,6 +926,17 @@ if __name__ == "__main__":
     run_ids = ["j8s7l3kw"]
     run_ids = ["32gs384i"]
 
+    run_ids = ["d9h5uzcp"]
+    run_ids = ["yx0h8mfm"]
+
+    # comparisons 
+    # M2N large set, small scale, type 6, g86hj04w
+    # M2N-en large set, small scale, type 6, c0z773gi
+    # MRT large set, small scale, type 6, yx0h8mfm
+    # MRT large set, small scale, type 6, monitor, d9h5uzcp
+    # run_ids = ["g86hj04w", "yx0h8mfm", "d9h5uzcp"]
+    run_ids = ["c0z773gi"]
+
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)

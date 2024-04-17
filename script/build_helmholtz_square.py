@@ -66,7 +66,7 @@ def arg_parse():
 
 args = arg_parse()
 
-mesh_type = args.mesh_type
+mesh_type = int(args.mesh_type)
 
 data_type = args.field_type
 use_iso = True if data_type == "iso" else False
@@ -231,12 +231,18 @@ if __name__ == "__main__":
     while i < n_samples:
         try:
             print("Generating Sample: " + str(i))
-            unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(
-                scale=scale_x, mesh_type=mesh_type
-            )  # noqa
-            mesh = unstructure_square_mesh_gen.get_mesh(
-                res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
-            )
+            if mesh_type != 0:
+                unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(
+                    scale=scale_x, mesh_type=mesh_type
+                )  # noqa
+                mesh = unstructure_square_mesh_gen.get_mesh(
+                    res=lc,
+                    file_path=os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"),
+                )
+            else:
+                n_grid = int(1 / lc)
+                mesh = fd.UnitSquareMesh(n_grid, n_grid)
+
             # Generate Random solution field
             rand_u_generator = wm.RandSourceGenerator(
                 use_iso=use_iso,
@@ -439,11 +445,14 @@ if __name__ == "__main__":
 
             # ==========================================
 
-            # generate log file
-            high_res_mesh = unstructure_square_mesh_gen.get_mesh(
-                res=1e-2,
-                file_path=os.path.join(problem_mesh_fine_dir, f"mesh_{i:04d}.msh"),
-            )
+            if mesh_type != 0:
+                # generate log file
+                high_res_mesh = unstructure_square_mesh_gen.get_mesh(
+                    res=1e-2,
+                    file_path=os.path.join(problem_mesh_fine_dir, f"mesh_{i:04d}.msh"),
+                )
+            else:
+                high_res_mesh = fd.UnitSquareMesh(100, 100)
             high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)
 
             res_high_res = helmholtz_eq.discretise(high_res_mesh)

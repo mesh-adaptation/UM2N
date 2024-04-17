@@ -73,7 +73,7 @@ problem = "swirl"
 
 # simulation time & time steps
 T = 1
-n_step = 500
+n_step = 500 * 2
 dt = T / n_step
 
 # mesh setup

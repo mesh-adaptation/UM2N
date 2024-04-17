@@ -1,0 +1,6 @@
+#!/bin/bash
+
+python run_train_baselines.py -config M2N_en_largeset_small_scale_type_2
+python run_train_baselines.py -config M2N_en_largeset_small_scale_type_6
+python run_train_baselines.py -config M2N_largeset_small_scale_type_2
+python run_train_baselines.py -config M2N_largeset_small_scale_type_6

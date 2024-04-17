@@ -157,6 +157,8 @@ if hasattr(config, "use_pre_train") and config.use_pre_train:
 
     model = wm.load_model(model, model_file_path, strict=False)
     print(f"Model {run_id} checkpoint loaded.")
+else:
+    print("No pre-train. Train from scratch.")
 # ===================================================================
 
 
@@ -169,7 +171,7 @@ data_root = config.data_root
 #     # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.055_n=100_aniso_full_meshtype_2",
 #     # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=300_aniso_full_meshtype_2",
 # ]
-data_paths = [f"{config.data_root}"]
+data_paths = [f"{pth}" for pth in config.data_root]
 ###############################################################
 
 
@@ -365,7 +367,6 @@ for epoch in range(config.num_epochs + 1):
                 },
                 step=epoch,
             )
-    print(f"Epoch: {epoch}")
 
     if config.use_inversion_loss:
         wandb.log(
@@ -382,6 +383,19 @@ for epoch in range(config.num_epochs + 1):
                 "Area Loss/Test": test_loss["area_loss"],
             },
             step=epoch,
+        )
+    train_deform_loss = train_loss["deform_loss"]
+    test_deform_loss = test_loss["deform_loss"]
+
+    if config.use_area_loss:
+        train_area_loss = train_loss["area_loss"]
+        test_area_loss = test_loss["area_loss"]
+        print(
+            f"Epoch: {epoch} Train deform loss: {train_deform_loss:.4f} Train area loss: {train_area_loss:.4f} Test deform loss: {test_deform_loss:.4f} Test area loss: {test_area_loss:.4f}"
+        )
+    else:
+        print(
+            f"Epoch: {epoch} Train deform loss: {train_deform_loss:.4f} Test deform loss: {test_deform_loss:.4f}"
         )
 
     #   if (epoch) % config.check_tangle_interval == 0:
