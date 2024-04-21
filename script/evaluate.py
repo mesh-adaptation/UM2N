@@ -20,7 +20,6 @@ import firedrake as fd
 import matplotlib.pyplot as plt  # noqa
 import pandas as pd
 import warpmesh as wm
-
 from torch_geometric.loader import DataLoader
 from types import SimpleNamespace
 from warpmesh.model.train_util import generate_samples, construct_graph, model_forward
@@ -784,7 +783,7 @@ if __name__ == "__main__":
     run_id_m2n_hessian_norm = "1cu4qw9u"  # M2N hessian norm
     run_id_m2n_area_loss_hessian_norm = "u4uxcz1e"  # M2N area loss hessian norm
 
-    epoch = 999
+    epoch = 19
 
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
@@ -842,7 +841,7 @@ if __name__ == "__main__":
     run_id_MRT_largeset = "kgr0nicn"
     run_id_PIMRT_largeset = "6wkt13wp"
     run_id_M2T_largeset = "gywsmly9"  # pre-train using "rud1gsge"
-    run_id_M2T_largeset = "ig1np6kx"  # pre-train using "kgr0nicn"
+    run_id_M2T_largeset = "ig1np6kx"  # pre-train using "kgr0nicn", this is the good one 
     run_id_M2T_largeset = "72esorfm"  # pre-train using "99zrohiu"
 
     run_ids_largeset = [
@@ -878,6 +877,7 @@ if __name__ == "__main__":
     # ]
 
     ds_root_swirl = [
+        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.5_y0_0.5_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
         "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
         # "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
         # "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
@@ -932,17 +932,32 @@ if __name__ == "__main__":
     # comparisons 
     # M2N large set, small scale, type 6, g86hj04w
     # M2N-en large set, small scale, type 6, c0z773gi
+    # M2N-en large set, small scale, type 6, monitor, ta0c8b3u
+    # M2N-en large set, small scale, type 2, monitor, 00yvtkg0
     # MRT large set, small scale, type 6, yx0h8mfm
     # MRT large set, small scale, type 6, monitor, d9h5uzcp
-    # run_ids = ["g86hj04w", "yx0h8mfm", "d9h5uzcp"]
-    run_ids = ["c0z773gi"]
+    # MRT large set, small scale, type 6 coord, 3sicl8ny, deform + area
 
+    # MRT large set, small scale, type 6 coord area only, b2la0gey
+
+    # M2T large set, small npouut8z
+    # run_ids = ["g86hj04w", "yx0h8mfm", "d9h5uzcp"]
+    run_ids = ["d9h5uzcp", "yx0h8mfm", "ta0c8b3u", "npouut8z"]
+
+
+
+    # loginto wandb API
+    api = wandb.Api()
+    runs = api.runs(path=f"{entity}/{project_name}")
+    latest_run = runs[0]
+    print(f"Latest run id {latest_run.id}")
+    run_ids = [latest_run.id]
+    # run_ids = ["3sicl8ny"]
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
             print(f"Evaluating {run_id} on dataset: {ds_root}")
-            # loginto wandb API
-            api = wandb.Api()
+
             run = api.run(f"{entity}/{project_name}/{run_id}")
             config = SimpleNamespace(**run.config)
 

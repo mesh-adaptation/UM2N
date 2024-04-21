@@ -129,7 +129,8 @@ if hasattr(config, "use_pre_train") and config.use_pre_train:
     project_name = "warpmesh"
     # run_id = "rud1gsge"
     # run_id = "kgr0nicn"
-    run_id = "j8s7l3kw"  # MRN train on monitor val only
+    # run_id = "j8s7l3kw"  # MRN train on monitor val only
+    run_id = "3sicl8ny" # MRN train on monitor val only, mesh type 6, 0.05, 0.055, coord
     # run_id = "99zrohiu"
     api = wandb.Api()
     run_loaded = api.run(f"{entity}/{project_name}/{run_id}")
@@ -270,6 +271,9 @@ save_namespace_to_yaml(config, f"{output_folder}/{config.experiment_name}")
 
 for epoch in range(config.num_epochs + 1):
     if config.model_used == "MRTransformer" or config.model_used == "M2T":
+        weight_chamfer_loss = 1.0
+        if "weight_chamfer_loss" in config:
+            weight_chamfer_loss = config.weight_chamfer_loss
         train_func = train_unsupervised
         evaluate_func = evaluate_unsupervised
         train_loss = train_func(
@@ -286,6 +290,7 @@ for epoch in range(config.num_epochs + 1):
             weight_area_loss=config.weight_area_loss,
             weight_deform_loss=config.weight_deform_loss,
             weight_eq_residual_loss=config.weight_eq_residual_loss,
+            weight_chamfer_loss=weight_chamfer_loss,
             scaler=300,
         )
         test_loss = evaluate_func(
@@ -301,9 +306,17 @@ for epoch in range(config.num_epochs + 1):
             weight_area_loss=config.weight_area_loss,
             weight_deform_loss=config.weight_deform_loss,
             weight_eq_residual_loss=config.weight_eq_residual_loss,
+            weight_chamfer_loss=weight_chamfer_loss,
             scaler=300,
         )
     elif config.model_used == "M2N":
+        weight_area_loss = 1.0
+        weight_deform_loss = 1.0
+        if "weight_deform_loss" in config:
+            weight_deform_loss = config.weight_deform_loss
+        if "weight_area_loss" in config:
+            weight_area_loss = config.weight_area_loss
+
         train_func = train
         evaluate_func = evaluate
         train_loss = train_func(
@@ -313,6 +326,8 @@ for epoch in range(config.num_epochs + 1):
             device,
             loss_func=loss_func,
             use_area_loss=config.use_area_loss,
+            weight_deform_loss=weight_deform_loss,
+            weight_area_loss=weight_area_loss,
             scaler=300,
         )
         test_loss = evaluate_func(
@@ -321,6 +336,8 @@ for epoch in range(config.num_epochs + 1):
             device,
             loss_func=loss_func,
             use_area_loss=config.use_area_loss,
+            weight_deform_loss=weight_deform_loss,
+            weight_area_loss=weight_area_loss,
             scaler=300,
         )
     elif config.model_used == "MRN":
@@ -387,15 +404,18 @@ for epoch in range(config.num_epochs + 1):
     train_deform_loss = train_loss["deform_loss"]
     test_deform_loss = test_loss["deform_loss"]
 
+    train_chamfer_loss = train_loss["chamfer_loss"]
+    test_chamfer_loss = test_loss["chamfer_loss"]
+
     if config.use_area_loss:
         train_area_loss = train_loss["area_loss"]
         test_area_loss = test_loss["area_loss"]
         print(
-            f"Epoch: {epoch} Train deform loss: {train_deform_loss:.4f} Train area loss: {train_area_loss:.4f} Test deform loss: {test_deform_loss:.4f} Test area loss: {test_area_loss:.4f}"
+            f"Epoch: {epoch} Train deform loss: {train_deform_loss:.4f} Train chamfer loss: {train_chamfer_loss:.4f} Train area loss: {train_area_loss:.4f} Test deform loss: {test_deform_loss:.4f} Test chamfer loss: {test_chamfer_loss:.4f} Test area loss: {test_area_loss:.4f}"
         )
     else:
         print(
-            f"Epoch: {epoch} Train deform loss: {train_deform_loss:.4f} Test deform loss: {test_deform_loss:.4f}"
+            f"Epoch: {epoch} Train deform loss: {train_deform_loss:.4f} Train chamfer loss: {train_chamfer_loss:.4f} Test deform loss: {test_deform_loss:.4f} Test chamfer loss: {test_chamfer_loss:.4f}"
         )
 
     #   if (epoch) % config.check_tangle_interval == 0:

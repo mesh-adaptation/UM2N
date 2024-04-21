@@ -58,11 +58,13 @@ project: warpmesh
 save_interval: 100
 train_boundary_scheme: full
 train_data_set_type: aniso
-use_area_loss: false
+use_area_loss: true
 use_cluster: false
 use_inversion_diff_loss: false
 use_inversion_loss: false
 use_jacob: false
+weight_area_loss: 1.0
+weight_deform_loss: 0.0
 weight_decay: 5.0e-04
 x_feat:
 - coord

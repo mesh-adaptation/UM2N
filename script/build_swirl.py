@@ -73,8 +73,10 @@ problem = "swirl"
 
 # simulation time & time steps
 T = 1
-n_step = 500 * 2
-dt = T / n_step
+# n_step = 1000 # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
+# dt = T / n_step
+dt = 1e-3 # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
+n_step = 100
 
 # mesh setup
 lc = args.lc
@@ -461,6 +463,7 @@ if __name__ == "__main__":
         y_0=y_0,
         save_interval=save_interval,
         T=T,
+        dt=dt,
         n_step=n_step,
         n_monitor_smooth=n_monitor_smooth,
     )

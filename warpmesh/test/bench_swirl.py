@@ -116,6 +116,7 @@ class SwirlEvaluator:
             self.T / 2
         )  # Time point the swirl direction get reverted  # noqa
         self.dt = self.T / self.n_step
+        # self.dt = kwargs.pop("dt", 1e-3)
         self.dtc = fd.Constant(self.dt)
         # initial condition params
         self.sigma = kwargs.pop("sigma", (0.05 / 3))

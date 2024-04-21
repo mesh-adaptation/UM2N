@@ -374,6 +374,8 @@ def train(
     use_inversion_loss=False,
     use_inversion_diff_loss=False,
     use_area_loss=False,
+    weight_deform_loss=1.0,
+    weight_area_loss=1.0,
     scaler=100,
 ):
     """
@@ -421,7 +423,7 @@ def train(
         if use_area_loss:
             area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
 
-        loss = deform_loss + inversion_loss + inversion_diff_loss + area_loss
+        loss = weight_deform_loss * deform_loss + inversion_loss + inversion_diff_loss + weight_area_loss * area_loss
         # Jacobian loss
         if use_jacob:
             loss.backward(retain_graph=True)
@@ -432,14 +434,14 @@ def train(
 
         optimizer.step()
         total_loss += loss.item()
-        total_deform_loss += deform_loss.item()
+        total_deform_loss += weight_deform_loss * deform_loss.item()
         total_inversion_loss += (
             inversion_loss.item() if use_inversion_loss else 0
         )  # noqa
         total_inversion_diff_loss += (
             inversion_diff_loss.item() if use_inversion_diff_loss else 0
         )  # noqa
-        total_area_loss += area_loss.item() if use_area_loss else 0
+        total_area_loss += weight_area_loss * area_loss.item() if use_area_loss else 0
 
     res = {
         "total_loss": total_loss / len(loader),
@@ -885,6 +887,27 @@ def model_forward(bs, data, model, use_add_random_query=True):
     )
 
 
+def chamfer_distance(mesh_test, mesh_target):
+    # (batch, node, feature)
+    batch_size = mesh_test.shape[0]
+    node_num = mesh_test.shape[1]
+
+    chamfer_distance_val = 0.0
+    for bs in range(batch_size):
+        mesh_stack = mesh_test[bs].unsqueeze(-2).repeat(1, node_num, 1)
+        # print("output mesh ", mesh_stack.shape)
+        # diff shape: (distance of a node in mesh_test to every node of mesh_target , number of node, feature)
+        diff = torch.norm(mesh_stack - mesh_target[bs], dim=-1)
+        min_diff = torch.min(diff, dim=0)
+        # min_diff[0] values, min_diff[1] index
+        min_diff_sum = torch.sum(min_diff[0])
+        chamfer_distance_val += min_diff_sum / node_num
+        # diff = mesh_stack - mesh_target[bs]
+        # print(diff, diff[0])
+        # print("min diff ", min_diff)
+    return chamfer_distance_val / batch_size
+
+
 def train_unsupervised(
     loader,
     model,
@@ -900,6 +923,7 @@ def train_unsupervised(
     finite_difference_grad=True,
     weight_area_loss=1,
     weight_deform_loss=1,
+    weight_chamfer_loss=1,
     weight_eq_residual_loss=1,
     scaler=100,
 ):
@@ -927,6 +951,7 @@ def train_unsupervised(
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
     total_area_loss = 0
+    total_chamfer_loss_loss = 0
     for batch in loader:
         optimizer.zero_grad()
         data = batch.to(device)
@@ -969,16 +994,24 @@ def train_unsupervised(
             if not use_jacob
             else jacobLoss(model, output_coord, data, loss_func)
         )
+
+        # Chamfer loss
+        coord_dim = output_coord.shape[-1]
+        chamfer_loss = 100 * (chamfer_distance(output_coord.reshape(bs, -1, coord_dim), data.y.reshape(bs, -1, coord_dim)) + chamfer_distance(data.y.reshape(bs, -1, coord_dim), output_coord.reshape(bs, -1, coord_dim)))
+        # print(output_coord.shape, data.y.shape, chamfer_loss)
+
         # Inversion loss
         if use_inversion_loss:
             inversion_loss = get_inversion_loss(
                 output_coord, data.y, data.face, batch_size=bs, scaler=scaler
             )
+
         # if use_area_loss:
         area_loss = get_area_loss(output_coord, data.y, data.face, bs, scaler)
 
         loss = (
             weight_deform_loss * deform_loss
+            + weight_chamfer_loss * chamfer_loss
             + inversion_loss
             + inversion_diff_loss
             + weight_area_loss * area_loss
@@ -998,19 +1031,21 @@ def train_unsupervised(
         total_loss += loss.item()
         total_eq_residual_loss += loss_eq_residual.item()
         total_convex_loss += loss_convex.item() if use_convex_loss else 0
-        total_deform_loss += deform_loss.item()
+        total_deform_loss += weight_deform_loss * deform_loss.item()
+        total_chamfer_loss_loss += weight_chamfer_loss * chamfer_loss.item()
         total_inversion_loss += (
             inversion_loss.item() if use_inversion_loss else 0
         )  # noqa
         total_inversion_diff_loss += (
             inversion_diff_loss.item() if use_inversion_diff_loss else 0
         )  # noqa
-        total_area_loss += area_loss.item()
+        total_area_loss += weight_area_loss * area_loss.item()
 
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
         "equation_residual": total_eq_residual_loss / len(loader),
+        "chamfer_loss": total_chamfer_loss_loss / len(loader)
     }
     if use_convex_loss:
         res["convex_loss"] = total_convex_loss / len(loader)
@@ -1039,6 +1074,7 @@ def evaluate_unsupervised(
     weight_area_loss=1,
     weight_deform_loss=1,
     weight_eq_residual_loss=1,
+    weight_chamfer_loss=1,
     scaler=100,
 ):
     """
@@ -1063,6 +1099,7 @@ def evaluate_unsupervised(
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
     total_area_loss = 0
+    total_chamfer_loss_loss = 0
     for batch in loader:
         data = batch.to(device)
 
@@ -1114,9 +1151,13 @@ def evaluate_unsupervised(
             )
         # if use_area_loss:
         area_loss = get_area_loss(output_coord, data.y, data.face, bs, scaler)
+        # Chamfer loss
+        coord_dim = output_coord.shape[-1]
+        chamfer_loss = 100 * (chamfer_distance(output_coord.reshape(bs, -1, coord_dim), data.y.reshape(bs, -1, coord_dim)) + chamfer_distance(data.y.reshape(bs, -1, coord_dim), output_coord.reshape(bs, -1, coord_dim)))
 
         loss = (
             weight_deform_loss * deform_loss
+            + weight_chamfer_loss * chamfer_loss
             + inversion_loss
             + inversion_diff_loss
             + weight_area_loss * area_loss
@@ -1126,19 +1167,21 @@ def evaluate_unsupervised(
 
         total_loss += loss.item()
         total_eq_residual_loss += loss_eq_residual.item()
+        total_chamfer_loss_loss += weight_chamfer_loss * chamfer_loss.item()
         total_convex_loss += loss_convex.item() if use_convex_loss else 0
-        total_deform_loss += deform_loss.item()
+        total_deform_loss += weight_deform_loss * deform_loss.item()
         total_inversion_diff_loss += (
             inversion_diff_loss.item() if use_inversion_diff_loss else 0
         )  # noqa
         total_inversion_loss += (
             inversion_loss.item() if use_inversion_loss else 0
         )  # noqa
-        total_area_loss += area_loss.item()
+        total_area_loss += weight_area_loss * area_loss.item()
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
         "equation_residual": total_eq_residual_loss / len(loader),
+        "chamfer_loss": total_chamfer_loss_loss / len(loader)
     }
     if use_convex_loss:
         res["convex_loss"] = total_convex_loss / len(loader)
@@ -1160,6 +1203,8 @@ def evaluate(
     use_inversion_loss=False,
     use_inversion_diff_loss=False,
     use_area_loss=False,
+    weight_deform_loss=1.0,
+    weight_area_loss=1.0,
     scaler=100,
 ):
     """
@@ -1205,16 +1250,16 @@ def evaluate(
             if use_area_loss:
                 area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
 
-            loss = inversion_loss + deform_loss
+            loss = weight_deform_loss * deform_loss + inversion_loss + inversion_diff_loss + weight_area_loss * area_loss
             total_loss += loss.item()
-            total_deform_loss += deform_loss.item()
+            total_deform_loss += weight_deform_loss * deform_loss.item()
             total_inversion_diff_loss += (
                 inversion_diff_loss.item() if use_inversion_diff_loss else 0
             )  # noqa
             total_inversion_loss += (
                 inversion_loss.item() if use_inversion_loss else 0
             )  # noqa
-            total_area_loss += area_loss.item() if use_area_loss else 0
+            total_area_loss += weight_area_loss * area_loss.item() if use_area_loss else 0
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),

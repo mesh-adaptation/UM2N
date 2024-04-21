@@ -21,7 +21,7 @@ import firedrake as fd
 # dataset_name = "sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15"
 
 
-model_names = ["M2N", "M2N", "MRTransformer"]#, "M2T"]
+model_names = ["M2N", "MRTransformer", "M2T"]#, "M2T"]
 # run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "ig1np6kx"]
 # run_id_model_mapping = {
 #     "cyzk2mna": "M2N",
@@ -30,12 +30,12 @@ model_names = ["M2N", "M2N", "MRTransformer"]#, "M2T"]
 #     "ig1np6kx": "M2T-w-edge",
 # }
 
-run_ids = ["g86hj04w", "4u40se08", "d9h5uzcp"]#, "32gs384i"]
+run_ids = ["g86hj04w", "3sicl8ny", "npouut8z"]#, "32gs384i"]
 run_id_model_mapping = {
     "g86hj04w": "M2N",
-    "4u40se08": "M2N-en",
-    "d9h5uzcp": "MRN",
-    # "32gs384i": "M2T-w-edge",
+    # "4u40se08": "M2N-en",
+    "3sicl8ny": "MRN",
+    "npouut8z": "M2T-w-edge",
 }
 
 trained_epoch = 999
@@ -145,7 +145,7 @@ for dataset_path in dataset_paths:
             show_name = run_id_model_mapping[run_id]
             print(f"model name: {show_name}, run id: {run_id}")
             eval_ret_path = f"./eval/{model_name}_{trained_epoch}_{run_id}/{problem_type}/{dataset_name}"
-            # print(eval_ret_path)
+            print(eval_ret_path)
             eval_exp_path = sorted(glob.glob(f"{eval_ret_path}/*"))[-1]
             eval_plot_data_path = os.path.join(eval_exp_path, "plot_data")
             eval_plot_more_path = os.path.join(eval_exp_path, "plot_more")
