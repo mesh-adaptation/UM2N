@@ -10,11 +10,6 @@ import movement as mv  # noqa
 import warpmesh as wm  # noqa
 import numpy as np
 
-import firedrake.function as ffunc
-import firedrake.functionspace as ffs
-import firedrake.mesh as fmesh
-import ufl
-
 import matplotlib.pyplot as plt  # noqa
 
 from tqdm import tqdm  # noqa
@@ -97,11 +92,11 @@ class SwirlSolver:
         # self.scalar_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
         # self.vector_space_fine = fd.VectorFunctionSpace(self.mesh_fine, "CG", 1)  # noqa
 
-        self.scalar_space = fd.FunctionSpace(self.mesh, "DG", 1)
+        self.scalar_space = fd.FunctionSpace(self.mesh, "CG", 1)
         self.vector_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
         self.tensor_space = fd.TensorFunctionSpace(self.mesh, "CG", 1)
         # function space on fine mesh
-        self.scalar_space_fine = fd.FunctionSpace(self.mesh_fine, "DG", 1)
+        self.scalar_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
         self.vector_space_fine = fd.VectorFunctionSpace(self.mesh_fine, "CG", 1)  # noqa
 
         # Test/Trial function on coarse mesh
@@ -116,13 +111,13 @@ class SwirlSolver:
 
         # simulation params
         self.T = kwargs.pop("T", 1)
+        self.dt = kwargs.pop("dt", 1e-3)
         self.t = 0.0
         self.n_step = kwargs.pop("n_step", 1000)
         self.threshold = (
             self.T / 2
         )  # Time point the swirl direction get reverted  # noqa
         # self.dt = self.T / self.n_step
-        self.dt = kwargs.pop("dt", 1e-3)
         self.dtc = fd.Constant(self.dt)
         # initial condition params
         self.sigma = kwargs.pop("sigma", (0.05 / 6))
@@ -306,57 +301,6 @@ class SwirlSolver:
         self.hessian_prob = fd.LinearVariationalSolver(
             self.prob_hess, solver_parameters=hess_param
         )
-    
-
-    def _compute_gradient_and_hessian(self, field, solver_parameters=None):
-        mesh = self.tensor_space.mesh()
-        V = ffs.VectorFunctionSpace(mesh, "CG", 1)
-        W = V * self.tensor_space
-        g, H = fd.TrialFunctions(W)
-        phi, tau = fd.TestFunctions(W)
-        sol = ffunc.Function(W)
-        n = ufl.FacetNormal(mesh)
-
-        a = (
-            ufl.inner(tau, H) * ufl.dx
-            + ufl.inner(ufl.div(tau), g) * ufl.dx
-            - ufl.dot(g, ufl.dot(tau, n)) * ufl.ds
-            - ufl.dot(ufl.avg(g), ufl.jump(tau, n)) * ufl.dS
-            + ufl.inner(phi, g) * ufl.dx
-        )
-        L = (
-            field * ufl.dot(phi, n) * ufl.ds
-            + ufl.avg(field) * ufl.jump(phi, n) * ufl.dS
-            - field * ufl.div(phi) * ufl.dx
-        )
-        if solver_parameters is None:
-            solver_parameters = {
-                "mat_type": "aij",
-                "ksp_type": "gmres",
-                "ksp_max_it": 20,
-                "pc_type": "fieldsplit",
-                "pc_fieldsplit_type": "schur",
-                "pc_fieldsplit_0_fields": "1",
-                "pc_fieldsplit_1_fields": "0",
-                "pc_fieldsplit_schur_precondition": "selfp",
-                "fieldsplit_0_ksp_type": "preonly",
-                "fieldsplit_1_ksp_type": "preonly",
-                "fieldsplit_1_pc_type": "gamg",
-                "fieldsplit_1_mg_levels_ksp_max_it": 5,
-            }
-            if fd.COMM_WORLD.size == 1:
-                solver_parameters["fieldsplit_0_pc_type"] = "ilu"
-                solver_parameters["fieldsplit_1_mg_levels_pc_type"] = "ilu"
-            else:
-                solver_parameters["fieldsplit_0_pc_type"] = "bjacobi"
-                solver_parameters["fieldsplit_0_sub_ksp_type"] = "preonly"
-                solver_parameters["fieldsplit_0_sub_pc_type"] = "ilu"
-                solver_parameters["fieldsplit_1_mg_levels_pc_type"] = "bjacobi"
-                solver_parameters["fieldsplit_1_mg_levels_sub_ksp_type"] = "preonly"
-                solver_parameters["fieldsplit_1_mg_levels_sub_pc_type"] = "ilu"
-        fd.solve(a == L, sol, solver_parameters=solver_parameters)
-        return sol.subfunctions
-    
 
     def solve_u(self, t):
         """
@@ -608,9 +552,7 @@ class SwirlSolver:
         self.solve_u(self.t)
         self.u_hess.project(self.u_cur)
 
-        self.l2_projection = self._compute_gradient_and_hessian(self.u_hess)[1]
-
-        # self.hessian_prob.solve()
+        self.hessian_prob.solve()
         self.f_norm.project(
             self.l2_projection[0, 0] ** 2
             + self.l2_projection[0, 1] ** 2
@@ -626,15 +568,12 @@ class SwirlSolver:
         self.f_norm /= self.f_norm.vector().max()
         # Normlize the grad
         self.grad_norm /= self.grad_norm.vector().max()
-        
-        monitor_values_dg = fd.Function(fd.FunctionSpace(mesh, "DG", 1))
-        monitor_values = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
+
         # Choose the max values between grad norm and hessian norm according to
         # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
-        monitor_values_dg.dat.data[:] = np.maximum(
+        self.monitor_values.dat.data[:] = np.maximum(
             beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
         )
-        monitor_values.project(monitor_values_dg)
 
         # #################
 
@@ -643,7 +582,7 @@ class SwirlSolver:
         v = fd.TestFunction(V)
         function_space = V
         # Discretised Eq Definition Start
-        f = monitor_values
+        f = self.monitor_values
         dx = mesh.cell_sizes.dat.data[:].mean()
         N = self.n_monitor_smooth
         K = N * dx**2 / 4
@@ -662,18 +601,16 @@ class SwirlSolver:
         # #################
 
         self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
-        monitor_values.project(1 + monitor_smoothed)
+        self.monitor_values.project(1 + monitor_smoothed)
 
-        return monitor_values
+        return self.monitor_values
 
     def monitor_function_on_coarse_mesh(self, mesh, alpha=10, beta=5):
         self.project_u_()
         self.solve_u(self.t)
         self.u_hess.project(self.u_cur)
 
-        self.l2_projection = self._compute_gradient_and_hessian(self.u_hess)[1]
-
-        # self.hessian_prob.solve()
+        self.hessian_prob.solve()
         self.f_norm.project(
             self.l2_projection[0, 0] ** 2
             + self.l2_projection[0, 1] ** 2
@@ -690,14 +627,12 @@ class SwirlSolver:
         # Normlize the grad
         self.grad_norm /= self.grad_norm.vector().max()
 
-        monitor_values_dg = fd.Function(fd.FunctionSpace(mesh, "DG", 1))
         monitor_values = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
         # Choose the max values between grad norm and hessian norm according to
         # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
-        monitor_values_dg.dat.data[:] = np.maximum(
+        monitor_values.dat.data[:] = np.maximum(
             beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
         )
-        monitor_values.project(monitor_values_dg)
 
         # #################
 
@@ -819,19 +754,11 @@ class SwirlSolver:
                     self.jacob = fd.project(
                         jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
                     )
-
-                    # Project from DG to CG
-                    function_scalar_space_cg = fd.FunctionSpace(self.mesh, "CG", 1)
-                    
-                    uh_cg = fd.Function(function_scalar_space_cg).project(self.uh)
-                    grad_u_norm_cg = fd.Function(function_scalar_space_cg).project(grad_u_norm)
-                    hessian_norm_cg = fd.Function(function_scalar_space_cg).project(hessian_norm)
-
                     callback(
-                        uh=uh_cg,
+                        uh=self.uh,
                         uh_grad=uh_grad,
-                        grad_u_norm=grad_u_norm_cg,
-                        hessian_norm=hessian_norm_cg,
+                        grad_u_norm=grad_u_norm,
+                        hessian_norm=hessian_norm,
                         monitor_values=monitor_values,
                         hessian=hessian,
                         phi=phi,
@@ -852,33 +779,6 @@ class SwirlSolver:
                         r_0=self.r_0,
                         t=self.t,
                     )
-
-
-                    # callback(
-                    #     uh=self.uh,
-                    #     uh_grad=uh_grad,
-                    #     grad_u_norm=grad_u_norm,
-                    #     hessian_norm=hessian_norm,
-                    #     monitor_values=monitor_values,
-                    #     hessian=hessian,
-                    #     phi=phi,
-                    #     grad_phi=phi_grad,
-                    #     jacobian=self.jacob,
-                    #     jacobian_det=self.jacob_det,
-                    #     mesh_new=self.mesh_new,
-                    #     mesh_og=self.mesh,
-                    #     uh_new=self.uh_new,
-                    #     uh_fine=uh_fine,
-                    #     function_space=function_space,
-                    #     function_space_fine=function_space_fine,
-                    #     error_adapt_list=self.error_adapt_list,
-                    #     error_og_list=self.error_og_list,
-                    #     dur=dur_ms,
-                    #     sigma=self.sigma,
-                    #     alpha=self.alpha,
-                    #     r_0=self.r_0,
-                    #     t=self.t,
-                    # )
                 except fd.exceptions.ConvergenceError:
                     fail_callback(self.t)
                     print("Not Converged.")
@@ -889,8 +789,8 @@ class SwirlSolver:
             # time stepping and prep for next solving iter
             self.t += self.dt
             step += 1
-            if step % 20 == 0:
-                self.plot_fine_solution(step)
+            # if step % 20 == 0:
+            #     self.plot_fine_solution(step)
             self.u_fine.assign(self.u_cur_fine)
             self.u_fine_buffer.assign(self.u_cur_fine)
 

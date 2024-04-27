@@ -27,7 +27,7 @@ n_grids_test:
 num_deform_in: 3
 num_deform_out: 1
 num_deformer_loop: 1
-num_epochs: 50
+num_epochs: 1000
 num_gfe_in: 2
 num_lfe_in: 4
 num_transformer_in: 3
@@ -44,7 +44,7 @@ deform_out_type: 'coord'
 out_path: ./out
 print_interval: 1
 project: warpmesh
-save_interval: 200
+save_interval: 20
 train_boundary_scheme: full
 train_data_set_type: aniso
 use_area_loss: true

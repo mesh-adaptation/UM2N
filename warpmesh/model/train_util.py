@@ -908,6 +908,29 @@ def chamfer_distance(mesh_test, mesh_target):
     return chamfer_distance_val / batch_size
 
 
+def sample_nodes_by_monitor(meshes, meshes_target, monitors, num_samples_per_mesh=100, random_seed=666):
+    # Set random seed
+    np.random.seed(random_seed)
+    # resample according to the monitor values
+    meshes_ = []
+    meshes_target_ = []
+    monitors = torch.max(monitors, torch.tensor([0.]).to(device))
+    for bs in range(monitors.shape[0]):
+        prob = monitors[bs, :, 0] / torch.sum(monitors[bs, :, 0])
+        index = np.random.choice(
+            a=meshes.shape[1],
+            size=num_samples_per_mesh,
+            replace=False,
+            p=prob.cpu().numpy(),
+        )
+        # print(torch.max(prob), torch.min(prob), torch.max(monitors), torch.min(monitors))
+        meshes_.append(meshes[bs, index, :])
+        meshes_target_.append(meshes_target[bs, index, :])
+    test_meshes = torch.stack(meshes_, dim=0)
+    target_meshes = torch.stack(meshes_target_, dim=0)
+    return test_meshes, target_meshes
+
+
 def train_unsupervised(
     loader,
     model,
@@ -997,7 +1020,12 @@ def train_unsupervised(
 
         # Chamfer loss
         coord_dim = output_coord.shape[-1]
-        chamfer_loss = 100 * (chamfer_distance(output_coord.reshape(bs, -1, coord_dim), data.y.reshape(bs, -1, coord_dim)) + chamfer_distance(data.y.reshape(bs, -1, coord_dim), output_coord.reshape(bs, -1, coord_dim)))
+        # Sampling according to monitor values, sampled 100 nodes per mesh
+        mesh_test_raw = output_coord.view(bs, -1, coord_dim)
+        mesh_target_raw = data.y.view(bs, -1, coord_dim)
+        monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
+        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors)
+        chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
         # print(output_coord.shape, data.y.shape, chamfer_loss)
 
         # Inversion loss
@@ -1151,9 +1179,15 @@ def evaluate_unsupervised(
             )
         # if use_area_loss:
         area_loss = get_area_loss(output_coord, data.y, data.face, bs, scaler)
+        
         # Chamfer loss
         coord_dim = output_coord.shape[-1]
-        chamfer_loss = 100 * (chamfer_distance(output_coord.reshape(bs, -1, coord_dim), data.y.reshape(bs, -1, coord_dim)) + chamfer_distance(data.y.reshape(bs, -1, coord_dim), output_coord.reshape(bs, -1, coord_dim)))
+        # Sampling according to monitor values, sampled 100 nodes per mesh
+        mesh_test_raw = output_coord.view(bs, -1, coord_dim)
+        mesh_target_raw = data.y.view(bs, -1, coord_dim)
+        monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
+        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors)
+        chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
 
         loss = (
             weight_deform_loss * deform_loss

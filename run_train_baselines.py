@@ -271,7 +271,7 @@ save_namespace_to_yaml(config, f"{output_folder}/{config.experiment_name}")
 
 for epoch in range(config.num_epochs + 1):
     if config.model_used == "MRTransformer" or config.model_used == "M2T":
-        weight_chamfer_loss = 1.0
+        weight_chamfer_loss = 0.0
         if "weight_chamfer_loss" in config:
             weight_chamfer_loss = config.weight_chamfer_loss
         train_func = train_unsupervised
@@ -376,6 +376,14 @@ for epoch in range(config.num_epochs + 1):
             step=epoch,
         )
 
+        wandb.log(
+            {
+                "Chamfer loss/Train": train_loss["chamfer_loss"],
+                "Chamfer loss/Test": test_loss["chamfer_loss"],
+            },
+            step=epoch,
+        )
+
         if config.use_convex_loss:
             wandb.log(
                 {
@@ -404,8 +412,14 @@ for epoch in range(config.num_epochs + 1):
     train_deform_loss = train_loss["deform_loss"]
     test_deform_loss = test_loss["deform_loss"]
 
-    train_chamfer_loss = train_loss["chamfer_loss"]
-    test_chamfer_loss = test_loss["chamfer_loss"]
+    if "chamfer_loss" in train_loss:
+        train_chamfer_loss = train_loss["chamfer_loss"]
+    else:
+        train_chamfer_loss = 0.0
+    if "chamfer_loss" in test_loss:
+        test_chamfer_loss = test_loss["chamfer_loss"]
+    else:
+        test_chamfer_loss = 0.0
 
     if config.use_area_loss:
         train_area_loss = train_loss["area_loss"]

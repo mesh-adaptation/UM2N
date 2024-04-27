@@ -783,7 +783,6 @@ if __name__ == "__main__":
     run_id_m2n_hessian_norm = "1cu4qw9u"  # M2N hessian norm
     run_id_m2n_area_loss_hessian_norm = "u4uxcz1e"  # M2N area loss hessian norm
 
-    epoch = 19
 
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
@@ -944,15 +943,17 @@ if __name__ == "__main__":
     # run_ids = ["g86hj04w", "yx0h8mfm", "d9h5uzcp"]
     run_ids = ["d9h5uzcp", "yx0h8mfm", "ta0c8b3u", "npouut8z"]
 
-
-
+    epoch = 999
     # loginto wandb API
     api = wandb.Api()
     runs = api.runs(path=f"{entity}/{project_name}")
     latest_run = runs[0]
     print(f"Latest run id {latest_run.id}")
     run_ids = [latest_run.id]
-    # run_ids = ["3sicl8ny"]
+
+    # chamfer, chamfer 05, chamfer 01
+    # run_ids = ["2wjlu0vg", "mk8aaxvz", "m7uar229"]
+    # run_ids = ["d2435i9b"]
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
