@@ -783,17 +783,15 @@ class SwirlSolver:
 
                 # calculate solution on original mesh
                 self.mesh.coordinates.dat.data[:] = self.init_coord
-                # self.project_u_()
                 self.project_from_prev_u_coarse()
                 self.solve_u(self.t)
                 function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-                self.uh = fd.Function(function_space).project(self.u_cur)
+                uh = fd.Function(function_space).project(self.u_cur)
                 # Update the prev solution on coarse mesh
                 self.u_prev_coarse.project(self.u_cur)
 
                 # calculate solution on adapted mesh
                 self.mesh.coordinates.dat.data[:] = self.adapt_coord
-                # self.project_u_()
                 self.project_from_prev_u_adapt()
                 self.solve_u(self.t)
 
@@ -807,9 +805,6 @@ class SwirlSolver:
                 # Update the prev solution on adapted mesh
                 self.u_prev_adapt.project(self.u_cur)
 
-                # error measuring
-                # error_og_cur, error_adapt_cur = self.get_error_currstep()
-                # error_og, error_adapt = self.get_error()
 
                 # Get the u_fine at current step
                 function_space_fine = fd.FunctionSpace(
@@ -818,39 +813,21 @@ class SwirlSolver:
                 uh_fine = fd.Function(function_space_fine)
                 uh_fine.project(self.u_cur_fine)
 
+                # Put mesh to init state
+                self.mesh.coordinates.dat.data[:] = self.init_coord
+                
+                # error measure
                 # Project to fine mesh
-                # u_og_2_fine = fd.project(self.uh, function_space_fine)
-                u_og_2_fine = fd.project(self.uh, function_space_fine)
+                # Note: this should only be performed after the "self.mesh" has been recovered back to initial uniform mesh
+                u_og_2_fine = fd.project(uh, function_space_fine)
                 u_adapt_2_fine = fd.project(uh_new, function_space_fine)
-                # error calculation
+
                 error_og = fd.errornorm(u_og_2_fine, uh_fine, norm_type="L2")
                 error_adapt = fd.errornorm(u_adapt_2_fine, uh_fine, norm_type="L2")
-
-                # put mesh to init state
-                self.mesh.coordinates.dat.data[:] = self.init_coord
-
-                # print(f"error_og before solve: {error_og_cur}, \terror_adapt before solve: {error_adapt_cur}")
-                print(f"[error measure] error_og: {error_og}, \terror_adapt: {error_adapt}")
-
-                # put coords back to init state and sampling for datasets
-                self.mesh.coordinates.dat.data[:] = self.init_coord
-
-                # plotting
-                plot = False
-                if plot is True:
-                    self.plot_res()
-                    plt.show()
-
-                # retrive info from original mesh and save data
-                # function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-                # function_space_fine = fd.FunctionSpace(
-                #     self.mesh_fine, "CG", 1
-                # )  # noqa
-                # uh_fine = fd.Function(function_space_fine)
-                # uh_fine.project(self.u_cur_fine)
+                print(f"[Error measure] error_og: {error_og}, \terror_adapt: {error_adapt}")
 
                 func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-                uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
+                uh_grad = fd.interpolate(fd.grad(uh), func_vec_space)
                 # hessian_norm = self.f_norm
                 # monitor_values = adapter.monitor
                 hessian = self.l2_projection
@@ -874,15 +851,14 @@ class SwirlSolver:
                 # Project from DG to CG
                 function_scalar_space_cg = fd.FunctionSpace(self.mesh, "CG", 1)
                 
-                uh_cg = fd.Function(function_scalar_space_cg).project(self.uh)
+                uh_cg = fd.Function(function_scalar_space_cg).project(uh)
                 grad_u_norm_cg = fd.Function(function_scalar_space_cg).project(grad_u_norm)
                 hessian_norm_cg = fd.Function(function_scalar_space_cg).project(hessian_norm)
-
 
                 if ((step + 1) % self.save_interval == 0) or (step == 0):
                     callback(
                         # uh=uh_cg,
-                        uh=self.uh,
+                        uh=uh,
                         uh_grad=uh_grad,
                         grad_u_norm=grad_u_norm_cg,
                         hessian_norm=hessian_norm_cg,
