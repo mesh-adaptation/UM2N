@@ -420,204 +420,204 @@ class SwirlSolver:
         self.u.project(self.u_prev_adapt)
         return
 
-    def monitor_function_pure_hessian(self, mesh, beta=5):
-        self.project_u_()
-        self.solve_u(self.t)
-        self.u_hess.project(self.u_cur)
+    # def monitor_function_pure_hessian(self, mesh, beta=5):
+    #     self.project_u_()
+    #     self.solve_u(self.t)
+    #     self.u_hess.project(self.u_cur)
 
-        self.hessian_prob.solve()
-        self.f_norm.project(
-            self.l2_projection[0, 0] ** 2
-            + self.l2_projection[0, 1] ** 2
-            + self.l2_projection[1, 0] ** 2
-            + self.l2_projection[1, 1] ** 2
-        )
+    #     self.hessian_prob.solve()
+    #     self.f_norm.project(
+    #         self.l2_projection[0, 0] ** 2
+    #         + self.l2_projection[0, 1] ** 2
+    #         + self.l2_projection[1, 0] ** 2
+    #         + self.l2_projection[1, 1] ** 2
+    #     )
 
-        # Normlize the hessian
-        self.f_norm /= self.f_norm.vector().max()
+    #     # Normlize the hessian
+    #     self.f_norm /= self.f_norm.vector().max()
 
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+    #     self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
 
-        self.monitor_values.project(1 + beta * self.f_norm)
-        return self.monitor_values
+    #     self.monitor_values.project(1 + beta * self.f_norm)
+    #     return self.monitor_values
 
-    def monitor_function_smoothed_hessian(self, mesh, beta=5):
-        self.project_u_()
-        self.solve_u(self.t)
-        self.u_hess.project(self.u_cur)
+    # def monitor_function_smoothed_hessian(self, mesh, beta=5):
+    #     self.project_u_()
+    #     self.solve_u(self.t)
+    #     self.u_hess.project(self.u_cur)
 
-        self.hessian_prob.solve()
-        self.f_norm.project(
-            self.l2_projection[0, 0] ** 2
-            + self.l2_projection[0, 1] ** 2
-            + self.l2_projection[1, 0] ** 2
-            + self.l2_projection[1, 1] ** 2
-        )
+    #     self.hessian_prob.solve()
+    #     self.f_norm.project(
+    #         self.l2_projection[0, 0] ** 2
+    #         + self.l2_projection[0, 1] ** 2
+    #         + self.l2_projection[1, 0] ** 2
+    #         + self.l2_projection[1, 1] ** 2
+    #     )
 
-        # Normlize the hessian
-        self.f_norm /= self.f_norm.vector().max()
-        self.f_norm.dat.data[:] = 1 / (1 + np.exp(-self.f_norm.dat.data[:])) - 0.5
-        self.f_norm /= self.f_norm.vector().max()
+    #     # Normlize the hessian
+    #     self.f_norm /= self.f_norm.vector().max()
+    #     self.f_norm.dat.data[:] = 1 / (1 + np.exp(-self.f_norm.dat.data[:])) - 0.5
+    #     self.f_norm /= self.f_norm.vector().max()
 
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+    #     self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
 
-        self.monitor_values.project(1 + beta * self.f_norm)
-        return self.monitor_values
+    #     self.monitor_values.project(1 + beta * self.f_norm)
+    #     return self.monitor_values
 
-    def monitor_function_grad(self, mesh, alpha=5):
-        self.project_u_()
-        self.solve_u(self.t)
-        self.u_hess.project(self.u_cur)
+    # def monitor_function_grad(self, mesh, alpha=5):
+    #     self.project_u_()
+    #     self.solve_u(self.t)
+    #     self.u_hess.project(self.u_cur)
 
-        self.hessian_prob.solve()
-        self.f_norm.project(
-            self.l2_projection[0, 0] ** 2
-            + self.l2_projection[0, 1] ** 2
-            + self.l2_projection[1, 0] ** 2
-            + self.l2_projection[1, 1] ** 2
-        )
+    #     self.hessian_prob.solve()
+    #     self.f_norm.project(
+    #         self.l2_projection[0, 0] ** 2
+    #         + self.l2_projection[0, 1] ** 2
+    #         + self.l2_projection[1, 0] ** 2
+    #         + self.l2_projection[1, 1] ** 2
+    #     )
 
-        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+    #     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+    #     uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+    #     self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+    #     self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
 
-        self.monitor_values.project(1 + alpha * self.grad_norm)
-        return self.monitor_values
+    #     self.monitor_values.project(1 + alpha * self.grad_norm)
+    #     return self.monitor_values
 
-    def monitor_function_smoothed_grad(self, mesh, alpha=5):
-        self.project_u_()
-        self.solve_u(self.t)
-        self.u_hess.project(self.u_cur)
+    # def monitor_function_smoothed_grad(self, mesh, alpha=5):
+    #     self.project_u_()
+    #     self.solve_u(self.t)
+    #     self.u_hess.project(self.u_cur)
 
-        self.hessian_prob.solve()
-        self.f_norm.project(
-            self.l2_projection[0, 0] ** 2
-            + self.l2_projection[0, 1] ** 2
-            + self.l2_projection[1, 0] ** 2
-            + self.l2_projection[1, 1] ** 2
-        )
+    #     self.hessian_prob.solve()
+    #     self.f_norm.project(
+    #         self.l2_projection[0, 0] ** 2
+    #         + self.l2_projection[0, 1] ** 2
+    #         + self.l2_projection[1, 0] ** 2
+    #         + self.l2_projection[1, 1] ** 2
+    #     )
 
-        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+    #     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+    #     uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+    #     self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
-        # Normlize the grad
-        self.grad_norm /= self.grad_norm.vector().max()
-        self.grad_norm.dat.data[:] = 1 / (1 + np.exp(-self.grad_norm.dat.data[:])) - 0.5
-        self.grad_norm /= self.grad_norm.vector().max()
+    #     # Normlize the grad
+    #     self.grad_norm /= self.grad_norm.vector().max()
+    #     self.grad_norm.dat.data[:] = 1 / (1 + np.exp(-self.grad_norm.dat.data[:])) - 0.5
+    #     self.grad_norm /= self.grad_norm.vector().max()
 
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+    #     self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
 
-        self.monitor_values.project(1 + alpha * self.grad_norm)
-        return self.monitor_values
+    #     self.monitor_values.project(1 + alpha * self.grad_norm)
+    #     return self.monitor_values
 
-    def monitor_function(self, mesh, alpha=10, beta=5):
-        self.project_u_()
-        self.solve_u(self.t)
-        self.u_hess.project(self.u_cur)
+    # def monitor_function(self, mesh, alpha=10, beta=5):
+    #     self.project_u_()
+    #     self.solve_u(self.t)
+    #     self.u_hess.project(self.u_cur)
 
-        self.hessian_prob.solve()
-        self.f_norm.project(
-            self.l2_projection[0, 0] ** 2
-            + self.l2_projection[0, 1] ** 2
-            + self.l2_projection[1, 0] ** 2
-            + self.l2_projection[1, 1] ** 2
-        )
+    #     self.hessian_prob.solve()
+    #     self.f_norm.project(
+    #         self.l2_projection[0, 0] ** 2
+    #         + self.l2_projection[0, 1] ** 2
+    #         + self.l2_projection[1, 0] ** 2
+    #         + self.l2_projection[1, 1] ** 2
+    #     )
 
-        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+    #     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+    #     uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+    #     self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
-        # Normlize the hessian
-        self.f_norm /= self.f_norm.vector().max()
-        self.f_norm.dat.data[:] = 1 / (1 + np.exp(-self.f_norm.dat.data[:])) - 0.5
-        self.f_norm /= self.f_norm.vector().max()
+    #     # Normlize the hessian
+    #     self.f_norm /= self.f_norm.vector().max()
+    #     self.f_norm.dat.data[:] = 1 / (1 + np.exp(-self.f_norm.dat.data[:])) - 0.5
+    #     self.f_norm /= self.f_norm.vector().max()
 
-        # Normlize the grad
-        self.grad_norm /= self.grad_norm.vector().max()
-        self.grad_norm.dat.data[:] = 1 / (1 + np.exp(-self.grad_norm.dat.data[:])) - 0.5
-        self.grad_norm /= self.grad_norm.vector().max()
+    #     # Normlize the grad
+    #     self.grad_norm /= self.grad_norm.vector().max()
+    #     self.grad_norm.dat.data[:] = 1 / (1 + np.exp(-self.grad_norm.dat.data[:])) - 0.5
+    #     self.grad_norm /= self.grad_norm.vector().max()
 
-        # Interpolate on P0 space and then project back to P1 to induce numerical diffusion
-        # p0_space = fd.FunctionSpace(self.mesh, "CG", 0)
-        # self.f_norm = fd.interpolate(self.f_norm, p0_space).project(self.f_norm)
-        # self.grad_norm = fd.interpolate(self.grad_norm, p0_space).project(self.grad_norm)
+    #     # Interpolate on P0 space and then project back to P1 to induce numerical diffusion
+    #     # p0_space = fd.FunctionSpace(self.mesh, "CG", 0)
+    #     # self.f_norm = fd.interpolate(self.f_norm, p0_space).project(self.f_norm)
+    #     # self.grad_norm = fd.interpolate(self.grad_norm, p0_space).project(self.grad_norm)
 
-        # Choose the max values between grad norm and hessian norm according to
-        # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
-        # self.monitor_values.dat.data[:] = np.maximum(
-        #     beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
-        # )
+    #     # Choose the max values between grad norm and hessian norm according to
+    #     # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
+    #     # self.monitor_values.dat.data[:] = np.maximum(
+    #     #     beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
+    #     # )
 
-        self.monitor_values.dat.data[:] = (
-            beta * self.f_norm.dat.data[:] + alpha * self.grad_norm.dat.data[:]
-        ) / 2
+    #     self.monitor_values.dat.data[:] = (
+    #         beta * self.f_norm.dat.data[:] + alpha * self.grad_norm.dat.data[:]
+    #     ) / 2
 
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+    #     self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
 
-        self.monitor_values.project(1 + self.monitor_values)
+    #     self.monitor_values.project(1 + self.monitor_values)
 
-        return self.monitor_values
+    #     return self.monitor_values
 
-    def monitor_function_for_merge(self, mesh, alpha=10, beta=5):
-        self.project_u_()
-        self.solve_u(self.t)
-        self.u_hess.project(self.u_cur)
+    # def monitor_function_for_merge(self, mesh, alpha=10, beta=5):
+    #     self.project_u_()
+    #     self.solve_u(self.t)
+    #     self.u_hess.project(self.u_cur)
 
-        self.hessian_prob.solve()
-        self.f_norm.project(
-            self.l2_projection[0, 0] ** 2
-            + self.l2_projection[0, 1] ** 2
-            + self.l2_projection[1, 0] ** 2
-            + self.l2_projection[1, 1] ** 2
-        )
+    #     self.hessian_prob.solve()
+    #     self.f_norm.project(
+    #         self.l2_projection[0, 0] ** 2
+    #         + self.l2_projection[0, 1] ** 2
+    #         + self.l2_projection[1, 0] ** 2
+    #         + self.l2_projection[1, 1] ** 2
+    #     )
 
-        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+    #     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
+    #     uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+    #     self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
-        # Normlize the hessian
-        self.f_norm /= self.f_norm.vector().max()
-        # Normlize the grad
-        self.grad_norm /= self.grad_norm.vector().max()
+    #     # Normlize the hessian
+    #     self.f_norm /= self.f_norm.vector().max()
+    #     # Normlize the grad
+    #     self.grad_norm /= self.grad_norm.vector().max()
 
-        # Choose the max values between grad norm and hessian norm according to
-        # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
-        self.monitor_values.dat.data[:] = np.maximum(
-            beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
-        )
+    #     # Choose the max values between grad norm and hessian norm according to
+    #     # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
+    #     self.monitor_values.dat.data[:] = np.maximum(
+    #         beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
+    #     )
 
-        # #################
+    #     # #################
 
-        # V = fd.FunctionSpace(mesh, "CG", 1)
-        # u = fd.TrialFunction(V)
-        # v = fd.TestFunction(V)
-        # function_space = V
-        # # Discretised Eq Definition Start
-        # f = self.monitor_values
-        # N = 40  # As suggested in eq 23
-        # dx = 1 / 35
-        # K = N * dx**2 / 4
-        # RHS = f * v * fd.dx(domain=mesh)
-        # LHS = (K * fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
-        # bc = fd.DirichletBC(function_space, f, "on_boundary")
+    #     # V = fd.FunctionSpace(mesh, "CG", 1)
+    #     # u = fd.TrialFunction(V)
+    #     # v = fd.TestFunction(V)
+    #     # function_space = V
+    #     # # Discretised Eq Definition Start
+    #     # f = self.monitor_values
+    #     # N = 40  # As suggested in eq 23
+    #     # dx = 1 / 35
+    #     # K = N * dx**2 / 4
+    #     # RHS = f * v * fd.dx(domain=mesh)
+    #     # LHS = (K * fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+    #     # bc = fd.DirichletBC(function_space, f, "on_boundary")
 
-        # monitor_smoothed = fd.Function(function_space)
-        # fd.solve(
-        #     LHS == RHS,
-        #     monitor_smoothed,
-        #     solver_parameters={"ksp_type": "cg", "pc_type": "none"},
-        #     bcs=bc,
-        # )
+    #     # monitor_smoothed = fd.Function(function_space)
+    #     # fd.solve(
+    #     #     LHS == RHS,
+    #     #     monitor_smoothed,
+    #     #     solver_parameters={"ksp_type": "cg", "pc_type": "none"},
+    #     #     bcs=bc,
+    #     # )
 
-        # #################
+    #     # #################
 
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
-        self.monitor_values.project(1 + self.monitor_values)
+    #     self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+    #     self.monitor_values.project(1 + self.monitor_values)
 
-        return self.monitor_values
+    #     return self.monitor_values
 
     def monitor_function(self, mesh, alpha=10, beta=5):
         # self.project_u_()
@@ -685,7 +685,7 @@ class SwirlSolver:
 
     def monitor_function_on_coarse_mesh(self, mesh, alpha=10, beta=5):
         # self.project_u_()
-        self.project_from_prev_u_coarse()
+        self.project_from_prev_u_adapt()
         self.solve_u(self.t)
         self.u_hess.project(self.u_cur)
 
@@ -851,13 +851,11 @@ class SwirlSolver:
                 # Project from DG to CG
                 function_scalar_space_cg = fd.FunctionSpace(self.mesh, "CG", 1)
                 
-                uh_cg = fd.Function(function_scalar_space_cg).project(uh)
                 grad_u_norm_cg = fd.Function(function_scalar_space_cg).project(grad_u_norm)
                 hessian_norm_cg = fd.Function(function_scalar_space_cg).project(hessian_norm)
 
                 if ((step + 1) % self.save_interval == 0) or (step == 0):
                     callback(
-                        # uh=uh_cg,
                         uh=uh,
                         uh_grad=uh_grad,
                         grad_u_norm=grad_u_norm_cg,
@@ -927,68 +925,68 @@ class SwirlSolver:
         return
     
 
-    def get_error(self):
-        # solve on fine mesh
-        function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
-        self.solve_u_fine(self.t)
-        u_fine = fd.Function(function_space_fine).project(self.u_cur_fine)  # noqa
+    # def get_error(self):
+    #     # solve on fine mesh
+    #     function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
+    #     self.solve_u_fine(self.t)
+    #     u_fine = fd.Function(function_space_fine).project(self.u_cur_fine)  # noqa
 
-        # solve on coarse mesh
-        self.mesh.coordinates.dat.data[:] = self.init_coord
-        self.project_from_prev_u_coarse()
-        self.solve_u(self.t)
-        function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-        u_og = fd.Function(function_space).project(self.u_cur)
-        u_og_2_fine = fd.project(u_og, function_space_fine)
+    #     # solve on coarse mesh
+    #     self.mesh.coordinates.dat.data[:] = self.init_coord
+    #     self.project_from_prev_u_coarse()
+    #     self.solve_u(self.t)
+    #     function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+    #     u_og = fd.Function(function_space).project(self.u_cur)
+    #     u_og_2_fine = fd.project(u_og, function_space_fine)
 
-        # solve on coarse adapt mesh
-        self.mesh.coordinates.dat.data[:] = self.adapt_coord
-        self.project_from_prev_u_adapt()
-        self.solve_u(self.t)
-        function_space_new = fd.FunctionSpace(self.mesh, "CG", 1)
-        u_adapt = fd.Function(function_space_new).project(self.u_cur)
-        u_adapt_2_fine = fd.project(u_adapt, function_space_fine)
+    #     # solve on coarse adapt mesh
+    #     self.mesh.coordinates.dat.data[:] = self.adapt_coord
+    #     self.project_from_prev_u_adapt()
+    #     self.solve_u(self.t)
+    #     function_space_new = fd.FunctionSpace(self.mesh, "CG", 1)
+    #     u_adapt = fd.Function(function_space_new).project(self.u_cur)
+    #     u_adapt_2_fine = fd.project(u_adapt, function_space_fine)
 
-        # error calculation
-        error_og = fd.errornorm(u_fine, u_og_2_fine, norm_type="L2")
-        error_adapt = fd.errornorm(u_fine, u_adapt_2_fine, norm_type="L2")
+    #     # error calculation
+    #     error_og = fd.errornorm(u_fine, u_og_2_fine, norm_type="L2")
+    #     error_adapt = fd.errornorm(u_fine, u_adapt_2_fine, norm_type="L2")
 
-        # put mesh to init state
-        self.mesh.coordinates.dat.data[:] = self.init_coord
+    #     # put mesh to init state
+    #     self.mesh.coordinates.dat.data[:] = self.init_coord
 
-        return error_og, error_adapt
+    #     return error_og, error_adapt
 
 
-    def get_error_currstep(self):
-        # solve on fine mesh
-        function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
-        # self.solve_u_fine(self.t)
-        # u_fine = fd.Function(function_space_fine).project(self.u_cur_fine)  # noqa
+    # def get_error_currstep(self):
+    #     # solve on fine mesh
+    #     function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
+    #     # self.solve_u_fine(self.t)
+    #     # u_fine = fd.Function(function_space_fine).project(self.u_cur_fine)  # noqa
 
-        # solve on coarse mesh
-        self.mesh.coordinates.dat.data[:] = self.init_coord
-        self.project_u_()
-        # self.solve_u(self.t)
-        function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-        u_og = fd.Function(function_space).project(self.u)
-        u_og_2_fine = fd.project(u_og, function_space_fine)
+    #     # solve on coarse mesh
+    #     self.mesh.coordinates.dat.data[:] = self.init_coord
+    #     self.project_u_()
+    #     # self.solve_u(self.t)
+    #     function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+    #     u_og = fd.Function(function_space).project(self.u)
+    #     u_og_2_fine = fd.project(u_og, function_space_fine)
 
-        # solve on coarse adapt mesh
-        self.mesh.coordinates.dat.data[:] = self.adapt_coord
-        self.project_u_()
-        # self.solve_u(self.t)
-        function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)
-        u_adapt = fd.Function(function_space_new).project(self.u)
-        u_adapt_2_fine = fd.project(u_adapt, function_space_fine)
+    #     # solve on coarse adapt mesh
+    #     self.mesh.coordinates.dat.data[:] = self.adapt_coord
+    #     self.project_u_()
+    #     # self.solve_u(self.t)
+    #     function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)
+    #     u_adapt = fd.Function(function_space_new).project(self.u)
+    #     u_adapt_2_fine = fd.project(u_adapt, function_space_fine)
 
-        # error calculation
-        error_og = fd.errornorm(self.u_fine_buffer, u_og_2_fine, norm_type="L2")
-        error_adapt = fd.errornorm(self.u_fine_buffer, u_adapt_2_fine, norm_type="L2")
+    #     # error calculation
+    #     error_og = fd.errornorm(self.u_fine_buffer, u_og_2_fine, norm_type="L2")
+    #     error_adapt = fd.errornorm(self.u_fine_buffer, u_adapt_2_fine, norm_type="L2")
 
-        # put mesh to init state
-        self.mesh.coordinates.dat.data[:] = self.init_coord
+    #     # put mesh to init state
+    #     self.mesh.coordinates.dat.data[:] = self.init_coord
 
-        return error_og, error_adapt
+    #     return error_og, error_adapt
     
     # def get_error(self):
     #     # solve on fine mesh
