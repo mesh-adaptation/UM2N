@@ -796,26 +796,41 @@ class SwirlSolver:
                 # self.project_u_()
                 self.project_from_prev_u_adapt()
                 self.solve_u(self.t)
+
+                self.mesh_prev.coordinates.dat.data[:] = self.adapt_coord
                 function_space_new = fd.FunctionSpace(
                     self.mesh_prev, "CG", 1
                 )  # noqa
-                # function_space_new = fd.FunctionSpace(
-                #     self.mesh, "CG", 1
-                # )  # noqa
-                self.uh_new = fd.Function(function_space_new).project(
+                uh_new = fd.Function(function_space_new).project(
                     self.u_cur
                 )  # noqa
-
-                self.mesh_prev.coordinates.dat.data[:] = self.adapt_coord
                 # Update the prev solution on adapted mesh
                 self.u_prev_adapt.project(self.u_cur)
 
                 # error measuring
                 # error_og_cur, error_adapt_cur = self.get_error_currstep()
-                error_og, error_adapt = self.get_error()
+                # error_og, error_adapt = self.get_error()
+
+                # Get the u_fine at current step
+                function_space_fine = fd.FunctionSpace(
+                    self.mesh_fine, "CG", 1
+                )  # noqa
+                uh_fine = fd.Function(function_space_fine)
+                uh_fine.project(self.u_cur_fine)
+
+                # Project to fine mesh
+                # u_og_2_fine = fd.project(self.uh, function_space_fine)
+                u_og_2_fine = fd.project(self.uh, function_space_fine)
+                u_adapt_2_fine = fd.project(uh_new, function_space_fine)
+                # error calculation
+                error_og = fd.errornorm(u_og_2_fine, uh_fine, norm_type="L2")
+                error_adapt = fd.errornorm(u_adapt_2_fine, uh_fine, norm_type="L2")
+
+                # put mesh to init state
+                self.mesh.coordinates.dat.data[:] = self.init_coord
 
                 # print(f"error_og before solve: {error_og_cur}, \terror_adapt before solve: {error_adapt_cur}")
-                print(f"error_og: {error_og}, \terror_adapt: {error_adapt}")
+                print(f"[error measure] error_og: {error_og}, \terror_adapt: {error_adapt}")
 
                 # put coords back to init state and sampling for datasets
                 self.mesh.coordinates.dat.data[:] = self.init_coord
@@ -827,12 +842,12 @@ class SwirlSolver:
                     plt.show()
 
                 # retrive info from original mesh and save data
-                function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-                function_space_fine = fd.FunctionSpace(
-                    self.mesh_fine, "CG", 1
-                )  # noqa
-                uh_fine = fd.Function(function_space_fine)
-                uh_fine.project(self.u_cur_fine)
+                # function_space = fd.FunctionSpace(self.mesh, "CG", 1)
+                # function_space_fine = fd.FunctionSpace(
+                #     self.mesh_fine, "CG", 1
+                # )  # noqa
+                # uh_fine = fd.Function(function_space_fine)
+                # uh_fine.project(self.u_cur_fine)
 
                 func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
                 uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
@@ -866,7 +881,8 @@ class SwirlSolver:
 
                 if ((step + 1) % self.save_interval == 0) or (step == 0):
                     callback(
-                        uh=uh_cg,
+                        # uh=uh_cg,
+                        uh=self.uh,
                         uh_grad=uh_grad,
                         grad_u_norm=grad_u_norm_cg,
                         hessian_norm=hessian_norm_cg,
@@ -878,7 +894,7 @@ class SwirlSolver:
                         jacobian_det=self.jacob_det,
                         mesh_new=self.mesh_new,
                         mesh_og=self.mesh,
-                        uh_new=self.uh_new,
+                        uh_new=uh_new,
                         uh_fine=uh_fine,
                         function_space=function_space,
                         function_space_fine=function_space_fine,
