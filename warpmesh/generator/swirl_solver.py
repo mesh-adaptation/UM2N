@@ -172,7 +172,11 @@ class SwirlSolver:
 
         # These two are holders for solution last timestep for coarse and adapted mesh 
         self.u_prev_coarse = fd.Function(self.scalar_space).assign(self.u_init)
-        self.u_prev_adapt = fd.Function(self.scalar_space).assign(self.u_init)
+
+        self.mesh_prev = fd.Mesh(self.mesh.coordinates.copy(deepcopy=True))
+        self.scalar_space_prev = fd.FunctionSpace(self.mesh_prev, "DG", 1)
+        self.u_init_prev = fd.Function(self.scalar_space_prev).interpolate(u_init_exp)
+        self.u_prev_adapt = fd.Function(self.scalar_space_prev).assign(self.u_init_prev)
 
         #       velocity field - the swirl: c
         self.c = fd.Function(self.vector_space)
@@ -793,7 +797,7 @@ class SwirlSolver:
                 self.project_from_prev_u_adapt()
                 self.solve_u(self.t)
                 function_space_new = fd.FunctionSpace(
-                    self.mesh_new, "CG", 1
+                    self.mesh_prev, "CG", 1
                 )  # noqa
                 # function_space_new = fd.FunctionSpace(
                 #     self.mesh, "CG", 1
@@ -801,6 +805,8 @@ class SwirlSolver:
                 self.uh_new = fd.Function(function_space_new).project(
                     self.u_cur
                 )  # noqa
+
+                self.mesh_prev.coordinates.dat.data[:] = self.adapt_coord
                 # Update the prev solution on adapted mesh
                 self.u_prev_adapt.project(self.u_cur)
 
@@ -947,7 +953,7 @@ class SwirlSolver:
         self.mesh.coordinates.dat.data[:] = self.adapt_coord
         self.project_from_prev_u_adapt()
         self.solve_u(self.t)
-        function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)
+        function_space_new = fd.FunctionSpace(self.mesh, "CG", 1)
         u_adapt = fd.Function(function_space_new).project(self.u_cur)
         u_adapt_2_fine = fd.project(u_adapt, function_space_fine)
 
