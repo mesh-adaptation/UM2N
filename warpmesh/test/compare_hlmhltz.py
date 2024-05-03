@@ -115,16 +115,25 @@ def compare_error(
             }
         )
         uh_model = model_solver.solve_eq()
+    
+    # a high_res mesh
+    high_res_mesh = mesh_fine
+    high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)
+
+    # exact solution on high_res mesh
+    res_high_res = eq.discretise(high_res_mesh)
+    uh_exact = fd.interpolate(res_high_res["u_exact"], high_res_function_space)
 
     fig, plot_data_dict = wm.plot_compare(
         mesh_fine,
         mesh,
         mesh_MA,
         mesh_model,
-        u_exact,
+        uh_exact,
         uh_og,
         uh_ma,
         uh_model,
+        data_in.monitor_val[:, 0].detach().cpu().numpy(),
         data_in.monitor_val[:, 0].detach().cpu().numpy(),
         num_tangle,
         model_name,

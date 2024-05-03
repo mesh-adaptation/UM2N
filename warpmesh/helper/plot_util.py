@@ -50,16 +50,16 @@ def plot_compare(
     cmap = "seismic"
 
     # Visualize the hessian norm on MA mesh
-    hessian_norm_vis_holder = fd.Function(ma_function_space)
+    hessian_norm_vis_holder = fd.Function(coarse_res_function_space)
     hessian_norm_vis_holder.dat.data[:] = hessian_norm  # [:, 0].detach().cpu().numpy()
-    # Hessian norm values
-    cb = fd.tripcolor(hessian_norm_vis_holder, cmap=cmap, axes=ax[0, 0])
-    ax[0, 0].set_title(f"Hessian norm")
-    plt.colorbar(cb)
+    # # Hessian norm values
+    # cb = fd.tripcolor(hessian_norm_vis_holder, cmap=cmap, axes=ax[0, 0])
+    # ax[0, 0].set_title(f"Hessian norm")
+    # plt.colorbar(cb)
 
     # High resolution mesh
-    # fd.triplot(mesh_fine, axes=ax[0, 0])
-    # ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
+    fd.triplot(mesh_fine, axes=ax[0, 0])
+    ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
 
     # Orginal low resolution uniform mesh
     fd.triplot(mesh, axes=ax[0, 1])

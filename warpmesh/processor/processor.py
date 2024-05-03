@@ -318,6 +318,7 @@ class MeshProcessor:
             "x": self.x,
             "coord": self.coordinates,
             "u": self.feature["uh"],
+            "u_adapt": self.feature["uh_adapt"],
             "grad_u": self.feature["grad_uh"],
             "grad_u_norm": self.feature["grad_uh_norm"],
             "hessian": self.feature["hessian"],

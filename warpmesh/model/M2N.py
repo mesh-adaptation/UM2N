@@ -65,7 +65,7 @@ class NetGATDeform(torch.nn.Module):
 class M2N(torch.nn.Module):
     def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7, use_drop=False):
         super().__init__()
-        self.gfe_out_c = 0 # 16
+        self.gfe_out_c = 16
         self.lfe_out_c = 16
         self.deformer_in_feat = deform_in_c + self.gfe_out_c + self.lfe_out_c
 
@@ -86,12 +86,12 @@ class M2N(torch.nn.Module):
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
 
-        # conv_feat = self.gfe(conv_feat_in)
-        # conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
+        conv_feat = self.gfe(conv_feat_in)
+        conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
         local_feat = self.lfe(mesh_feat, edge_idx)
 
-        # x = torch.cat([x, local_feat, conv_feat], dim=1)
-        x = torch.cat([x, local_feat], dim=1)
+        x = torch.cat([x, local_feat, conv_feat], dim=1)
+        # x = torch.cat([x, local_feat], dim=1)
         x = self.deformer(x, edge_idx, bd_mask, poly_mesh)
 
         return x

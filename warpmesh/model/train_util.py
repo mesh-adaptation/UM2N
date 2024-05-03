@@ -8,6 +8,7 @@ import numpy as np
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing
 from torch_geometric.nn import knn_graph
+from pytorch3d.loss import chamfer_distance
 
 __all__ = [
     "train",
@@ -376,6 +377,7 @@ def train(
     use_area_loss=False,
     weight_deform_loss=1.0,
     weight_area_loss=1.0,
+    weight_chamfer_loss=0.0,
     scaler=100,
 ):
     """
@@ -400,6 +402,7 @@ def train(
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
     total_area_loss = 0
+    total_chamfer_loss =0.0
     for batch in loader:
         optimizer.zero_grad()
         data = batch.to(device)
@@ -422,8 +425,9 @@ def train(
             )
         if use_area_loss:
             area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
-
-        loss = weight_deform_loss * deform_loss + inversion_loss + inversion_diff_loss + weight_area_loss * area_loss
+        
+        chamfer_loss = 100 * chamfer_distance(out.unsqueeze(0), data.y.unsqueeze(0))[0]
+        loss = weight_deform_loss * deform_loss + inversion_loss + inversion_diff_loss + weight_area_loss * area_loss + weight_chamfer_loss * chamfer_loss
         # Jacobian loss
         if use_jacob:
             loss.backward(retain_graph=True)
@@ -442,6 +446,7 @@ def train(
             inversion_diff_loss.item() if use_inversion_diff_loss else 0
         )  # noqa
         total_area_loss += weight_area_loss * area_loss.item() if use_area_loss else 0
+        total_chamfer_loss += weight_chamfer_loss * chamfer_loss.item()
 
     res = {
         "total_loss": total_loss / len(loader),
@@ -453,7 +458,92 @@ def train(
         res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
     if use_area_loss:
         res["area_loss"] = total_area_loss / len(loader)
+    res["chamfer_loss"] = total_chamfer_loss / len(loader)
 
+    return res
+
+
+def evaluate(
+    loader,
+    model,
+    device,
+    loss_func,
+    use_jacob=False,
+    use_inversion_loss=False,
+    use_inversion_diff_loss=False,
+    use_area_loss=False,
+    weight_deform_loss=1.0,
+    weight_area_loss=1.0,
+    weight_chamfer_loss=0.0,
+    scaler=100,
+):
+    """
+    Evaluates a model using the given data loader and loss function.
+
+    Args:
+        loader (DataLoader): DataLoader object for the evaluation data.
+        model (torch.nn.Module): The PyTorch model to evaluate.
+        device (torch.device): The device to run the computation on.
+        loss_func (callable): Loss function (e.g., MSE, Cross-Entropy).
+        use_jacob (bool): Whether or not to use Jacobian loss. Defaults to.
+
+    Returns:
+        float: The average evaluation loss across all batches.
+    """
+    bs = loader.batch_size
+    model.eval()
+    total_loss = 0
+    total_deform_loss = 0
+    total_inversion_loss = 0
+    total_inversion_diff_loss = 0
+    total_area_loss = 0
+    total_chamfer_loss =0.0
+    for batch in loader:
+        data = batch.to(device)
+        loss = 0
+        deform_loss = 0
+        inversion_loss = 0
+        inversion_diff_loss = 0
+        area_loss = 0
+
+        with torch.no_grad():
+            out = model(data)
+            deform_loss = 1000 * (
+                loss_func(out, data.y)
+                if not use_jacob
+                else jacobLoss(model, out, data, loss_func)
+            )
+            inversion_loss = 0
+            if use_inversion_loss:
+                inversion_loss = get_inversion_loss(
+                    out, data.y, data.face, batch_size=bs, scaler=scaler
+                )
+            if use_area_loss:
+                area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
+
+            chamfer_loss = 100 * chamfer_distance(out.unsqueeze(0), data.y.unsqueeze(0))[0]
+            loss = weight_deform_loss * deform_loss + inversion_loss + inversion_diff_loss + weight_area_loss * area_loss + weight_chamfer_loss * chamfer_loss
+            total_loss += loss.item()
+            total_deform_loss += weight_deform_loss * deform_loss.item()
+            total_inversion_diff_loss += (
+                inversion_diff_loss.item() if use_inversion_diff_loss else 0
+            )  # noqa
+            total_inversion_loss += (
+                inversion_loss.item() if use_inversion_loss else 0
+            )  # noqa
+            total_area_loss += weight_area_loss * area_loss.item() if use_area_loss else 0
+            total_chamfer_loss += weight_chamfer_loss * chamfer_loss.item()
+    res = {
+        "total_loss": total_loss / len(loader),
+        "deform_loss": total_deform_loss / len(loader),
+    }
+    if use_inversion_loss:
+        res["inversion_loss"] = total_inversion_loss / len(loader)
+    if use_inversion_diff_loss:
+        res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
+    if use_area_loss:
+        res["area_loss"] = total_area_loss / len(loader)
+    res["chamfer_loss"] = total_chamfer_loss / len(loader)
     return res
 
 
@@ -887,25 +977,25 @@ def model_forward(bs, data, model, use_add_random_query=True):
     )
 
 
-def chamfer_distance(mesh_test, mesh_target):
-    # (batch, node, feature)
-    batch_size = mesh_test.shape[0]
-    node_num = mesh_test.shape[1]
+# def chamfer_distance(mesh_test, mesh_target):
+#     # (batch, node, feature)
+#     batch_size = mesh_test.shape[0]
+#     node_num = mesh_test.shape[1]
 
-    chamfer_distance_val = 0.0
-    for bs in range(batch_size):
-        mesh_stack = mesh_test[bs].unsqueeze(-2).repeat(1, node_num, 1)
-        # print("output mesh ", mesh_stack.shape)
-        # diff shape: (distance of a node in mesh_test to every node of mesh_target , number of node, feature)
-        diff = torch.norm(mesh_stack - mesh_target[bs], dim=-1)
-        min_diff = torch.min(diff, dim=0)
-        # min_diff[0] values, min_diff[1] index
-        min_diff_sum = torch.sum(min_diff[0])
-        chamfer_distance_val += min_diff_sum / node_num
-        # diff = mesh_stack - mesh_target[bs]
-        # print(diff, diff[0])
-        # print("min diff ", min_diff)
-    return chamfer_distance_val / batch_size
+#     chamfer_distance_val = 0.0
+#     for bs in range(batch_size):
+#         mesh_stack = mesh_test[bs].unsqueeze(-2).repeat(1, node_num, 1)
+#         # print("output mesh ", mesh_stack.shape)
+#         # diff shape: (distance of a node in mesh_test to every node of mesh_target , number of node, feature)
+#         diff = torch.norm(mesh_stack - mesh_target[bs], dim=-1)
+#         min_diff = torch.min(diff, dim=0)
+#         # min_diff[0] values, min_diff[1] index
+#         min_diff_sum = torch.sum(min_diff[0])
+#         chamfer_distance_val += min_diff_sum / node_num
+#         # diff = mesh_stack - mesh_target[bs]
+#         # print(diff, diff[0])
+#         # print("min diff ", min_diff)
+#     return chamfer_distance_val / batch_size
 
 
 def sample_nodes_by_monitor(meshes, meshes_target, monitors, num_samples_per_mesh=100, random_seed=666):
@@ -1025,7 +1115,8 @@ def train_unsupervised(
         mesh_target_raw = data.y.view(bs, -1, coord_dim)
         monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
         mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors)
-        chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
+        # chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
+        chamfer_loss = 100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
         # print(output_coord.shape, data.y.shape, chamfer_loss)
 
         # Inversion loss
@@ -1187,7 +1278,7 @@ def evaluate_unsupervised(
         mesh_target_raw = data.y.view(bs, -1, coord_dim)
         monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
         mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors)
-        chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
+        chamfer_loss = 100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
 
         loss = (
             weight_deform_loss * deform_loss
@@ -1226,86 +1317,6 @@ def evaluate_unsupervised(
     if use_area_loss:
         res["area_loss"] = total_area_loss / len(loader)
     return res
-
-
-def evaluate(
-    loader,
-    model,
-    device,
-    loss_func,
-    use_jacob=False,
-    use_inversion_loss=False,
-    use_inversion_diff_loss=False,
-    use_area_loss=False,
-    weight_deform_loss=1.0,
-    weight_area_loss=1.0,
-    scaler=100,
-):
-    """
-    Evaluates a model using the given data loader and loss function.
-
-    Args:
-        loader (DataLoader): DataLoader object for the evaluation data.
-        model (torch.nn.Module): The PyTorch model to evaluate.
-        device (torch.device): The device to run the computation on.
-        loss_func (callable): Loss function (e.g., MSE, Cross-Entropy).
-        use_jacob (bool): Whether or not to use Jacobian loss. Defaults to.
-
-    Returns:
-        float: The average evaluation loss across all batches.
-    """
-    bs = loader.batch_size
-    model.eval()
-    total_loss = 0
-    total_deform_loss = 0
-    total_inversion_loss = 0
-    total_inversion_diff_loss = 0
-    total_area_loss = 0
-    for batch in loader:
-        data = batch.to(device)
-        loss = 0
-        deform_loss = 0
-        inversion_loss = 0
-        inversion_diff_loss = 0
-        area_loss = 0
-
-        with torch.no_grad():
-            out = model(data)
-            deform_loss = 1000 * (
-                loss_func(out, data.y)
-                if not use_jacob
-                else jacobLoss(model, out, data, loss_func)
-            )
-            inversion_loss = 0
-            if use_inversion_loss:
-                inversion_loss = get_inversion_loss(
-                    out, data.y, data.face, batch_size=bs, scaler=scaler
-                )
-            if use_area_loss:
-                area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
-
-            loss = weight_deform_loss * deform_loss + inversion_loss + inversion_diff_loss + weight_area_loss * area_loss
-            total_loss += loss.item()
-            total_deform_loss += weight_deform_loss * deform_loss.item()
-            total_inversion_diff_loss += (
-                inversion_diff_loss.item() if use_inversion_diff_loss else 0
-            )  # noqa
-            total_inversion_loss += (
-                inversion_loss.item() if use_inversion_loss else 0
-            )  # noqa
-            total_area_loss += weight_area_loss * area_loss.item() if use_area_loss else 0
-    res = {
-        "total_loss": total_loss / len(loader),
-        "deform_loss": total_deform_loss / len(loader),
-    }
-    if use_inversion_loss:
-        res["inversion_loss"] = total_inversion_loss / len(loader)
-    if use_inversion_diff_loss:
-        res["inversion_diff_loss"] = total_inversion_diff_loss / len(loader)
-    if use_area_loss:
-        res["area_loss"] = total_area_loss / len(loader)
-    return res
-
 
 def get_sample_tangle(out_coords, in_coords, face):
     """

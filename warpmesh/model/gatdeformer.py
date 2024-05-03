@@ -128,9 +128,9 @@ class DeformGAT(MessagePassing):
         self.left_node_idx = in_data[:, 1] == 0
         self.right_node_idx = in_data[:, 1] == 1
 
-        if self.poly_mesh:
-            self.bd_pos_x = in_data[self.bd_mask, 0].clone()
-            self.bd_pos_y = in_data[self.bd_mask, 1].clone()
+        # if self.poly_mesh:
+        self.bd_pos_x = in_data[self.bd_mask, 0].clone()
+        self.bd_pos_y = in_data[self.bd_mask, 1].clone()
 
     def fix_boundary(self, in_data):
         in_data[self.upper_node_idx, 0] = 1
@@ -138,9 +138,9 @@ class DeformGAT(MessagePassing):
         in_data[self.left_node_idx, 1] = 0
         in_data[self.right_node_idx, 1] = 1
 
-        if self.poly_mesh:
-            in_data[self.bd_mask, 0] = self.bd_pos_x
-            in_data[self.bd_mask, 1] = self.bd_pos_y
+        # if self.poly_mesh:
+        in_data[self.bd_mask, 0] = self.bd_pos_x
+        in_data[self.bd_mask, 1] = self.bd_pos_y
 
     def __repr__(self):
         return '{}({}, {}, heads={})'.format(self.__class__.__name__,
