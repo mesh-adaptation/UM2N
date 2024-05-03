@@ -1,6 +1,7 @@
 import os
 import wandb
 import torch
+import pickle
 import firedrake as fd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -140,7 +141,7 @@ outfile_p.write(p_save)
 
 # Time loop
 t = 0.0
-t_end = 1.
+t_end = 5.
 
 total_step = int((t_end - t) / dt)
 print("Beginning time loop...")
@@ -168,10 +169,14 @@ print(f"boundary mask {bd_mask.shape}")
 
 u_list = []
 step_cnt = 0
-adapted_coord = init_coord
+adapted_coord = torch.tensor(init_coord)
 monitor_val = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
 output_path = f"outputs_sim/cylinder/adapt/Re_{re_num}"
+output_data_path = f"{output_path}/data"
+output_plot_path = f"{output_path}/plot"
 os.makedirs(output_path, exist_ok=True)
+os.makedirs(output_data_path, exist_ok=True)
+os.makedirs(output_plot_path, exist_ok=True)
 
 
 with torch.no_grad():
@@ -197,8 +202,21 @@ with torch.no_grad():
         if( np.abs( t - np.round(t,decimals=0) ) < 1.e-8): 
             print('time = {0:.3f}'.format(t))
         
-        step_cnt += 1
+        if step_cnt % 50 == 0:
+            print(f"{step_cnt} steps done.")
+            plot_dict = {}
+            plot_dict["mesh_original"] = init_coord
+            plot_dict["mesh_adapt"] = adapted_coord.cpu().detach().numpy()
+            plot_dict["u"] = u_now.dat.data[:]
+            plot_dict["p"] = p_now.dat.data[:]
+            plot_dict["monitor_val"] = monitor_val.dat.data[:]
+            plot_dict["step"] = step_cnt
+            plot_dict["dt"] = dt
+            ret_file = f"{output_data_path}/data_{step_cnt:06d}.pkl"
+            with open(ret_file, "wb") as file:
+                pickle.dump(plot_dict, file)
 
+        step_cnt += 1
         # Recover the mesh back to init coord 
         mesh.coordinates.dat.data[:] = init_coord
         monitor_val = monitor_func(mesh, u_now)
@@ -211,53 +229,71 @@ with torch.no_grad():
         # Update the mesh to adpated mesh
         mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
 
-        if step_cnt % 10 == 0:
-            print(f"{step_cnt} steps done.")
-        if step_cnt % 10 == 0:
+        if step_cnt % 5000 == 0:
             break
 
 print("Simulation complete")
-# import IPython
-# IPython.embed()
 
-rows = 5 
-fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
-mesh.coordinates.dat.data[:] = init_coord
-fd.triplot(mesh, axes=ax[0])
-ax[0].set_title("Original Mesh")
 
-adapted_mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
-fd.triplot(adapted_mesh, axes=ax[1])
-ax[1].set_title("Adapated Mesh")
+import glob
+all_data_files = sorted(glob.glob(f"{output_data_path}/*.pkl"))
+for idx, data_f in enumerate(all_data_files):
+    with open(data_f, "rb") as f:
+        data_dict = pickle.load(f)
 
-cmap = "seismic"
-ax1 = ax[2]
-ax1.set_xlabel('$x$', fontsize=16)
-ax1.set_ylabel('$y$', fontsize=16)
-ax1.set_title('FEM Navier-Stokes - channel flow - pressure', fontsize=16)
-fd.tripcolor(p_now,axes=ax1, cmap=cmap)
-# ax1.axis('equal')
+        function_space = fd.FunctionSpace(mesh, "CG", 1)
+        function_space_vec = fd.VectorFunctionSpace(mesh, "CG", 2)
 
-ax2 = ax[3]
-ax2.set_xlabel('$x$', fontsize=16)
-ax2.set_ylabel('$y$', fontsize=16)
-ax2.set_title('FEM Navier-Stokes - channel flow - velocity', fontsize=16)
-cb = fd.tripcolor(u_now,axes=ax2, cmap=cmap)
-plt.colorbar(cb)
-# ax2.axis('equal')
+        mesh_original = data_dict["mesh_original"]
+        mesh_adapt = data_dict["mesh_adapt"]
+        u = data_dict["u"]
+        p = data_dict["p"]
+        monitor_val = data_dict["monitor_val"]
+        rows = 5 
+        fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
+        mesh.coordinates.dat.data[:] = init_coord
+        fd.triplot(mesh, axes=ax[0])
+        ax[0].set_title("Original Mesh")
 
-ax3 = ax[4]
-ax3.set_xlabel('$x$', fontsize=16)
-ax3.set_ylabel('$y$', fontsize=16)
-ax3.set_title('FEM Navier-Stokes - channel flow - Monitor Values', fontsize=16)
-cb = fd.tripcolor(fd.assemble(monitor_val),axes=ax3, cmap=cmap)
-plt.colorbar(cb)
-# ax3.axis('equal')
+        adapted_mesh.coordinates.dat.data[:] = mesh_adapt
+        fd.triplot(adapted_mesh, axes=ax[1])
+        ax[1].set_title("Adapated Mesh")
 
-for rr in range(rows):
-    ax[rr].set_aspect("equal", "box")
+        cmap = "seismic"
 
-# plt.tight_layout()
-plt.savefig(f"{output_path}/{mesh_name.split('.msh')[0]}_Re_{re_num}_{total_step:06d}_adapt.png")
-plt.close()
-print("Done")
+        p_holder = fd.Function(function_space)
+        p_holder.dat.data[:] = p
+        ax1 = ax[2]
+        ax1.set_xlabel('$x$', fontsize=16)
+        ax1.set_ylabel('$y$', fontsize=16)
+        ax1.set_title('FEM Navier-Stokes - channel flow - pressure', fontsize=16)
+        fd.tripcolor(p_holder ,axes=ax1, cmap=cmap)
+        # ax1.axis('equal')
+
+        u_holder = fd.Function(function_space_vec)
+        u_holder.dat.data[:] = u
+
+        ax2 = ax[3]
+        ax2.set_xlabel('$x$', fontsize=16)
+        ax2.set_ylabel('$y$', fontsize=16)
+        ax2.set_title('FEM Navier-Stokes - channel flow - velocity', fontsize=16)
+        cb = fd.tripcolor(u_holder, axes=ax2, cmap=cmap)
+        # plt.colorbar(cb)
+        # ax2.axis('equal')
+
+        monitor_holder = fd.Function(function_space)
+        monitor_holder.dat.data[:] = monitor_val
+        ax3 = ax[4]
+        ax3.set_xlabel('$x$', fontsize=16)
+        ax3.set_ylabel('$y$', fontsize=16)
+        ax3.set_title('FEM Navier-Stokes - channel flow - Monitor Values', fontsize=16)
+        cb = fd.tripcolor(monitor_holder,axes=ax3, cmap=cmap)
+        # plt.colorbar(cb)
+        # ax3.axis('equal')
+
+        for rr in range(rows):
+            ax[rr].set_aspect("equal", "box")
+        # plt.tight_layout()
+        plt.savefig(f"{output_plot_path}/cylinder_Re_{re_num}_{idx:06d}_adapt.png")
+        plt.close()
+        print(f"Plot {idx} Done")
