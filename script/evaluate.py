@@ -1,13 +1,3 @@
-# Author: Chunyang Wang
-# GitHub Username: acse-cw1722
-
-# A evaluation pipeline script for evaluating the performance of input model:
-#
-#       1. Calculate PDE loss
-#       2. Evaluate Deform Loss
-#       3. Monitor time consumed
-
-# import packages
 import datetime
 import glob
 import time
@@ -324,66 +314,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
                         model,
                         use_add_random_query=config.use_add_random_query,
                     )
-                    # # Create mesh query for deformer, seperate from the original mesh as feature for encoder
-                    # mesh_query_x = sample.mesh_feat[:, 0].view(-1, 1).detach().clone()
-                    # mesh_query_y = sample.mesh_feat[:, 1].view(-1, 1).detach().clone()
-                    # mesh_query_x.requires_grad = True
-                    # mesh_query_y.requires_grad = True
-                    # mesh_query = torch.cat([mesh_query_x, mesh_query_y], dim=-1)
-
-                    # num_nodes = mesh_query.shape[-2] // bs
-                    # # Generate random mesh queries for unsupervised learning
-                    # sampled_queries = generate_samples(
-                    #     bs=bs,
-                    #     num_samples_per_mesh=num_nodes,
-                    #     num_meshes=5,
-                    #     data=sample,
-                    #     device=device,
-                    # )
-                    # sampled_queries_edge_index = construct_graph(
-                    #     sampled_queries[:, :, :2], num_neighbors=6
-                    # )
-
-                    # mesh_sampled_queries_x = (
-                    #     sampled_queries[:, :, 0].view(-1, 1).detach()
-                    # )
-                    # mesh_sampled_queries_y = (
-                    #     sampled_queries[:, :, 1].view(-1, 1).detach()
-                    # )
-                    # mesh_sampled_queries_x.requires_grad = True
-                    # mesh_sampled_queries_y.requires_grad = True
-                    # mesh_sampled_queries = torch.cat(
-                    #     [mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1
-                    # ).view(-1, 2)
-
-                    # coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
-                    # coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
-                    # coord_ori_x.requires_grad = True
-                    # coord_ori_y.requires_grad = True
-                    # coord_ori = torch.cat([coord_ori_x, coord_ori_y], dim=-1)
-
-                    # num_nodes = coord_ori.shape[-2] // bs
-                    # input_q = sample.mesh_feat[:, :4]
-                    # input_kv = generate_samples(
-                    #     bs=bs,
-                    #     num_samples_per_mesh=num_nodes,
-                    #     data=sample,
-                    #     device=device,
-                    # )
-                    # # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
-
-                    # (output_coord_all, output, out_monitor), (phix, phiy) = model(
-                    #     sample,
-                    #     input_q,
-                    #     input_q,
-                    #     mesh_query,
-                    #     sampled_queries=None,
-                    #     sampled_queries_edge_index=None,
-                    #     poly_mesh=True if domain == "poly" else False,
-                    # )
-                    # # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
-                    # out = output_coord_all[: num_nodes * bs]
-                    # # (out, model_raw_output, out_monitor), (phix, phiy) = model(sample, input_q, input_q, mesh_query, poly_mesh=True if domain == "poly" else False)
+                    out = output_coord
                 elif config.model_used == "M2N":
                     # print(sample)
                     out = model(sample)
@@ -519,53 +450,75 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
         y_0 = info_df["y_0"][0]
         T = info_df["T"][0]
         n_step = info_df["n_step"][0]
+        dt = info_df["dt"][0]
+        save_interval = info_df["save_interval"][0]
 
         if n_grid is None:
             mesh = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_coarse = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
-            mesh_new = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
+            mesh_ma = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_model = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_fine = fd.Mesh(os.path.join(ds_root, "mesh_fine", "mesh.msh"))
         else:
             mesh = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_coarse = fd.UnitSquareMesh(n_grid, n_grid)
-            mesh_new = fd.UnitSquareMesh(n_grid, n_grid)
+            mesh_ma = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_fine = fd.UnitSquareMesh(100, 100)
+        
 
-        # fd.triplot(mesh)
-        # fd.triplot(mesh_fine)
-
-        evaluator = wm.SwirlEvaluator(
+        # solver defination
+        swril_solver = wm.SwirlSolver(
             mesh,
-            mesh_coarse,
             mesh_fine,
-            mesh_new,
+            mesh_ma,
             mesh_model,
-            dataset,
-            model,
-            eval_dir,
-            ds_root,
-            device=device,
+            dataset=dataset,
             sigma=sigma,
             alpha=alpha,
             r_0=r_0,
             x_0=x_0,
             y_0=y_0,
+            save_interval=save_interval,
             T=T,
+            dt=dt,
             n_step=n_step,
-            model_used=config.model_used,
-            num_samples_to_eval=num_samples,
         )
 
-        evaluator.make_log_dir()
-        evaluator.make_plot_dir()
-        evaluator.make_plot_more_dir()
-        evaluator.make_plot_data_dir()
+        # evaluator = wm.SwirlEvaluator(
+        #     mesh,
+        #     mesh_coarse,
+        #     mesh_fine,
+        #     mesh_new,
+        #     mesh_model,
+        #     dataset,
+        #     model,
+        #     eval_dir,
+        #     ds_root,
+        #     device=device,
+        #     sigma=sigma,
+        #     alpha=alpha,
+        #     r_0=r_0,
+        #     x_0=x_0,
+        #     y_0=y_0,
+        #     T=T,
+        #     n_step=n_step,
+        #     model_used=config.model_used,
+        #     num_samples_to_eval=num_samples,
+        # )
+
+        # evaluator.make_log_dir()
+        # evaluator.make_plot_dir()
+        # evaluator.make_plot_more_dir()
+        # evaluator.make_plot_data_dir()
+
         model_name = config.model_used
         if config.model_used == "MRTransform":
             model_name = "M2T"
-        eval_res = evaluator.eval_problem(model_name=model_name)  # noqa
+        eval_res = swril_solver.eval_problem(model,
+                                             ds_root=ds_root, 
+                                             eval_dir=eval_dir,
+                                             model_name=model_name)  # noqa
 
     elif problem_type == "burgers":
         # Select params to generate burgers bump
@@ -861,11 +814,12 @@ if __name__ == "__main__":
     ]
 
     ds_root_helmholtz = [
+        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=300_aniso_full_meshtype_6"
         # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=5_aniso_full_meshtype_6",
         # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
-        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
-        "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
-        "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2",
+        # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
+        # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_2",
+        # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_2",
         # "./data/dataset_meshtype_2/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=300_aniso_full_meshtype_2",
     ]
 
@@ -876,8 +830,8 @@ if __name__ == "__main__":
     # ]
 
     ds_root_swirl = [
-        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.5_y0_0.5_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
-        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
+        # "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.5_y0_0.5_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
+        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.3_y0_0.3_lc_0.028_ngrid_35_interval_10_meshtype_6_smooth_15",
         # "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
         # "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
     ]
@@ -894,6 +848,7 @@ if __name__ == "__main__":
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = [*ds_root_swirl, *ds_root_helmholtz]
     ds_roots = [*ds_root_swirl]
+    # ds_roots = [*ds_root_helmholtz]
     # ds_roots = [*ds_root_helmholtz]
 
     # run_ids = [*run_ids_largeset, *run_ids_miniset_new, *run_ids_old_benchmark]
@@ -933,11 +888,14 @@ if __name__ == "__main__":
     # M2N-en large set, small scale, type 6, c0z773gi
     # M2N-en large set, small scale, type 6, monitor, ta0c8b3u
     # M2N-en large set, small scale, type 2, monitor, 00yvtkg0
+    # M2N-en large set, small scale, type 6, area only 7fwne0ig
     # MRT large set, small scale, type 6, yx0h8mfm
     # MRT large set, small scale, type 6, monitor, d9h5uzcp
     # MRT large set, small scale, type 6 coord, 3sicl8ny, deform + area
 
     # MRT large set, small scale, type 6 coord area only, b2la0gey
+
+    # current best: vnv1mv48
 
     # M2T large set, small npouut8z
     # run_ids = ["g86hj04w", "yx0h8mfm", "d9h5uzcp"]
@@ -950,10 +908,15 @@ if __name__ == "__main__":
     latest_run = runs[0]
     print(f"Latest run id {latest_run.id}")
     run_ids = [latest_run.id]
-
+    # run_ids = ["ta0c8b3u"]
+    # run_ids = ["7fwne0ig"] # M2N not global
     # chamfer, chamfer 05, chamfer 01
     # run_ids = ["2wjlu0vg", "mk8aaxvz", "m7uar229"]
     # run_ids = ["d2435i9b"]
+    # run_ids = ["3sicl8ny"]
+    # run_ids = ["g86hj04w"]
+    # run_ids = ["d9h5uzcp"]
+    # run_ids = ["g86hj04w"]
     for run_id in run_ids:
         for ds_root in ds_roots:
             problem_type, domain, meshtype = get_problem_type(ds_root=ds_root)
