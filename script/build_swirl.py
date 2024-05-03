@@ -37,7 +37,7 @@ def arg_parse():
         help="scalar coefficient of the swirl (velocity)",
     )
     parser.add_argument(
-        "--save_interval", type=int, default=5, help="interval for stroing sample file"
+        "--save_interval", type=int, default=10, help="interval for stroing sample file"
     )
     parser.add_argument(
         "--lc",
@@ -244,6 +244,7 @@ def sample_from_loop(
             "phi": phi.dat.data_ro.reshape(-1, 1),
             "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
             "monitor_val": monitor_values.dat.data_ro.reshape(-1, 1),
+            "uh_adapt": uh_new.dat.data_ro.reshape(-1, 1),
         },
         raw_feature={
             "uh": uh,
@@ -422,6 +423,9 @@ if __name__ == "__main__":
         mesh_new = mesh_gen.get_mesh(
             res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
         )
+        mesh_model = mesh_gen.get_mesh(
+            res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
+        )
         mesh_gen_fine = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
         mesh_fine = mesh_gen_fine.get_mesh(
             res=1e-2, file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh")
@@ -429,6 +433,7 @@ if __name__ == "__main__":
     else:
         mesh = fd.UnitSquareMesh(n_grid, n_grid)
         mesh_new = fd.UnitSquareMesh(n_grid, n_grid)
+        mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
         mesh_fine = fd.UnitSquareMesh(100, 100)
 
     df = pd.DataFrame(
@@ -456,6 +461,7 @@ if __name__ == "__main__":
         mesh,
         mesh_fine,
         mesh_new,
+        mesh_model=mesh_model,
         sigma=sigma,
         alpha=alpha,
         r_0=r_0,

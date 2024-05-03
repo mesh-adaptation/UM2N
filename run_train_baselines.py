@@ -316,6 +316,10 @@ for epoch in range(config.num_epochs + 1):
             weight_deform_loss = config.weight_deform_loss
         if "weight_area_loss" in config:
             weight_area_loss = config.weight_area_loss
+        
+        weight_chamfer_loss = 0.0
+        if "weight_chamfer_loss" in config:
+            weight_chamfer_loss = config.weight_chamfer_loss
 
         train_func = train
         evaluate_func = evaluate
@@ -328,6 +332,7 @@ for epoch in range(config.num_epochs + 1):
             use_area_loss=config.use_area_loss,
             weight_deform_loss=weight_deform_loss,
             weight_area_loss=weight_area_loss,
+            weight_chamfer_loss=weight_chamfer_loss,
             scaler=300,
         )
         test_loss = evaluate_func(
@@ -338,6 +343,7 @@ for epoch in range(config.num_epochs + 1):
             use_area_loss=config.use_area_loss,
             weight_deform_loss=weight_deform_loss,
             weight_area_loss=weight_area_loss,
+            weight_chamfer_loss=weight_chamfer_loss,
             scaler=300,
         )
     elif config.model_used == "MRN":
@@ -367,31 +373,23 @@ for epoch in range(config.num_epochs + 1):
         },
         step=epoch,
     )
-    if config.model_used == "MRTransformer":
-        wandb.log(
-            {
-                "Equation residual/Train": train_loss["equation_residual"],
-                "Equation residual/Test": test_loss["equation_residual"],
-            },
-            step=epoch,
-        )
 
-        wandb.log(
-            {
-                "Chamfer loss/Train": train_loss["chamfer_loss"],
-                "Chamfer loss/Test": test_loss["chamfer_loss"],
-            },
-            step=epoch,
-        )
+    if "convex_loss" in train_loss:
+        train_convex_loss = train_loss["convex_loss"]
+    else:
+        train_convex_loss = 0.0
+    if "convex_loss" in test_loss:
+        test_convex_loss = test_loss["convex_loss"]
+    else:
+        test_convex_loss = 0.0
 
-        if config.use_convex_loss:
-            wandb.log(
-                {
-                    "Convex loss/Train": train_loss["convex_loss"],
-                    "Convex loss/Test": test_loss["convex_loss"],
-                },
-                step=epoch,
-            )
+    wandb.log(
+        {
+            "Convex loss/Train": train_convex_loss,
+            "Convex loss/Test": test_convex_loss,
+        },
+        step=epoch,
+    )
 
     if config.use_inversion_loss:
         wandb.log(
@@ -420,6 +418,31 @@ for epoch in range(config.num_epochs + 1):
         test_chamfer_loss = test_loss["chamfer_loss"]
     else:
         test_chamfer_loss = 0.0
+    
+    wandb.log(
+        {
+            "Chamfer loss/Train": train_chamfer_loss,
+            "Chamfer loss/Test": test_chamfer_loss,
+        },
+        step=epoch,
+    )
+
+    if "equation_residual" in train_loss:
+        train_equation_residual = train_loss["equation_residual"]
+    else:
+        train_equation_residual = 0.0
+    if "equation_residual" in test_loss:
+        test_equation_residual = test_loss["equation_residual"]
+    else:
+        test_equation_residual = 0.0
+    
+    wandb.log(
+        {
+            "Equation residual/Train": train_equation_residual,
+            "Equation residual/Test": test_equation_residual,
+        },
+        step=epoch,
+    )
 
     if config.use_area_loss:
         train_area_loss = train_loss["area_loss"]

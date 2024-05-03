@@ -65,7 +65,7 @@ use_inversion_loss: false
 use_jacob: false
 weight_area_loss: 1.0
 weight_deform_loss: 0.0
-weight_chamfer_loss: 0.0
+weight_chamfer_loss: 1.0
 weight_decay: 5.0e-04
 x_feat:
 - coord
