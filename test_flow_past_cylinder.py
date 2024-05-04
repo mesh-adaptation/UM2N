@@ -49,8 +49,8 @@ dt = 0.001
 k = fd.Constant(dt)
 
 # instead of using RectangleMesh, we now read the mesh from file
-mesh_name = "cylinder_fine.msh"
-# mesh_name = "cylinder_very_fine.msh"
+# mesh_name = "cylinder_fine.msh"
+mesh_name = "cylinder_very_fine.msh"
 # mesh_name = "cylinder_coarse.msh"
 
 # mesh_name = "cylinder_multiple_very_fine.msh"
@@ -62,7 +62,10 @@ adapted_mesh = fd.Mesh(mesh.coordinates.copy(deepcopy=True))
 init_coord = mesh.coordinates.copy(deepcopy=True).dat.data[:]
 
 V = fd.VectorFunctionSpace(mesh, "CG", 2)
+V_adapted = fd.VectorFunctionSpace(adapted_mesh, "CG", 2)
+
 Q = fd.FunctionSpace(mesh, "CG", 1)
+Q_adapted = fd.FunctionSpace(adapted_mesh, "CG", 1)
 
 u = fd.TrialFunction(V)
 v = fd.TestFunction(V)
@@ -75,6 +78,9 @@ u_next = fd.Function(V)
 u_star = fd.Function(V)
 p_now = fd.Function(Q)
 p_next = fd.Function(Q)
+
+u_adapted = fd.Function(V_adapted)
+p_adapted = fd.Function(Q_adapted)
 
 # Expressions for the variational forms
 n = fd.FacetNormal(mesh)
@@ -132,12 +138,12 @@ solve2 = fd.LinearVariationalSolver(prob2, solver_parameters={'ksp_type': 'cg', 
 solve3 = fd.LinearVariationalSolver(prob3, solver_parameters={'ksp_type': 'cg', 'pc_type': 'sor'})  
 
 # Prep for saving solutions
-u_save = fd.Function(V).assign(u_now)
-p_save = fd.Function(Q).assign(p_now)
-outfile_u = fd.File("outputs_sim/cylinder/u.pvd")
-outfile_p = fd.File("outputs_sim/cylinder/p.pvd")
-outfile_u.write(u_save)
-outfile_p.write(p_save)
+# u_save = fd.Function(V).assign(u_now)
+# p_save = fd.Function(Q).assign(p_now)
+# outfile_u = fd.File("outputs_sim/cylinder/u.pvd")
+# outfile_p = fd.File("outputs_sim/cylinder/p.pvd")
+# outfile_u.write(u_save)
+# outfile_p.write(p_save)
 
 # Time loop
 t = 0.0
@@ -169,9 +175,12 @@ print(f"boundary mask {bd_mask.shape}")
 
 u_list = []
 step_cnt = 0
+save_interval = 10
+total_step = 100
 adapted_coord = torch.tensor(init_coord)
 monitor_val = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
-output_path = f"outputs_sim/cylinder/adapt/Re_{re_num}"
+exp_name = mesh_name.split(".msh")[0]
+output_path = f"outputs_sim/{exp_name}/adapt/Re_{re_num}_total_{total_step}_save_{save_interval}"
 output_data_path = f"{output_path}/data"
 output_plot_path = f"{output_path}/plot"
 os.makedirs(output_path, exist_ok=True)
@@ -188,21 +197,26 @@ with torch.no_grad():
 
         t += dt
 
-        u_save.assign(u_next)
-        p_save.assign(p_next)
+        # u_save.assign(u_next)
+        # p_save.assign(p_next)
         # outfile_u.write(u_save)
         # outfile_p.write(p_save)
         
-        u_list.append(fd.Function(u_next))
+        # u_list.append(fd.Function(u_next))
 
         # update solutions
         u_now.assign(u_next)
         p_now.assign(p_next)
 
+        # Store the solutions to adapted meshes
+        # so that we can safely modify mesh coordinates later
+        u_adapted.project(u_next)
+        p_adapted.project(p_next)
+
         if( np.abs( t - np.round(t,decimals=0) ) < 1.e-8): 
             print('time = {0:.3f}'.format(t))
         
-        if step_cnt % 50 == 0:
+        if step_cnt % save_interval == 0:
             print(f"{step_cnt} steps done.")
             plot_dict = {}
             plot_dict["mesh_original"] = init_coord
@@ -219,7 +233,12 @@ with torch.no_grad():
         step_cnt += 1
         # Recover the mesh back to init coord 
         mesh.coordinates.dat.data[:] = init_coord
-        monitor_val = monitor_func(mesh, u_now)
+
+        # Project u_adapted back to uniform mesh for computing monitors
+        u_proj_from_adapted = fd.Function(V)
+        u_proj_from_adapted.project(u_adapted)
+
+        monitor_val = monitor_func(mesh, u_proj_from_adapted)
         filter_monitor_val = np.minimum(1e3, monitor_val.dat.data[:])
         filter_monitor_val = np.maximum(0, filter_monitor_val)
         monitor_val.dat.data[:] = filter_monitor_val / filter_monitor_val.max()
@@ -228,8 +247,13 @@ with torch.no_grad():
         adapted_coord = model(sample)
         # Update the mesh to adpated mesh
         mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
+        # Project the u_adapted and p_adapted to new adapted mesh for next timestep solving
+        u_now.project(u_adapted)
+        p_now.project(p_adapted) 
+        # The buffer for adapted mesh should also be updated 
+        adapted_mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
 
-        if step_cnt % 5000 == 0:
+        if step_cnt % total_step == 0:
             break
 
 print("Simulation complete")
