@@ -213,6 +213,10 @@ with torch.no_grad():
         u_adapted.project(u_next)
         p_adapted.project(p_next)
 
+        # TODO: interpolate might be faster however requries to update firedrake version
+        # u_adapted.interpolate(u_next)
+        # p_adapted.interpolate(p_next)
+
         if( np.abs( t - np.round(t,decimals=0) ) < 1.e-8): 
             print('time = {0:.3f}'.format(t))
         
@@ -249,7 +253,12 @@ with torch.no_grad():
         mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
         # Project the u_adapted and p_adapted to new adapted mesh for next timestep solving
         u_now.project(u_adapted)
-        p_now.project(p_adapted) 
+        p_now.project(p_adapted)
+
+        # TODO: interpolate might be faster however requries to update firedrake version
+        # u_now.interpolate(u_adapted)
+        # p_now.interpolate(p_adapted)
+        
         # The buffer for adapted mesh should also be updated 
         adapted_mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
 
