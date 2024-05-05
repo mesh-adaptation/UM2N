@@ -49,8 +49,9 @@ dt = 0.001
 k = fd.Constant(dt)
 
 # instead of using RectangleMesh, we now read the mesh from file
+mesh_name = "cylinder_010.msh"
 # mesh_name = "cylinder_fine.msh"
-mesh_name = "cylinder_very_fine.msh"
+# mesh_name = "cylinder_very_fine.msh"
 # mesh_name = "cylinder_coarse.msh"
 
 # mesh_name = "cylinder_multiple_very_fine.msh"
@@ -72,6 +73,8 @@ v = fd.TestFunction(V)
 
 p = fd.TrialFunction(Q)
 q = fd.TestFunction(Q)
+
+vortex = fd.Function(Q)
 
 u_now = fd.Function(V)
 u_next = fd.Function(V)
@@ -176,7 +179,7 @@ print(f"boundary mask {bd_mask.shape}")
 u_list = []
 step_cnt = 0
 save_interval = 10
-total_step = 100
+total_step = 3000
 adapted_coord = torch.tensor(init_coord)
 monitor_val = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
 exp_name = mesh_name.split(".msh")[0]
@@ -221,18 +224,21 @@ with torch.no_grad():
             print('time = {0:.3f}'.format(t))
         
         if step_cnt % save_interval == 0:
-            print(f"{step_cnt} steps done.")
+            # print(f"{step_cnt} steps done.")
+            vorticity = vortex.project(fd.curl(u_now)).dat.data[:]
             plot_dict = {}
             plot_dict["mesh_original"] = init_coord
             plot_dict["mesh_adapt"] = adapted_coord.cpu().detach().numpy()
             plot_dict["u"] = u_now.dat.data[:]
             plot_dict["p"] = p_now.dat.data[:]
             plot_dict["monitor_val"] = monitor_val.dat.data[:]
+            plot_dict["vortex"] = vorticity
             plot_dict["step"] = step_cnt
             plot_dict["dt"] = dt
             ret_file = f"{output_data_path}/data_{step_cnt:06d}.pkl"
             with open(ret_file, "wb") as file:
                 pickle.dump(plot_dict, file)
+            print(f"{step_cnt} steps done. Max vorticity: {np.max(vorticity)}, Min vorticity: {np.min(vorticity)}")
 
         step_cnt += 1
         # Recover the mesh back to init coord 
@@ -258,7 +264,7 @@ with torch.no_grad():
         # TODO: interpolate might be faster however requries to update firedrake version
         # u_now.interpolate(u_adapted)
         # p_now.interpolate(p_adapted)
-        
+
         # The buffer for adapted mesh should also be updated 
         adapted_mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
 
@@ -281,6 +287,7 @@ for idx, data_f in enumerate(all_data_files):
         mesh_adapt = data_dict["mesh_adapt"]
         u = data_dict["u"]
         p = data_dict["p"]
+        vorticity = data_dict["vortex"]
         monitor_val = data_dict["monitor_val"]
         rows = 5 
         fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
@@ -294,14 +301,23 @@ for idx, data_f in enumerate(all_data_files):
 
         cmap = "seismic"
 
-        p_holder = fd.Function(function_space)
-        p_holder.dat.data[:] = p
+        # p_holder = fd.Function(function_space)
+        # p_holder.dat.data[:] = p
+        # ax1 = ax[2]
+        # ax1.set_xlabel('$x$', fontsize=16)
+        # ax1.set_ylabel('$y$', fontsize=16)
+        # ax1.set_title('FEM Navier-Stokes - channel flow - pressure', fontsize=16)
+        # fd.tripcolor(p_holder ,axes=ax1, cmap=cmap)
+        # # ax1.axis('equal')
+
+        vortex_holder = fd.Function(function_space)
+        vortex_holder.dat.data[:] = vorticity
+
         ax1 = ax[2]
         ax1.set_xlabel('$x$', fontsize=16)
         ax1.set_ylabel('$y$', fontsize=16)
-        ax1.set_title('FEM Navier-Stokes - channel flow - pressure', fontsize=16)
-        fd.tripcolor(p_holder ,axes=ax1, cmap=cmap)
-        # ax1.axis('equal')
+        ax1.set_title('FEM Navier-Stokes - channel flow - vorticity', fontsize=16)
+        fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap, vmax=100, vmin=-100)
 
         u_holder = fd.Function(function_space_vec)
         u_holder.dat.data[:] = u

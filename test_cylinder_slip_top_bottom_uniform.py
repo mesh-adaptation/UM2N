@@ -6,7 +6,7 @@ import firedrake as fd
 import numpy as np
 import matplotlib.pyplot as plt
 from types import SimpleNamespace
-from inference_utils import get_conv_feat, find_edges, find_bd, InputPack, load_model
+# from inference_utils import get_conv_feat, find_edges, find_bd, InputPack, load_model
 print("Setting up solver.")
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -50,6 +50,7 @@ k = fd.Constant(dt)
 
 # instead of using RectangleMesh, we now read the mesh from file
 mesh_name = "cylinder_010.msh"
+# mesh_name = "neurips.msh"
 # mesh_name = "cylinder_020.msh"
 # mesh_name = "cylinder_very_fine.msh"
 # mesh_name = "cylinder_coarse.msh"
@@ -96,19 +97,24 @@ def sigma(u, p):
 
 x, y = fd.SpatialCoordinate(mesh)
 
-
+u_val = 2.0
 if "multiple" in mesh_name:
     # Define boundary conditions
     bcu = [fd.DirichletBC(V, fd.Constant((0,0)), (1, 4, 5, 6, 7, 8)), # top-bottom and cylinder
             fd.DirichletBC(V, ((4.0*1.5*y*(0.41 - y) / 0.41**2) ,0), 2)] # inflow
 else:
     # Define boundary conditions
-    bcu = [fd.DirichletBC(V, fd.Constant((0,0)), (1, 4)), # top-bottom and cylinder
-            fd.DirichletBC(V, ((4.0*1.5*y*(0.41 - y) / 0.41**2) ,0), 2)] # inflow
+    # bcu = [fd.DirichletBC(V, fd.Constant((0,0)), (4)), # cylinder, no-slip
+    #        fd.DirichletBC(V.sub(1), fd.Constant(0), (1)), # top-bottom, slip
+    #         fd.DirichletBC(V, (1.5, 0), 2)] # inflow
+    bcu = [fd.DirichletBC(V, fd.Constant((0, 0)), (1, 4)), # cylinder, no-slip
+            fd.DirichletBC(V, (u_val, 0), 2)] # inflow
+    
+
 bcp = [fd.DirichletBC(Q, fd.Constant(0), 3)]  # outflow
 
 
-re_num = int(4.0*1.5*0.2*(0.41 - 0.2) / 0.41**2 * 0.1 / nu_val)
+re_num = int(u_val * 0.1 / nu_val)
 print(f"Re = {re_num}")
 
 
@@ -182,7 +188,7 @@ save_interval = 10
 total_step = 3000
 adapted_coord = torch.tensor(init_coord)
 monitor_val = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
-exp_name = mesh_name.split(".msh")[0]
+exp_name = mesh_name.split(".msh")[0] + "_slip"
 output_path = f"outputs_sim/{exp_name}/original/Re_{re_num}_total_{total_step}_save_{save_interval}"
 output_data_path = f"{output_path}/data"
 output_plot_path = f"{output_path}/plot"
@@ -224,19 +230,20 @@ with torch.no_grad():
             print('time = {0:.3f}'.format(t))
         
         if step_cnt % save_interval == 0:
-            print(f"{step_cnt} steps done.")
+            vorticity = vortex.project(fd.curl(u_now)).dat.data[:]
             plot_dict = {}
             plot_dict["mesh_original"] = init_coord
             plot_dict["mesh_adapt"] = adapted_coord.cpu().detach().numpy()
             plot_dict["u"] = u_now.dat.data[:]
             plot_dict["p"] = p_now.dat.data[:]
-            plot_dict["vortex"] = vortex.project(fd.curl(u_now)).dat.data[:]
+            plot_dict["vortex"] = vorticity
             plot_dict["monitor_val"] = monitor_val.dat.data[:]
             plot_dict["step"] = step_cnt
             plot_dict["dt"] = dt
             ret_file = f"{output_data_path}/data_{step_cnt:06d}.pkl"
             with open(ret_file, "wb") as file:
                 pickle.dump(plot_dict, file)
+            print(f"{step_cnt} steps done. Max vorticity: {np.max(vorticity)}, Min vorticity: {np.min(vorticity)}")
 
         step_cnt += 1
 
@@ -310,7 +317,7 @@ for idx, data_f in enumerate(all_data_files):
         ax1.set_xlabel('$x$', fontsize=16)
         ax1.set_ylabel('$y$', fontsize=16)
         ax1.set_title('FEM Navier-Stokes - channel flow - vorticity', fontsize=16)
-        fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap)
+        fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap, vmax=100, vmin=-100)
         # ax1.axis('equal')
 
         u_holder = fd.Function(function_space_vec)
