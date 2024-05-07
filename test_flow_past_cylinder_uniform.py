@@ -49,8 +49,12 @@ dt = 0.001
 k = fd.Constant(dt)
 
 
-all_mesh_names = ["cylinder_040.msh", "cylinder_020.msh", "cylinder_015.msh", "cylinder_010.msh"]
-all_mesh_names = ["cylinder_030.msh", "cylinder_035.msh"]
+RUN_SIM = True
+# all_mesh_names = ["cylinder_040.msh", "cylinder_020.msh", "cylinder_015.msh", "cylinder_010.msh"]
+# all_mesh_names = ["cylinder_030.msh", "cylinder_035.msh"]
+# all_mesh_names = ["cylinder_005.msh", "cylinder_002.msh"]
+# all_mesh_names = ["cylinder_020.msh", "cylinder_010.msh", "cylinder_005.msh", "cylinder_002.msh"]
+all_mesh_names = ["cylinder_015.msh", "cylinder_010.msh", "cylinder_005.msh", "cylinder_002.msh"]
 # instead of using RectangleMesh, we now read the mesh from file
 # mesh_name = "cylinder_040.msh"
 # mesh_name = "cylinder_020.msh"
@@ -111,8 +115,8 @@ for mesh_name in all_mesh_names:
                 fd.DirichletBC(V, ((4.0*1.5*y*(0.41 - y) / 0.41**2) ,0), 2)] # inflow
     bcp = [fd.DirichletBC(Q, fd.Constant(0), 3)]  # outflow
 
-
-    re_num = int(4.0*1.5*0.2*(0.41 - 0.2) / 0.41**2 * 0.1 / nu_val)
+    Umean = 1.0
+    re_num = int(Umean * 0.1 / nu_val)
     print(f"Re = {re_num}")
 
 
@@ -154,7 +158,7 @@ for mesh_name in all_mesh_names:
 
     # Time loop
     t = 0.0
-    t_end = 5.
+    t_end = 8.
 
     total_step = int((t_end - t) / dt)
     print("Beginning time loop...")
@@ -183,104 +187,109 @@ for mesh_name in all_mesh_names:
     u_list = []
     step_cnt = 0
     save_interval = 10
-    total_step = 3000
+    total_step = 8000
     adapted_coord = torch.tensor(init_coord)
     monitor_val = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
     exp_name = mesh_name.split(".msh")[0]
     output_path = f"outputs_sim/{exp_name}/original/Re_{re_num}_total_{total_step}_save_{save_interval}"
     output_data_path = f"{output_path}/data"
     output_plot_path = f"{output_path}/plot"
+    output_stat_path = f"{output_path}/stat"
     os.makedirs(output_path, exist_ok=True)
     os.makedirs(output_data_path, exist_ok=True)
     os.makedirs(output_plot_path, exist_ok=True)
+    os.makedirs(output_stat_path, exist_ok=True)
 
 
-    with torch.no_grad():
-        while t < t_end :
+    if RUN_SIM:
+        with torch.no_grad():
+            while t < t_end :
 
-            solve1.solve()
-            solve2.solve()
-            solve3.solve()
+                solve1.solve()
+                solve2.solve()
+                solve3.solve()
 
-            t += dt
+                t += dt
 
-            # u_save.assign(u_next)
-            # p_save.assign(p_next)
-            # outfile_u.write(u_save)
-            # outfile_p.write(p_save)
-            
-            # u_list.append(fd.Function(u_next))
+                # u_save.assign(u_next)
+                # p_save.assign(p_next)
+                # outfile_u.write(u_save)
+                # outfile_p.write(p_save)
+                
+                # u_list.append(fd.Function(u_next))
 
-            # update solutions
-            u_now.assign(u_next)
-            p_now.assign(p_next)
+                # update solutions
+                u_now.assign(u_next)
+                p_now.assign(p_next)
 
-            # Store the solutions to adapted meshes
-            # so that we can safely modify mesh coordinates later
-            # u_adapted.project(u_next)
-            # p_adapted.project(p_next)
+                # Store the solutions to adapted meshes
+                # so that we can safely modify mesh coordinates later
+                # u_adapted.project(u_next)
+                # p_adapted.project(p_next)
 
-            # TODO: interpolate might be faster however requries to update firedrake version
-            # u_adapted.interpolate(u_next)
-            # p_adapted.interpolate(p_next)
+                # TODO: interpolate might be faster however requries to update firedrake version
+                # u_adapted.interpolate(u_next)
+                # p_adapted.interpolate(p_next)
 
-            if( np.abs( t - np.round(t,decimals=0) ) < 1.e-8): 
-                print('time = {0:.3f}'.format(t))
-            
-            if step_cnt % save_interval == 0:
-                # print(f"{step_cnt} steps done.")
-                vorticity = vortex.project(fd.curl(u_now)).dat.data[:]
-                plot_dict = {}
-                plot_dict["mesh_original"] = init_coord
-                plot_dict["mesh_adapt"] = adapted_coord.cpu().detach().numpy()
-                plot_dict["u"] = u_now.dat.data[:]
-                plot_dict["p"] = p_now.dat.data[:]
-                plot_dict["vortex"] = vorticity
-                plot_dict["monitor_val"] = monitor_val.dat.data[:]
-                plot_dict["step"] = step_cnt
-                plot_dict["dt"] = dt
-                ret_file = f"{output_data_path}/data_{step_cnt:06d}.pkl"
-                with open(ret_file, "wb") as file:
-                    pickle.dump(plot_dict, file)
-                print(f"{step_cnt} steps done. Max vorticity: {np.max(vorticity)}, Min vorticity: {np.min(vorticity)}")
+                if( np.abs( t - np.round(t,decimals=0) ) < 1.e-8): 
+                    print('time = {0:.3f}'.format(t))
+                
+                if step_cnt % save_interval == 0:
+                    # print(f"{step_cnt} steps done.")
+                    vorticity = vortex.project(fd.curl(u_now)).dat.data[:]
+                    plot_dict = {}
+                    plot_dict["mesh_original"] = init_coord
+                    plot_dict["mesh_adapt"] = adapted_coord.cpu().detach().numpy()
+                    plot_dict["u"] = u_now.dat.data[:]
+                    plot_dict["p"] = p_now.dat.data[:]
+                    plot_dict["vortex"] = vorticity
+                    plot_dict["monitor_val"] = monitor_val.dat.data[:]
+                    plot_dict["step"] = step_cnt
+                    plot_dict["dt"] = dt
+                    ret_file = f"{output_data_path}/data_{step_cnt:06d}.pkl"
+                    with open(ret_file, "wb") as file:
+                        pickle.dump(plot_dict, file)
+                    print(f"{step_cnt} steps done. Max vorticity: {np.max(vorticity)}, Min vorticity: {np.min(vorticity)}")
 
-            step_cnt += 1
+                step_cnt += 1
 
-            # # Recover the mesh back to init coord 
-            # mesh.coordinates.dat.data[:] = init_coord
+                # # Recover the mesh back to init coord 
+                # mesh.coordinates.dat.data[:] = init_coord
 
-            # # Project u_adapted back to uniform mesh for computing monitors
-            # u_proj_from_adapted = fd.Function(V)
-            # u_proj_from_adapted.project(u_adapted)
+                # # Project u_adapted back to uniform mesh for computing monitors
+                # u_proj_from_adapted = fd.Function(V)
+                # u_proj_from_adapted.project(u_adapted)
 
-            # monitor_val = monitor_func(mesh, u_proj_from_adapted)
-            # filter_monitor_val = np.minimum(1e3, monitor_val.dat.data[:])
-            # filter_monitor_val = np.maximum(0, filter_monitor_val)
-            # monitor_val.dat.data[:] = filter_monitor_val / filter_monitor_val.max()
-            # conv_feat = get_conv_feat(mesh, monitor_val)
-            # sample = InputPack(coord=coords, monitor_val=monitor_val.dat.data_ro.reshape(-1, 1), edge_index=edge_idx, bd_mask=bd_mask, conv_feat=conv_feat)
-            # adapted_coord = model(sample)
-            # # Update the mesh to adpated mesh
-            # mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
-            # # Project the u_adapted and p_adapted to new adapted mesh for next timestep solving
-            # u_now.project(u_adapted)
-            # p_now.project(p_adapted)
+                # monitor_val = monitor_func(mesh, u_proj_from_adapted)
+                # filter_monitor_val = np.minimum(1e3, monitor_val.dat.data[:])
+                # filter_monitor_val = np.maximum(0, filter_monitor_val)
+                # monitor_val.dat.data[:] = filter_monitor_val / filter_monitor_val.max()
+                # conv_feat = get_conv_feat(mesh, monitor_val)
+                # sample = InputPack(coord=coords, monitor_val=monitor_val.dat.data_ro.reshape(-1, 1), edge_index=edge_idx, bd_mask=bd_mask, conv_feat=conv_feat)
+                # adapted_coord = model(sample)
+                # # Update the mesh to adpated mesh
+                # mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
+                # # Project the u_adapted and p_adapted to new adapted mesh for next timestep solving
+                # u_now.project(u_adapted)
+                # p_now.project(p_adapted)
 
-            # TODO: interpolate might be faster however requries to update firedrake version
-            # u_now.interpolate(u_adapted)
-            # p_now.interpolate(p_adapted)
-            
-            # The buffer for adapted mesh should also be updated 
-            # adapted_mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
+                # TODO: interpolate might be faster however requries to update firedrake version
+                # u_now.interpolate(u_adapted)
+                # p_now.interpolate(p_adapted)
+                
+                # The buffer for adapted mesh should also be updated 
+                # adapted_mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
 
-            if step_cnt % total_step == 0:
-                break
+                if step_cnt % total_step == 0:
+                    break
 
-    print("Simulation complete")
+        print("Simulation complete")
 
 
     import glob
     all_data_files = sorted(glob.glob(f"{output_data_path}/*.pkl"))
+    C_D_list = []
+    C_L_list = []
     for idx, data_f in enumerate(all_data_files):
         with open(data_f, "rb") as f:
             data_dict = pickle.load(f)
@@ -306,9 +315,6 @@ for mesh_name in all_mesh_names:
 
             cmap = "seismic"
 
-            # p_holder = fd.Function(function_space)
-            # p_holder.dat.data[:] = p
-
             vortex_holder = fd.Function(function_space)
             vortex_holder.dat.data[:] = vortex
 
@@ -321,6 +327,19 @@ for mesh_name in all_mesh_names:
 
             u_holder = fd.Function(function_space_vec)
             u_holder.dat.data[:] = u
+
+            p_holder = fd.Function(function_space)
+            p_holder.dat.data[:] = p
+
+            Umean = 1.0
+            L = 0.1
+            n = fd.FacetNormal(mesh)
+            F_D = fd.assemble(fd.dot(n, sigma(u_holder, p_holder))[0] * fd.ds(4))
+            F_L = fd.assemble(fd.dot(n, sigma(u_holder, p_holder))[1] * fd.ds(4))
+            C_D = 2/(Umean**2*L)*F_D
+            C_L = 2/(Umean**2*L)*F_L
+            C_D_list.append(C_D)
+            C_L_list.append(C_L)
 
             ax2 = ax[3]
             ax2.set_xlabel('$x$', fontsize=16)
