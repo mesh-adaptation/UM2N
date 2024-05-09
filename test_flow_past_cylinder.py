@@ -189,7 +189,7 @@ for mesh_name in all_mesh_names:
 
     u_list = []
     step_cnt = 0
-    save_interval = 8
+    save_interval = 10
     total_step = 8000
     adapted_coord = torch.tensor(init_coord)
     monitor_val = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
