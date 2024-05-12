@@ -791,6 +791,8 @@ class SwirlSolver:
                     out = model(sample)
                 elif model_name == "MRN":
                     out = model(sample)
+                elif model_name == "M2N_T":
+                    out = model(sample)
                 else:
                     raise Exception(f"model {model_name} not implemented.")
             end = time.perf_counter()

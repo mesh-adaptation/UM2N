@@ -17,4 +17,5 @@ from .deformer import * # noqa
 from .MRT_phi import *  # noqa
 # from .MRTransformer import * # noqa
 # from .M2Transformer import * # noqa
+from .M2N_T import * # noqa
 from .extractor import *  # noqa

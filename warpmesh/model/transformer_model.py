@@ -178,8 +178,4 @@ class TransformerModel(nn.Module):
             list_attn_scores.append(attn_mat)
             
         return list_attn_scores
-    
-    # def save_kwargs(self, name=None):
-    #     create_folder("model_kwargs")
-    #     kwargs_name = "transformer_model_kwargs_" + name + ".pkl" if name is not None else "transformer_model_kwargs.pkl"
-    #     dump_pickle(self.kwargs, kwargs_name)
+

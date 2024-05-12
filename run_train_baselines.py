@@ -20,6 +20,7 @@ from warpmesh.model import (
     MRNLocalTransformerEncoder,
     MRTransformer,
     M2T,
+    M2N_T
 )
 from warpmesh.helper import mkdir_if_not_exist, plot_loss, plot_tangle
 from warpmesh.helper import save_namespace_to_yaml, load_yaml_to_namespace
@@ -115,6 +116,12 @@ elif config.model_used == "MRN":
         gfe_in_c=config.num_gfe_in,
         lfe_in_c=config.num_lfe_in,
         num_loop=config.num_deformer_loop,
+    )
+elif config.model_used == "M2N_T":
+    model = M2N_T(
+        deform_in_c=config.num_deform_in,
+        gfe_in_c=config.num_gfe_in,
+        lfe_in_c=config.num_lfe_in,
     )
 else:
     raise Exception(f"Model {config.model_used} not implemented.")
@@ -309,7 +316,7 @@ for epoch in range(config.num_epochs + 1):
             weight_chamfer_loss=weight_chamfer_loss,
             scaler=300,
         )
-    elif config.model_used == "M2N":
+    elif config.model_used == "M2N" or config.model_used == "M2N_T":
         weight_area_loss = 1.0
         weight_deform_loss = 1.0
         if "weight_deform_loss" in config:

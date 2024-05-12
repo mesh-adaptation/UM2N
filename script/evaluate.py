@@ -205,6 +205,12 @@ def load_model(config, epoch, experiment_dir):
             num_loop=config.num_deformer_loop,
             device=device,
         )
+    elif config.model_used == "M2N_T":
+        model = wm.M2N_T(
+            deform_in_c=config.num_deform_in,
+            gfe_in_c=config.num_gfe_in,
+            lfe_in_c=config.num_lfe_in,
+        )
     else:
         print("Model not found")
     model_file_path = os.path.join(experiment_dir, target_file_name)
@@ -315,7 +321,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
                         use_add_random_query=config.use_add_random_query,
                     )
                     out = output_coord
-                elif config.model_used == "M2N":
+                elif config.model_used == "M2N" or config.model_used == "M2N_T":
                     # print(sample)
                     out = model(sample)
                 elif config.model_used == "MRN":

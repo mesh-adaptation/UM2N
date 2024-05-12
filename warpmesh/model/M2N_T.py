@@ -1,12 +1,3 @@
-# This file is not written by the author of the project.
-# The purose of this file is for comparison with the MRN model.
-# The impelemented DeformGAT class is from M2N paper:
-# https://arxiv.org/abs/2204.11188
-# The original code is from: https://github.com/erizmr/M2N. However,
-# this is a private repo belongs to https://github.com/erizmr, So the
-# marker of this project may need to contact the original author for
-# original code base.
-
 import sys
 import os
 import torch
@@ -14,11 +5,11 @@ import torch.nn.functional as F
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
-from extractor import LocalFeatExtractor, GlobalFeatExtractor  # noqa: E402
+from extractor import LocalFeatExtractor, TransformerEncoder  # noqa: E402
 from gatdeformer import DeformGAT  # noqa: E402
 
 
-__all__ = ["M2N"]
+__all__ = ["M2N_T"]
 
 
 class NetGATDeform(torch.nn.Module):
@@ -62,16 +53,17 @@ class NetGATDeform(torch.nn.Module):
         return out_coord_4
 
 
-class M2N(torch.nn.Module):
-    def __init__(self, gfe_in_c=1, lfe_in_c=3, deform_in_c=7, use_drop=False):
+class M2N_T(torch.nn.Module):
+    def __init__(self, gfe_in_c=3, lfe_in_c=3, deform_in_c=3):
         super().__init__()
         self.gfe_out_c = 16
         self.lfe_out_c = 16
         self.deformer_in_feat = deform_in_c + self.gfe_out_c + self.lfe_out_c
 
-        self.gfe = GlobalFeatExtractor(
-            in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop
-        )
+        # self.gfe = GlobalFeatExtractor(
+        #     in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop
+        # )
+        self.gfe = TransformerEncoder(num_transformer_in=gfe_in_c, num_transformer_out=self.gfe_out_c)
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
         self.deformer = NetGATDeform(in_dim=self.deformer_in_feat)
 
@@ -81,18 +73,18 @@ class M2N(torch.nn.Module):
             poly_mesh = True if data.poly_mesh.sum() > 0 else False
         x = data.x  # [num_nodes * batch_size, 2]
         # conv_feat_in = data.conv_feat_fix  # [batch_size, feat, 20, 20], using fixed conv-sample. # noqa
-        conv_feat_in = data.conv_feat
+        # conv_feat_in = data.conv_feat
+        batch_size = data.conv_feat.shape[0]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
 
-        conv_feat = self.gfe(conv_feat_in)
-        print(f"conv feat shape {conv_feat.shape}")
-        conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
-        print(f"conv feat after inter leave {conv_feat.shape}")
+        feat_dim = mesh_feat.shape[-1]
+        global_feat = self.gfe(mesh_feat.view(batch_size, -1, feat_dim))
+        # conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
         local_feat = self.lfe(mesh_feat, edge_idx)
-
-        x = torch.cat([x, local_feat, conv_feat], dim=1)
+        # print("output shape ", global_feat.shape, local_feat.shape)
+        x = torch.cat([x, local_feat, global_feat], dim=1)
         # x = torch.cat([x, local_feat], dim=1)
         x = self.deformer(x, edge_idx, bd_mask, poly_mesh)
 
