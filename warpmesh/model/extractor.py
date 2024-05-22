@@ -139,11 +139,11 @@ class GlobalFeatExtractor(torch.nn.Module):
         x = F.selu(x)
         x = self.dropout(x) if self.use_drop else x
         x = self.conv4(x)
-        print(f"before selu {x.shape}")
+        # print(f"before selu {x.shape}")
         x = F.selu(x)
         x = self.dropout(x) if self.use_drop else x
         x = self.final_pool(x)
-        print(f"after final pool {x.shape}")
+        # print(f"after final pool {x.shape}")
         x = x.reshape(-1, self.out_c)
         return x
 
