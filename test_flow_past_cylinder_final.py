@@ -341,14 +341,14 @@ for mesh_name in all_mesh_names:
             C_L_list.append(C_L)
 
             if VIZ:
-                rows = 5 
+                rows = 4 
                 fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
                 # Uniform mesh
                 fd.triplot(mesh, axes=ax[0])
                 ax[0].set_title("Original Mesh")
                 # Adapted mesh
                 fd.triplot(adapted_mesh, axes=ax[1])
-                ax[1].set_title("Adapated Mesh")
+                ax[1].set_title("Adapated Mesh (UM2N)")
 
                 cmap = "seismic"
 
@@ -364,24 +364,24 @@ for mesh_name in all_mesh_names:
                 ax1 = ax[2]
                 ax1.set_xlabel('$x$', fontsize=16)
                 ax1.set_ylabel('$y$', fontsize=16)
-                ax1.set_title('FEM Navier-Stokes - channel flow - vorticity', fontsize=16)
+                ax1.set_title('Navier-Stokes - channel flow - vorticity', fontsize=16)
                 fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap, vmax=100, vmin=-100)
 
                 ax2 = ax[3]
                 ax2.set_xlabel('$x$', fontsize=16)
                 ax2.set_ylabel('$y$', fontsize=16)
-                ax2.set_title('FEM Navier-Stokes - channel flow - velocity', fontsize=16)
+                ax2.set_title('Navier-Stokes - channel flow - velocity', fontsize=16)
                 cb = fd.tripcolor(u_holder, axes=ax2, cmap=cmap)
                 # plt.colorbar(cb)
                 # ax2.axis('equal')
 
-                monitor_holder = fd.Function(function_space)
-                monitor_holder.dat.data[:] = monitor_val
-                ax3 = ax[4]
-                ax3.set_xlabel('$x$', fontsize=16)
-                ax3.set_ylabel('$y$', fontsize=16)
-                ax3.set_title('FEM Navier-Stokes - channel flow - Monitor Values', fontsize=16)
-                cb = fd.tripcolor(monitor_holder,axes=ax3, cmap=cmap)
+                # monitor_holder = fd.Function(function_space)
+                # monitor_holder.dat.data[:] = monitor_val
+                # ax3 = ax[4]
+                # ax3.set_xlabel('$x$', fontsize=16)
+                # ax3.set_ylabel('$y$', fontsize=16)
+                # ax3.set_title('Navier-Stokes - channel flow - Monitor Values', fontsize=16)
+                # cb = fd.tripcolor(monitor_holder,axes=ax3, cmap=cmap)
                 # plt.colorbar(cb)
                 # ax3.axis('equal')
 
