@@ -87,9 +87,9 @@ class M2N(torch.nn.Module):
         node_num = data.node_num
 
         conv_feat = self.gfe(conv_feat_in)
-        print(f"conv feat shape {conv_feat.shape}")
+        # print(f"conv feat shape {conv_feat.shape}")
         conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
-        print(f"conv feat after inter leave {conv_feat.shape}")
+        # print(f"conv feat after inter leave {conv_feat.shape}")
         local_feat = self.lfe(mesh_feat, edge_idx)
 
         x = torch.cat([x, local_feat, conv_feat], dim=1)
