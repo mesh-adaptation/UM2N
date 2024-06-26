@@ -49,12 +49,14 @@ dt = 0.001
 k = fd.Constant(dt)
 
 
-RUN_SIM = True
+RUN_SIM = False
+VIZ = False
 # all_mesh_names = ["cylinder_040.msh", "cylinder_020.msh", "cylinder_015.msh", "cylinder_010.msh"]
 # all_mesh_names = ["cylinder_030.msh", "cylinder_035.msh"]
 # all_mesh_names = ["cylinder_005.msh", "cylinder_002.msh"]
 # all_mesh_names = ["cylinder_020.msh", "cylinder_010.msh", "cylinder_005.msh", "cylinder_002.msh"]
-all_mesh_names = ["cylinder_015.msh", "cylinder_010.msh", "cylinder_005.msh", "cylinder_002.msh"]
+# all_mesh_names = ["cylinder_015.msh", "cylinder_010.msh", "cylinder_005.msh", "cylinder_002.msh"]
+all_mesh_names = ["cylinder_015.msh"]
 # instead of using RectangleMesh, we now read the mesh from file
 # mesh_name = "cylinder_040.msh"
 # mesh_name = "cylinder_020.msh"
@@ -303,28 +305,8 @@ for mesh_name in all_mesh_names:
             p = data_dict["p"]
             vortex = data_dict["vortex"]
             monitor_val = data_dict["monitor_val"]
-            rows = 5 
-            fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
-            mesh.coordinates.dat.data[:] = init_coord
-            fd.triplot(mesh, axes=ax[0])
-            ax[0].set_title("Original Mesh")
 
-            adapted_mesh.coordinates.dat.data[:] = mesh_adapt
-            fd.triplot(adapted_mesh, axes=ax[1])
-            ax[1].set_title("Adapated Mesh")
-
-            cmap = "seismic"
-
-            vortex_holder = fd.Function(function_space)
-            vortex_holder.dat.data[:] = vortex
-
-            ax1 = ax[2]
-            ax1.set_xlabel('$x$', fontsize=16)
-            ax1.set_ylabel('$y$', fontsize=16)
-            ax1.set_title('FEM Navier-Stokes - channel flow - vorticity', fontsize=16)
-            fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap, vmax=100, vmin=-100)
-            # ax1.axis('equal')
-
+            # Compute drag and lift
             u_holder = fd.Function(function_space_vec)
             u_holder.dat.data[:] = u
 
@@ -341,27 +323,54 @@ for mesh_name in all_mesh_names:
             C_D_list.append(C_D)
             C_L_list.append(C_L)
 
-            ax2 = ax[3]
-            ax2.set_xlabel('$x$', fontsize=16)
-            ax2.set_ylabel('$y$', fontsize=16)
-            ax2.set_title('FEM Navier-Stokes - channel flow - velocity', fontsize=16)
-            cb = fd.tripcolor(u_holder, axes=ax2, cmap=cmap)
-            # plt.colorbar(cb)
-            # ax2.axis('equal')
+            if VIZ:
+                rows = 5 
+                fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
+                mesh.coordinates.dat.data[:] = init_coord
+                fd.triplot(mesh, axes=ax[0])
+                ax[0].set_title("Original Mesh")
 
-            monitor_holder = fd.Function(function_space)
-            monitor_holder.dat.data[:] = monitor_val
-            ax3 = ax[4]
-            ax3.set_xlabel('$x$', fontsize=16)
-            ax3.set_ylabel('$y$', fontsize=16)
-            ax3.set_title('FEM Navier-Stokes - channel flow - Monitor Values', fontsize=16)
-            cb = fd.tripcolor(monitor_holder,axes=ax3, cmap=cmap)
-            # plt.colorbar(cb)
-            # ax3.axis('equal')
+                adapted_mesh.coordinates.dat.data[:] = mesh_adapt
+                fd.triplot(adapted_mesh, axes=ax[1])
+                ax[1].set_title("Adapated Mesh")
 
-            for rr in range(rows):
-                ax[rr].set_aspect("equal", "box")
-            # plt.tight_layout()
-            plt.savefig(f"{output_plot_path}/cylinder_Re_{re_num}_{idx:06d}_original.png")
-            plt.close()
-            print(f"Plot {idx} Done")
+                cmap = "seismic"
+
+                vortex_holder = fd.Function(function_space)
+                vortex_holder.dat.data[:] = vortex
+
+                # print(f"vortex max {vortex.max()} min {vortex.min()}")
+                ax1 = ax[2]
+                ax1.set_xlabel('$x$', fontsize=16)
+                ax1.set_ylabel('$y$', fontsize=16)
+                ax1.set_title('FEM Navier-Stokes - channel flow - vorticity', fontsize=16)
+                fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap, vmax=100, vmin=-100)
+                # ax1.axis('equal')
+
+                ax2 = ax[3]
+                ax2.set_xlabel('$x$', fontsize=16)
+                ax2.set_ylabel('$y$', fontsize=16)
+                ax2.set_title('FEM Navier-Stokes - channel flow - velocity', fontsize=16)
+                cb = fd.tripcolor(u_holder, axes=ax2, cmap=cmap)
+                # plt.colorbar(cb)
+                # ax2.axis('equal')
+
+                monitor_holder = fd.Function(function_space)
+                monitor_holder.dat.data[:] = monitor_val
+                ax3 = ax[4]
+                ax3.set_xlabel('$x$', fontsize=16)
+                ax3.set_ylabel('$y$', fontsize=16)
+                ax3.set_title('FEM Navier-Stokes - channel flow - Monitor Values', fontsize=16)
+                cb = fd.tripcolor(monitor_holder,axes=ax3, cmap=cmap)
+                # plt.colorbar(cb)
+                # ax3.axis('equal')
+
+                for rr in range(rows):
+                    ax[rr].set_aspect("equal", "box")
+                # plt.tight_layout()
+                plt.savefig(f"{output_plot_path}/cylinder_Re_{re_num}_{idx:06d}_original.png")
+                plt.close()
+            print(f"Idx {idx} Done")
+    import pandas as pd
+    df_stat = pd.DataFrame({"C_D":C_D_list, "C_L":C_L_list})
+    df_stat.to_csv(f"{output_stat_path}/df_stat.csv")

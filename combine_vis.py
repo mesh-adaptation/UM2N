@@ -21,7 +21,8 @@ import firedrake as fd
 # dataset_name = "sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15"
 
 
-model_names = ["M2N", "MRTransformer", "M2T"]#, "M2T"]
+# model_names = ["M2N", "MRTransformer", "M2T"]#, "M2T"]
+model_names = ["M2N", "M2N_T"]#, "M2T"]
 # run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "ig1np6kx"]
 # run_id_model_mapping = {
 #     "cyzk2mna": "M2N",
@@ -30,12 +31,14 @@ model_names = ["M2N", "MRTransformer", "M2T"]#, "M2T"]
 #     "ig1np6kx": "M2T-w-edge",
 # }
 
-run_ids = ["g86hj04w", "3sicl8ny", "npouut8z"]#, "32gs384i"]
+# run_ids = ["g86hj04w", "3sicl8ny", "npouut8z"]#, "32gs384i"]
+run_ids = ["g86hj04w", "n4t1fqq2"]#, "32gs384i"]
 run_id_model_mapping = {
     "g86hj04w": "M2N",
     # "4u40se08": "M2N-en",
-    "3sicl8ny": "MRN",
-    "npouut8z": "M2T-w-edge",
+    # "3sicl8ny": "MRN",
+    # "npouut8z": "M2T-w-edge",
+    "n4t1fqq2": "UM2N"
 }
 
 trained_epoch = 999
@@ -43,7 +46,8 @@ trained_epoch = 999
 problem_type = "swirl_square"
 
 dataset_paths = [
-    "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
+    # "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.3_y0_0.3_lc_0.028_ngrid_35_interval_10_meshtype_6_smooth_15",
+    "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_0.9_r0_0.2_x0_0.3_y0_0.3_lc_0.028_ngrid_35_interval_10_meshtype_6_smooth_10",
     # "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
     # "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
 ]
@@ -86,9 +90,10 @@ for dataset_path in dataset_paths:
     for run_id in run_ids:
         ret_dict[run_id] = {"error": [], "deform_loss": [], "error_reduction": []}
 
-    num_vis = 50
+    num_vis = 100
     rows = 3
-    cols = 3 + len(run_ids)
+    head_cols = 3 -1 
+    cols = head_cols + len(run_ids)
     for n_v in range(num_vis):
         print(f"=== Visualizing number {n_v} of {dataset_name} ===")
         if problem_type == "helmholtz_square":
@@ -228,13 +233,13 @@ for dataset_path in dataset_paths:
             mesh_model.coordinates.dat.data[:] = plot_data_dict["mesh_model"]
             deform_loss = plot_data_dict["deform_loss"]
             # Adapted mesh (Model)
-            fd.triplot(mesh_model, axes=ax[0, 3 + cnt])
+            fd.triplot(mesh_model, axes=ax[0, head_cols + cnt])
             if deform_loss is not None:
-                ax[0, 3 + cnt].set_title(
+                ax[0, head_cols + cnt].set_title(
                     f"Adapted Mesh ({show_name}) | Deform loss: {deform_loss:.2f}"
                 )
             else:
-                ax[0, 3 + cnt].set_title(f"Adapted Mesh ({show_name})")
+                ax[0, head_cols + cnt].set_title(f"Adapted Mesh ({show_name})")
 
             if error_model_mesh != -1:
                 # Solution on adapted mesh (Model)
@@ -243,10 +248,10 @@ for dataset_path in dataset_paths:
                     cmap=cmap,
                     vmax=solution_v_max,
                     vmin=solution_v_min,
-                    axes=ax[1, 3 + cnt],
+                    axes=ax[1, head_cols + cnt],
                 )
                 plt.colorbar(cb)
-            ax[1, 3 + cnt].set_title(f"Solution on Adapted Mesh ({show_name})")
+            ax[1, head_cols + cnt].set_title(f"Solution on Adapted Mesh ({show_name})")
 
             if error_model_mesh != -1:
                 # Error map (Model)
@@ -255,10 +260,10 @@ for dataset_path in dataset_paths:
                     cmap=cmap,
                     vmax=error_v_max,
                     vmin=-error_v_max,
-                    axes=ax[2, 3 + cnt],
+                    axes=ax[2, head_cols + cnt],
                 )
                 plt.colorbar(cb)
-            ax[2, 3 + cnt].set_title(
+            ax[2, head_cols + cnt].set_title(
                 f"Error (u-u_exact) {model_name}| L2 Norm: {error_model_mesh:.5f} | {(error_og_mesh-error_model_mesh)/error_og_mesh*100:.2f}%"
             )
 
@@ -311,9 +316,9 @@ for dataset_path in dataset_paths:
         # Orginal low resolution uniform mesh
         fd.triplot(mesh_og, axes=ax[0, 1])
         ax[0, 1].set_title(f"Original uniform Mesh")
-        # Adapted mesh (MA)
-        fd.triplot(mesh_MA, axes=ax[0, 2])
-        ax[0, 2].set_title(f"Adapted Mesh (MA)")
+        # # Adapted mesh (MA)
+        # fd.triplot(mesh_MA, axes=ax[0, 2])
+        # ax[0, 2].set_title(f"Adapted Mesh (MA)")
 
         # Solution on high resolution mesh
         cb = fd.tripcolor(
@@ -327,12 +332,12 @@ for dataset_path in dataset_paths:
         )
         ax[1, 1].set_title(f"Solution on uniform Mesh")
         plt.colorbar(cb)
-        # Solution on adapted mesh (MA)
-        cb = fd.tripcolor(
-            u_ma, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 2]
-        )
-        ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
-        plt.colorbar(cb)
+        # # Solution on adapted mesh (MA)
+        # cb = fd.tripcolor(
+        #     u_ma, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 2]
+        # )
+        # ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
+        # plt.colorbar(cb)
 
         # Monitor values
         cb = fd.tripcolor(monitor_values, cmap=cmap, axes=ax[2, 0])
@@ -351,18 +356,18 @@ for dataset_path in dataset_paths:
             f"Error (u-u_exact) uniform Mesh | L2 Norm: {error_og_mesh:.5f}"
         )
         plt.colorbar(cb)
-        # Error on adapted mesh (MA)
-        cb = fd.tripcolor(
-            error_map_ma,
-            cmap=cmap,
-            axes=ax[2, 2],
-            vmax=error_v_max,
-            vmin=-error_v_max,
-        )
-        ax[2, 2].set_title(
-            f"Error (u-u_exact) MA| L2 Norm: {error_ma_mesh:.5f} | {(error_og_mesh-error_ma_mesh)/error_og_mesh*100:.2f}%"
-        )
-        plt.colorbar(cb)
+        # # Error on adapted mesh (MA)
+        # cb = fd.tripcolor(
+        #     error_map_ma,
+        #     cmap=cmap,
+        #     axes=ax[2, 2],
+        #     vmax=error_v_max,
+        #     vmin=-error_v_max,
+        # )
+        # ax[2, 2].set_title(
+        #     f"Error (u-u_exact) MA| L2 Norm: {error_ma_mesh:.5f} | {(error_og_mesh-error_ma_mesh)/error_og_mesh*100:.2f}%"
+        # )
+        # plt.colorbar(cb)
 
         for rr in range(rows):
             for cc in range(cols):

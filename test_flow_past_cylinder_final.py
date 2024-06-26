@@ -62,6 +62,7 @@ SAVE_DATA = True
 # all_mesh_names = ["cylinder_030.msh", "cylinder_035.msh"]
 # all_mesh_names = ["cylinder_020.msh", "cylinder_010.msh"]
 all_mesh_names = ["cylinder_015.msh", "cylinder_010.msh"]
+# all_mesh_names = ["cylinder_square.msh"]
 # instead of using RectangleMesh, we now read the mesh from file
 # mesh_name = "cylinder_010.msh"
 # mesh_name = "cylinder_fine.msh"

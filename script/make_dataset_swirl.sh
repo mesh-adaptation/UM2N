@@ -12,7 +12,7 @@ monitor_smooths=(10 15 20 30 40)
 for m in "${mesh_types[@]}"; do
     for m_s in "${monitor_smooths[@]}"; do
         echo "Swirl meshtype = $m monitor smooth = $m_s"
-        python ./script/build_swirl.py --lc=0.028 --alpha=1.5 --r_0 0.20 --x_0 0.25 --y_0 0.25 --mesh_type=$m --n_monitor_smooth=$m_s
+        python ./script/build_swirl.py --lc=0.028 --alpha=1.5 --r_0 0.20 --x_0 0.3 --y_0 0.3 --mesh_type=$m --n_monitor_smooth=$m_s
     done
 done
 

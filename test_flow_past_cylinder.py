@@ -51,6 +51,7 @@ k = fd.Constant(dt)
 
 
 RUN_SIM = True
+VIZ = True
 # all_mesh_names = ["cylinder_010.msh", "cylinder_015.msh", "cylinder_020.msh", "cylinder_040.msh"]
 # all_mesh_names = ["cylinder_020.msh"]
 # all_mesh_names = ["cylinder_010.msh", "cylinder_015.msh"]
@@ -304,45 +305,23 @@ for mesh_name in all_mesh_names:
             p = data_dict["p"]
             vorticity = data_dict["vortex"]
             monitor_val = data_dict["monitor_val"]
-            rows = 5 
-            fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
+            
+            # Mesh coordinates
             mesh.coordinates.dat.data[:] = init_coord
-            fd.triplot(mesh, axes=ax[0])
-            ax[0].set_title("Original Mesh")
-
             adapted_mesh.coordinates.dat.data[:] = mesh_adapt
-            fd.triplot(adapted_mesh, axes=ax[1])
-            ax[1].set_title("Adapated Mesh")
-
-            cmap = "seismic"
-
-            # p_holder = fd.Function(function_space)
-            # p_holder.dat.data[:] = p
-            # ax1 = ax[2]
-            # ax1.set_xlabel('$x$', fontsize=16)
-            # ax1.set_ylabel('$y$', fontsize=16)
-            # ax1.set_title('FEM Navier-Stokes - channel flow - pressure', fontsize=16)
-            # fd.tripcolor(p_holder ,axes=ax1, cmap=cmap)
-            # # ax1.axis('equal')
-
-            # The vorticity is extracted from adapted mesh, we need to define the function space based on adapted mesh
-            function_space_adapted = fd.FunctionSpace(adapted_mesh, "CG", 1)
-            vortex_holder = fd.Function(function_space_adapted)
-            vortex_holder.dat.data[:] = vorticity
-
-            ax1 = ax[2]
-            ax1.set_xlabel('$x$', fontsize=16)
-            ax1.set_ylabel('$y$', fontsize=16)
-            ax1.set_title('FEM Navier-Stokes - channel flow - vorticity', fontsize=16)
-            fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap, vmax=100, vmin=-100)
-
+            
             # The velocity is extracted from adapted mesh, we need to define the function space based on adapted mesh
             function_space_adapted_vec = fd.VectorFunctionSpace(adapted_mesh, "CG", 2)
+            function_space_adapted = fd.FunctionSpace(adapted_mesh, "CG", 1)
             u_holder = fd.Function(function_space_adapted_vec)
             u_holder.dat.data[:] = u
 
             p_holder = fd.Function(function_space_adapted)
             p_holder.dat.data[:] = p
+
+            # The vorticity is extracted from adapted mesh, we need to define the function space based on adapted mesh
+            vortex_holder = fd.Function(function_space_adapted)
+            vortex_holder.dat.data[:] = vorticity
 
             Umean = 1.0
             L = 0.1
@@ -354,27 +333,58 @@ for mesh_name in all_mesh_names:
             C_D_list.append(C_D)
             C_L_list.append(C_L)
 
-            ax2 = ax[3]
-            ax2.set_xlabel('$x$', fontsize=16)
-            ax2.set_ylabel('$y$', fontsize=16)
-            ax2.set_title('FEM Navier-Stokes - channel flow - velocity', fontsize=16)
-            cb = fd.tripcolor(u_holder, axes=ax2, cmap=cmap)
-            # plt.colorbar(cb)
-            # ax2.axis('equal')
+            if VIZ:
+                rows = 5 
+                fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
+                # Uniform mesh
+                fd.triplot(mesh, axes=ax[0])
+                ax[0].set_title("Original Mesh")
+                # Adapted mesh
+                fd.triplot(adapted_mesh, axes=ax[1])
+                ax[1].set_title("Adapated Mesh")
 
-            monitor_holder = fd.Function(function_space)
-            monitor_holder.dat.data[:] = monitor_val
-            ax3 = ax[4]
-            ax3.set_xlabel('$x$', fontsize=16)
-            ax3.set_ylabel('$y$', fontsize=16)
-            ax3.set_title('FEM Navier-Stokes - channel flow - Monitor Values', fontsize=16)
-            cb = fd.tripcolor(monitor_holder,axes=ax3, cmap=cmap)
-            # plt.colorbar(cb)
-            # ax3.axis('equal')
+                cmap = "seismic"
 
-            for rr in range(rows):
-                ax[rr].set_aspect("equal", "box")
-            # plt.tight_layout()
-            plt.savefig(f"{output_plot_path}/cylinder_Re_{re_num}_{idx:06d}_adapt.png")
-            plt.close()
-            print(f"Plot {idx} Done")
+                # p_holder = fd.Function(function_space)
+                # p_holder.dat.data[:] = p
+                # ax1 = ax[2]
+                # ax1.set_xlabel('$x$', fontsize=16)
+                # ax1.set_ylabel('$y$', fontsize=16)
+                # ax1.set_title('FEM Navier-Stokes - channel flow - pressure', fontsize=16)
+                # fd.tripcolor(p_holder ,axes=ax1, cmap=cmap)
+                # # ax1.axis('equal')
+
+                ax1 = ax[2]
+                ax1.set_xlabel('$x$', fontsize=16)
+                ax1.set_ylabel('$y$', fontsize=16)
+                ax1.set_title('FEM Navier-Stokes - channel flow - vorticity', fontsize=16)
+                fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap, vmax=100, vmin=-100)
+
+                ax2 = ax[3]
+                ax2.set_xlabel('$x$', fontsize=16)
+                ax2.set_ylabel('$y$', fontsize=16)
+                ax2.set_title('FEM Navier-Stokes - channel flow - velocity', fontsize=16)
+                cb = fd.tripcolor(u_holder, axes=ax2, cmap=cmap)
+                # plt.colorbar(cb)
+                # ax2.axis('equal')
+
+                monitor_holder = fd.Function(function_space)
+                monitor_holder.dat.data[:] = monitor_val
+                ax3 = ax[4]
+                ax3.set_xlabel('$x$', fontsize=16)
+                ax3.set_ylabel('$y$', fontsize=16)
+                ax3.set_title('FEM Navier-Stokes - channel flow - Monitor Values', fontsize=16)
+                cb = fd.tripcolor(monitor_holder,axes=ax3, cmap=cmap)
+                # plt.colorbar(cb)
+                # ax3.axis('equal')
+
+                for rr in range(rows):
+                    ax[rr].set_aspect("equal", "box")
+                # plt.tight_layout()
+                plt.savefig(f"{output_plot_path}/cylinder_Re_{re_num}_{idx:06d}_adapt.png")
+                plt.close()
+            print(f"Idx {idx} Done")
+    
+    import pandas as pd
+    df_stat = pd.DataFrame({"C_D":C_D_list, "C_L":C_L_list})
+    df_stat.to_csv(f"{output_stat_path}/df_stat.csv")

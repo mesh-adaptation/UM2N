@@ -5,11 +5,11 @@
 # Random_seed: 42
 # Resolution: 0.05, 0.055, 0.028
 
-n_samples_train=100
+n_samples_train=101
 rand_seed=42
-mesh_types=(0 2 6)
+mesh_types=(6 2 0)
 # length character for polygon mesh
-lcs=(0.05 0.055 0.028)
+lcs=(0.05 0.028)
 
 # helmholtz square case
 for m in "${mesh_types[@]}"; do

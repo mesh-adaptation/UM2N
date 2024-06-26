@@ -456,7 +456,7 @@ class SwirlSolver:
         self.l2_projection = self._compute_gradient_and_hessian(self.u_hess)[1]
 
         # self.hessian_prob.solve()
-        self.f_norm.project(
+        self.f_norm.interpolate(
             self.l2_projection[0, 0] ** 2
             + self.l2_projection[0, 1] ** 2
             + self.l2_projection[1, 0] ** 2
@@ -465,8 +465,13 @@ class SwirlSolver:
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
         uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
-
+        self.grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+        
+        # filter_monitor_val = np.minimum(1e3, self.f_norm.dat.data[:])
+        # self.f_norm.dat.data[:] = filter_monitor_val
+        
+        print(f"max and min monitors Hessian {self.f_norm.dat.data[:].max()}, {self.f_norm.dat.data[:].min()}")
+        print(f"max and min grad norm {self.grad_norm.dat.data[:].max()}, {self.grad_norm.dat.data[:].min()}")
         # Normlize the hessian
         self.f_norm /= self.f_norm.vector().max()
         # Normlize the grad
@@ -520,7 +525,7 @@ class SwirlSolver:
         self.l2_projection = self._compute_gradient_and_hessian(self.u_hess)[1]
 
         # self.hessian_prob.solve()
-        self.f_norm.project(
+        self.f_norm.interpolate(
             self.l2_projection[0, 0] ** 2
             + self.l2_projection[0, 1] ** 2
             + self.l2_projection[1, 0] ** 2
@@ -529,7 +534,7 @@ class SwirlSolver:
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
         uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+        self.grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
         self.f_norm /= self.f_norm.vector().max()
@@ -753,6 +758,8 @@ class SwirlSolver:
             raw_data = np.load(raw_data_path, allow_pickle=True).item()
             data_t = raw_data.get("swirl_params")["t"]
             y = raw_data.get("y")
+            # print("raw data ", raw_data.keys())
+            u_adapt = raw_data.get("u_adapt")
             # error tracking lists init
             self.error_adapt_list = []
             self.error_og_list = []
@@ -859,6 +866,8 @@ class SwirlSolver:
 
             # Put mesh to init state
             self.mesh.coordinates.dat.data[:] = self.init_coord
+
+            self.mesh_new.coordinates.dat.data[:] = y
 
             if ((step + 1) % self.save_interval == 0) or (step == 0):
                 fig, plot_data_dict = wm.plot_compare(

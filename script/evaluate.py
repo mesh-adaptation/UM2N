@@ -820,7 +820,8 @@ if __name__ == "__main__":
     ]
 
     ds_root_helmholtz = [
-        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=300_aniso_full_meshtype_6"
+        # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=300_aniso_full_meshtype_6"
+        "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=101_aniso_full_meshtype_6"
         # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=5_aniso_full_meshtype_6",
         # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6",
         # "./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.028_n=100_aniso_full_meshtype_6",
@@ -842,6 +843,13 @@ if __name__ == "__main__":
         # "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
     ]
 
+    ds_root_swirl = [
+        # "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.5_y0_0.5_lc_0.028_ngrid_35_interval_5_meshtype_6_smooth_15",
+        "./data/dataset_meshtype_6/swirl/sigma_0.017_alpha_0.9_r0_0.2_x0_0.3_y0_0.3_lc_0.028_ngrid_35_interval_10_meshtype_6_smooth_10",
+        # "./data/dataset_meshtype_2/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_2_smooth_15",
+        # "./data/dataset_meshtype_0/swirl/sigma_0.017_alpha_1.5_r0_0.2_x0_0.25_y0_0.25_lc_0.028_ngrid_35_interval_5_meshtype_0_smooth_15",
+    ]
+
     ds_root_burgers = [
         "./data/dataset_meshtype_2/burgers/lc=0.05_ngrid_20_n=5_iso_pad_meshtype_2",
         "./data/dataset_meshtype_2/burgers/lc=0.028_ngrid_20_n=5_iso_pad_meshtype_2",
@@ -853,6 +861,7 @@ if __name__ == "__main__":
     # ds_roots = [*ds_root_burgers]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = [*ds_root_swirl, *ds_root_helmholtz]
+    
     ds_roots = [*ds_root_swirl]
     # ds_roots = [*ds_root_helmholtz]
     # ds_roots = [*ds_root_helmholtz]
@@ -889,6 +898,9 @@ if __name__ == "__main__":
     run_ids = ["d9h5uzcp"]
     run_ids = ["yx0h8mfm"]
 
+
+    run_ids = ["6qa5jius"] # Ablation of coord trained
+
     # comparisons 
     # M2N large set, small scale, type 6, g86hj04w
     # M2N-en large set, small scale, type 6, c0z773gi
@@ -913,7 +925,15 @@ if __name__ == "__main__":
     runs = api.runs(path=f"{entity}/{project_name}")
     latest_run = runs[0]
     print(f"Latest run id {latest_run.id}")
-    run_ids = [latest_run.id]
+    # run_ids = [latest_run.id]
+    # run_ids = ["g86hj04w", "n4t1fqq2"]
+    run_ids = ["g86hj04w"]
+    run_ids = ["8os8zve7"] # abalation for solution vs monitor
+    run_ids = ["6qa5jius"] # Ablation of coord trained
+    run_ids = ["n4t1fqq2", "6qa5jius", "8os8zve7"]
+
+    # run_ids = ["n4t1fqq2", "g86hj04w"]
+    run_ids = ["8os8zve7", "6qa5jius"]
     # run_ids = ["ta0c8b3u"]
     # run_ids = ["7fwne0ig"] # M2N not global
     # chamfer, chamfer 05, chamfer 01
@@ -934,7 +954,8 @@ if __name__ == "__main__":
             # Append the monitor val at the end
             # config.mesh_feat.append("monitor_val")
             # config.mesh_feat = ["coord", "u", "monitor_val"]
-            config.mesh_feat = ["coord", "monitor_val"]
+            # config.mesh_feat = ["coord", "monitor_val"]
+            # config.mesh_feat = ["coord", "u"]
 
             print("# Evaluation Pipeline Started\n")
             print(config)
@@ -948,7 +969,7 @@ if __name__ == "__main__":
             # bench_res = benchmark_model(
             #     model, dataset, eval_dir, ds_root, start_idx=300, num_samples=100)
             bench_res = benchmark_model(
-                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=50
+                model, dataset, eval_dir, ds_root, start_idx=0, num_samples=100
             )
 
             write_sumo(eval_dir, ds_root)
