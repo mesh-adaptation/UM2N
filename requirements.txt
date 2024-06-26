@@ -7,9 +7,9 @@ pytest
 pytest-timeout
 jupyter
 ipython
-torch
-torch_geometric
-torch_sparse
+torch == 1.13.1
+torch_geometric == 2.5.3
+torch_sparse == 0.6.18
 tensorboardX
 torch_scatter
 rich
