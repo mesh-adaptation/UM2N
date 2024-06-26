@@ -4,8 +4,6 @@ import torch.nn.functional as F
 from torch import einsum
 from einops import rearrange, repeat
 
-# from src.utils.general_utils import dump_pickle, create_folder
-
 
 class MLP_model(torch.nn.Module):
     def __init__(self, input_channels, output_channels, list_hiddens=[128, 128], hidden_act="LeakyReLU", output_act="LeakyReLU", 
@@ -89,12 +87,12 @@ class TransformerBlock(nn.Module):
         
         self.c_attn = nn.Parameter(torch.ones(num_heads), requires_grad=True) 
         self.residual_weight = nn.Parameter(torch.ones(embed_dim), requires_grad=True)
-        
-        
-    def forward(self, x, x_cls=None, key_padding_mask=None, attn_mask=None, return_attn=False):
+
+    def forward(self, x, k, v, x_cls=None, key_padding_mask=None, attn_mask=None, return_attn=False):
+        # In pytorch nn.MultiheadAttention, key_padding_mask True indicates ignore the corresponding key value
         # NOTE: check default True or False of key_padding_mask with nn.MultiheadAttention
-        if key_padding_mask is not None:
-            key_padding_mask = ~key_padding_mask
+        # if key_padding_mask is not None:
+        #     key_padding_mask = ~key_padding_mask
         
         if x_cls is not None:
             # to be implemented later
@@ -102,8 +100,9 @@ class TransformerBlock(nn.Module):
         else:
             residual = x
             x = self.pre_attn_norm(x)
-            # NOTE: not batch first, option to use batch first in nn.MultiheadAttention
-            # [num_points, batch_size, embed_dim]
+            # NOTE: Here we use batch first in nn.MultiheadAttention
+            # [batch_size, num_points, embed_dim]
+            
             x, attn_scores = self.attn_layer(x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
             
         if self.c_attn is not None:
@@ -138,27 +137,29 @@ class TransformerBlock(nn.Module):
         else:
             return x, attn_scores
     
-    
+
 class TransformerModel(nn.Module):
     def __init__(self, *, input_dim, embed_dim, output_dim, num_heads=4, num_layers=3) -> None:
         super(TransformerModel, self).__init__()
         # save torch module kwargs - lightning ckpt too cumbersome to use
         self.kwargs = {"input_dim": input_dim, "embed_dim": embed_dim, "output_dim": output_dim, "num_heads": num_heads, "num_layers": num_layers}
         self.num_heads = num_heads
-        
+
         list_attn_layers = []
         for _ in range(num_layers):
             list_attn_layers.append(TransformerBlock(embed_dim=embed_dim, num_heads=num_heads, list_dropout=[0.1, 0.1, 0.1]))
         self.attn_layers = nn.ModuleList(list_attn_layers)
-        
+
         self.mlp_in = MLP_model(input_dim, embed_dim, [embed_dim], hidden_act="GELU", output_act="GELU")
         self.mlp_out = MLP_model(embed_dim, output_dim, [embed_dim], hidden_act="GELU", output_act="GELU")
-        
-    def forward(self, x, key_padding_mask=None):
-        x = self.mlp_in(x)
-        for _, layer in enumerate(self.attn_layers):
-            x = layer(x, key_padding_mask=key_padding_mask)
 
+        
+    def forward(self, x, k, v, key_padding_mask=None, attention_mask=None):
+        x = self.mlp_in(x)
+        # k = self.mlp_in(k)
+        # v = self.mlp_in(v)
+        for _, layer in enumerate(self.attn_layers):
+            x = layer(x, k, v, key_padding_mask=key_padding_mask, attn_mask=attention_mask)
         x = self.mlp_out(x)
         return x
     
@@ -171,11 +172,10 @@ class TransformerModel(nn.Module):
                 mask_mat =  rearrange(key_padding_mask, 'b i -> b i 1') * rearrange(key_padding_mask, 'b j -> b 1 j')
                 num_points = key_padding_mask.sum().numpy()
                 attn_mat = attn_scores.detach().numpy().squeeze()[mask_mat.numpy().squeeze()].reshape(num_points, num_points)
+            else:
+                # The dim for torch squeeze can not be tuple with a version lower than 2.0
+                attn_mat = torch.squeeze(attn_scores, dim=0).detach().cpu().numpy()
             list_attn_scores.append(attn_mat)
             
         return list_attn_scores
-    
-    # def save_kwargs(self, name=None):
-    #     create_folder("model_kwargs")
-    #     kwargs_name = "transformer_model_kwargs_" + name + ".pkl" if name is not None else "transformer_model_kwargs.pkl"
-    #     dump_pickle(self.kwargs, kwargs_name)
+

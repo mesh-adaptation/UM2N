@@ -1,7 +1,7 @@
 # Author: Chunyang Wang
 # GitHub Username: chunyang-w
 
-# Functionality: Evaluate the model performance on the given dataset, on the given metrics:
+# Functionality: Evaluate the model performance on the given dataset
 #                   + consume time
 #                   + error reduction
 #                   + tangled element per mesh

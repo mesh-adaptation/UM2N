@@ -1,0 +1,67 @@
+batch_size: 3
+check_tangle_interval: 20
+cluster_r: 0.35
+conv_feat:
+- conv_monitor_val
+conv_feat_fix:
+- conv_monitor_val_fix
+count_tangle_method: inversion
+data_root:
+- ./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=300_aniso_full_meshtype_6
+- ./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.055_n=300_aniso_full_meshtype_6
+inversion_loss_scaler: 10000000000.0
+is_normalise: true
+learning_rate: 1.0e-03
+mesh_feat:
+- coord
+- monitor_val
+model_used: M2T
+multi_scale_check_interval: 50
+n_grids:
+- 15
+- 20
+n_grids_test:
+- 15
+- 20
+- 35
+num_deform_in: 3
+num_deform_out: 1
+num_deformer_loop: 1
+num_epochs: 1000
+num_gfe_in: 2
+num_lfe_in: 3
+num_transformer_in: 3
+num_transformer_out: 16
+num_transformer_embed_dim: 64
+num_transformer_heads: 4
+num_transformer_layers: 1
+transformer_training_mask: false
+transformer_key_padding_training_mask: false
+transformer_attention_training_mask: false
+transformer_training_mask_ratio_lower_bound: 0.5
+transformer_training_mask_ratio_upper_bound: 0.9
+deform_out_type: 'coord'
+out_path: ./out
+print_interval: 1
+project: warpmesh
+save_interval: 20
+train_boundary_scheme: full
+train_data_set_type: aniso
+use_pre_train: True
+use_area_loss: true
+use_cluster: false
+use_convex_loss: true
+use_inversion_diff_loss: false
+use_inversion_loss: false
+use_jacob: false
+use_add_random_query: false
+weight_area_loss: 1.0
+weight_deform_loss: 1.0
+weight_eq_residual_loss: 0.0
+weight_decay: 0.1
+finite_difference_grad: false
+freeze_transformer_monitor: false
+freeze_deformer: false
+x_feat:
+- coord
+- bd_mask
