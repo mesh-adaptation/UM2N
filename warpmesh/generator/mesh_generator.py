@@ -56,7 +56,7 @@ class MeshGenerator:
         sigma = mover.sigma
         I = fd.Identity(2)  # noqa
         jacobian = I + sigma
-        jacobian_det = fd.Function(self.eq.function_space, name="jacobian_det")
+        jacobian_det = fd.Function(mover.P1, name="jacobian_det")
         jacobian_det.project(
             jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
         )
@@ -67,7 +67,7 @@ class MeshGenerator:
         # extract phi_grad
         self.grad_phi = mover.grad_phi
 
-        return self.mesh
+        return mover.mesh
 
     def get_grad_phi(self):
         """
