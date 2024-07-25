@@ -318,7 +318,6 @@ class MeshProcessor:
             "x": self.x,
             "coord": self.coordinates,
             "u": self.feature["uh"],
-            "u_adapt": self.feature["uh_adapt"],
             "grad_u": self.feature["grad_uh"],
             "grad_u_norm": self.feature["grad_uh_norm"],
             "hessian": self.feature["hessian"],
@@ -369,6 +368,8 @@ class MeshProcessor:
             "idx": self.idx,  # index number for picking params for burgers tracer.  # noqa
             "f": self.feature["f"] if "f" in self.feature else None,
         }
+        if "uh_adapt" in self.feature:  # currently only in swirl case
+            np_data["u_adapt"] = self.feature["uh_adapt"]
         print("data saved, details:")
         # print("conv_feat shape: ", self.conv_feat.shape)
         print("x shape: ", self.x.shape)
