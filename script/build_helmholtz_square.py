@@ -285,19 +285,15 @@ if __name__ == "__main__":
             hessian = wm.MeshGenerator(
                 params={
                     "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(
-                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
-                    ),  # noqa
+                    "mesh": mesh
                 }
             ).get_hessian(mesh)
 
             hessian_norm = wm.MeshGenerator(
                 params={
                     "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(
-                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
-                    ),  # noqa
-                }
+                    "mesh": mesh
+                    }
             ).get_hessian_norm(mesh)
             hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 
@@ -305,9 +301,7 @@ if __name__ == "__main__":
             monitor_val = wm.MeshGenerator(
                 params={
                     "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(
-                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
-                    ),  # noqa
+                    "mesh": mesh
                 }
             ).monitor_func(mesh)
 
@@ -331,9 +325,7 @@ if __name__ == "__main__":
             mesh_gen = wm.MeshGenerator(
                 params={
                     "eq": helmholtz_eq,
-                    "mesh": fd.Mesh(
-                        os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh")
-                    ),  # noqa
+                    "mesh": mesh
                 }
             )
 
