@@ -48,7 +48,7 @@ nu_val = 0.001
 nu = fd.Constant(nu_val)
 
 # time step
-dt = 0.0005
+dt = 0.001
 # define a firedrake constant equal to dt so that variation forms 
 # not regenerated if we change the time step
 k = fd.Constant(dt)
@@ -163,6 +163,7 @@ for mesh_name in all_mesh_names:
     # Prep for saving solutions
     u_save = fd.Function(V).assign(u_now)
     p_save = fd.Function(Q).assign(p_now)
+    exp_name = mesh_name.split(".msh")[0]
     outfile_u = fd.File(f"outputs_sim_ale/{exp_name}/u.pvd")
     outfile_u_grid = fd.File(f"outputs_sim_ale/{exp_name}/u_grid.pvd")
     outfile_p = fd.File(f"outputs_sim_ale/{exp_name}/p.pvd")
@@ -204,7 +205,6 @@ for mesh_name in all_mesh_names:
     total_step = 8000
     adapted_coord = torch.tensor(init_coord)
     monitor_val = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
-    exp_name = mesh_name.split(".msh")[0]
     output_path = f"outputs_sim_ale/{exp_name}/adapt_T_final/Re_{re_num}_total_{total_step}_save_{save_interval}"
     output_data_path = f"{output_path}/data"
     output_plot_path = f"{output_path}/plot"
@@ -303,7 +303,7 @@ for mesh_name in all_mesh_names:
                 start_time = time.perf_counter()
                 u_grid_max = np.abs(u_grid.dat.data).max()
                 print(f"{u_grid_max=}")
-                if u_grid_max<2:
+                if u_grid_max<5:
                     u_now.assign(u_next)
                     p_now.assign(p_next)
                 else:
