@@ -35,6 +35,7 @@ model = wm.M2N_T(
     gfe_in_c=config.num_gfe_in,
     lfe_in_c=config.num_lfe_in,
 )
+
 model_file_path = "./pretrain_model/model_999.pth"
 model = wm.load_model(model, model_file_path)
 # model = load_model(run, config, epoch, "output_sim")
@@ -44,11 +45,11 @@ model = model.to(device)
 
 
 # physical constants
-nu_val = 0.001
+nu_val = 0.0001
 nu = fd.Constant(nu_val)
 
 # time step
-dt = 0.001
+dt = 0.0005
 # define a firedrake constant equal to dt so that variation forms 
 # not regenerated if we change the time step
 k = fd.Constant(dt)
@@ -75,6 +76,7 @@ all_mesh_names = ["cylinder_one.msh"]
 # mesh_name = "cylinder_multiple_very_fine.msh"
 # mesh_name = "cylinder_multiple_fine.msh"
 # mesh_name = "cylinder_multiple_coarse.msh"
+
 for mesh_name in all_mesh_names:
     mesh_path = f"./meshes/{mesh_name}"
     mesh = fd.Mesh(mesh_path)

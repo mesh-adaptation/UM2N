@@ -24,6 +24,18 @@ script/check_tangle.ipynb
 script/compare_error.ipynb
 scirpt/play_tangle.ipynb
 
+output_sim/
+outputs_sim/
+outputs_sim_ale/
+
+tests/animatio2.mp4
+tests/animation.mp4
+
+tests/vis_d.ipynb
+tests/vis_d_cylinder.ipynb
+
+meshes/airfoil/
+
 eval/*
 
 .gitmodules

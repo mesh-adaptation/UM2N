@@ -3,11 +3,9 @@ import wandb
 import glob
 import time
 import torch
-import yaml
 import pickle
 import firedrake as fd
 import numpy as np
-import warpmesh as wm
 import matplotlib.pyplot as plt
 from types import SimpleNamespace
 from inference_utils import get_conv_feat, find_edges, find_bd, InputPack, load_model
@@ -15,12 +13,15 @@ print("Setting up solver.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #################### Load trained model ####################
-
-with open(f'./pretrain_model/config.yaml', 'r') as file:
-    config_data = yaml.safe_load(file)
-    # print(config_data)
-
-config = SimpleNamespace(**config_data)
+entity = "mz-team"
+project_name = "warpmesh"
+# run_id  = "vnv1mv48"
+run_id = "n4t1fqq2"
+epoch = 999
+api = wandb.Api()
+runs = api.runs(path=f"{entity}/{project_name}")
+run = api.run(f"{entity}/{project_name}/{run_id}")
+config = SimpleNamespace(**run.config)
 
 # Append the monitor val at the end
 # config.mesh_feat.append("monitor_val")
@@ -29,26 +30,27 @@ config.mesh_feat = ["coord", "monitor_val"]
 
 # print("# Evaluation Pipeline Started\n")
 print(config)
-
-model = wm.M2N_T(
-    deform_in_c=config.num_deform_in,
-    gfe_in_c=config.num_gfe_in,
-    lfe_in_c=config.num_lfe_in,
-)
-model_file_path = "./pretrain_model/model_999.pth"
-model = wm.load_model(model, model_file_path)
-# model = load_model(run, config, epoch, "output_sim")
+# # init
+# eval_dir = init_dir(
+#     config, run_id, epoch, ds_root, problem_type, domain
+# )  # noqa
+# dataset = load_dataset(config, ds_root, tar_folder="data")
+model = load_model(run, config, epoch, "output_sim")
 model.eval()
 model = model.to(device)
 ###########################################################
 
 
 # physical constants
-nu_val = 0.001
+nu_val = 2e-5
 nu = fd.Constant(nu_val)
+U_mean = 6.0
+L = 0.2
+re_num = int(U_mean * L / nu_val)
+print(f"Re = {re_num}")
 
 # time step
-dt = 0.001
+dt = 0.00001
 # define a firedrake constant equal to dt so that variation forms 
 # not regenerated if we change the time step
 k = fd.Constant(dt)
@@ -63,8 +65,7 @@ SAVE_DATA = True
 # all_mesh_names = ["cylinder_040.msh"]
 # all_mesh_names = ["cylinder_030.msh", "cylinder_035.msh"]
 # all_mesh_names = ["cylinder_020.msh", "cylinder_010.msh"]
-# all_mesh_names = ["cylinder_015.msh", "cylinder_010.msh"]
-all_mesh_names = ["cylinder_one.msh"]
+all_mesh_names = ["airfoil.msh"]
 # all_mesh_names = ["cylinder_square.msh"]
 # instead of using RectangleMesh, we now read the mesh from file
 # mesh_name = "cylinder_010.msh"
@@ -112,23 +113,15 @@ for mesh_name in all_mesh_names:
     def sigma(u, p):
         return 2*nu*fd.sym(fd.nabla_grad(u)) - p*fd.Identity(len(u))
 
-
     x, y = fd.SpatialCoordinate(mesh)
 
-
-    if "multiple" in mesh_name:
-        # Define boundary conditions
-        bcu = [fd.DirichletBC(V, fd.Constant((0,0)), (1, 4, 5, 6, 7, 8)), # top-bottom and cylinder
-                fd.DirichletBC(V, ((4.0*1.5*y*(0.41 - y) / 0.41**2) ,0), 2)] # inflow
-    else:
-        # Define boundary conditions
-        bcu = [fd.DirichletBC(V, fd.Constant((0,0)), (1, 4)), # top-bottom and cylinder
-                fd.DirichletBC(V, ((4.0*1.5*y*(0.41 - y) / 0.41**2) ,0), 2)] # inflow
+    # Define boundary conditions
+    bcu = [
+        fd.DirichletBC(V, fd.Constant((0,0)), (4,)),  # top-bottom and cylinder
+        fd.DirichletBC(V, (U_mean, 0), 2),  # inflow
+    ] 
     bcp = [fd.DirichletBC(Q, fd.Constant(0), 3)]  # outflow
 
-    U_mean = 1.0
-    re_num = int(U_mean * 0.1 / nu_val)
-    print(f"Re = {re_num}")
 
 
     # Define variational forms
@@ -169,7 +162,7 @@ for mesh_name in all_mesh_names:
 
     # Time loop
     t = 0.0
-    t_end = 8.
+    t_end = 1.
 
     total_step = int((t_end - t) / dt)
     print("Beginning time loop...")
@@ -271,18 +264,19 @@ for mesh_name in all_mesh_names:
                 u_proj_from_adapted = fd.Function(V)
                 u_proj_from_adapted.project(u_adapted)
 
-                monitor_val = monitor_func(mesh, u_proj_from_adapted)
-                filter_monitor_val = np.minimum(1e3, monitor_val.dat.data[:])
-                filter_monitor_val = np.maximum(0, filter_monitor_val)
-                monitor_val.dat.data[:] = filter_monitor_val / filter_monitor_val.max()
-                conv_feat = get_conv_feat(mesh, monitor_val)
-                start_time = time.perf_counter()
-                sample = InputPack(coord=coords, monitor_val=monitor_val.dat.data_ro.reshape(-1, 1), edge_index=edge_idx, bd_mask=bd_mask, conv_feat=conv_feat, stack_boundary=False)
-                adapted_coord = model(sample)
-                end_time = time.perf_counter()
-                print(f"Model inference time: {(end_time - start_time)*1e3} ms")
-                # Update the mesh to adpated mesh
-                mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
+                # monitor_val = monitor_func(mesh, u_proj_from_adapted)
+                # filter_monitor_val = np.minimum(1e3, monitor_val.dat.data[:])
+                # filter_monitor_val = np.maximum(0, filter_monitor_val)
+                # monitor_val.dat.data[:] = filter_monitor_val / filter_monitor_val.max()
+                # conv_feat = get_conv_feat(mesh, monitor_val)
+                # start_time = time.perf_counter()
+                # sample = InputPack(coord=coords, monitor_val=monitor_val.dat.data_ro.reshape(-1, 1), edge_index=edge_idx, bd_mask=bd_mask, conv_feat=conv_feat, stack_boundary=False)
+                # adapted_coord = model(sample)
+                # end_time = time.perf_counter()
+                # print(f"Model inference time: {(end_time - start_time)*1e3}")
+                # # Update the mesh to adpated mesh
+                # mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
+
                 # Project the u_adapted and p_adapted to new adapted mesh for next timestep solving
                 u_now.project(u_adapted)
                 p_now.project(p_adapted)
@@ -334,13 +328,12 @@ for mesh_name in all_mesh_names:
             vortex_holder = fd.Function(function_space_adapted)
             vortex_holder.dat.data[:] = vorticity
 
-            Umean = 1.0
-            L = 0.1
+
             n = fd.FacetNormal(adapted_mesh)
             F_D = fd.assemble(fd.dot(n, sigma(u_holder, p_holder))[0] * fd.ds(4))
             F_L = fd.assemble(fd.dot(n, sigma(u_holder, p_holder))[1] * fd.ds(4))
-            C_D = 2/(Umean**2*L)*F_D
-            C_L = 2/(Umean**2*L)*F_L
+            C_D = 2/(U_mean**2*L)*F_D
+            C_L = 2/(U_mean**2*L)*F_L
             C_D_list.append(C_D)
             C_L_list.append(C_L)
 

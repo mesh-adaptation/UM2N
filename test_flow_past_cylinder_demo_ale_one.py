@@ -14,6 +14,7 @@ from inference_utils import get_conv_feat, find_edges, find_bd, InputPack, load_
 print("Setting up solver.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+exp_name = "jijiji"
 #################### Load trained model ####################
 
 with open(f'./pretrain_model/config.yaml', 'r') as file:
@@ -44,11 +45,11 @@ model = model.to(device)
 
 
 # physical constants
-nu_val = 0.001
+nu_val = 0.0001
 nu = fd.Constant(nu_val)
 
 # time step
-dt = 0.001
+dt = 0.0005
 # define a firedrake constant equal to dt so that variation forms 
 # not regenerated if we change the time step
 k = fd.Constant(dt)
@@ -63,7 +64,6 @@ SAVE_DATA = True
 # all_mesh_names = ["cylinder_040.msh"]
 # all_mesh_names = ["cylinder_030.msh", "cylinder_035.msh"]
 # all_mesh_names = ["cylinder_020.msh", "cylinder_010.msh"]
-# all_mesh_names = ["cylinder_015.msh", "cylinder_010.msh"]
 all_mesh_names = ["cylinder_one.msh"]
 # all_mesh_names = ["cylinder_square.msh"]
 # instead of using RectangleMesh, we now read the mesh from file
@@ -80,6 +80,7 @@ for mesh_name in all_mesh_names:
     mesh = fd.Mesh(mesh_path)
     adapted_mesh = fd.Mesh(mesh.coordinates.copy(deepcopy=True))
     init_coord = mesh.coordinates.copy(deepcopy=True).dat.data[:]
+    u_grid = fd.Function(mesh.coordinates.function_space(), name='gridvelocity')
 
     V = fd.VectorFunctionSpace(mesh, "CG", 2)
     V_adapted = fd.VectorFunctionSpace(adapted_mesh, "CG", 2)
@@ -108,6 +109,7 @@ for mesh_name in all_mesh_names:
     n = fd.FacetNormal(mesh)
     f = fd.Constant((0.0, 0.0))
     u_mid = 0.5*(u_now + u)
+    u_adv = u_now - u_grid
 
     def sigma(u, p):
         return 2*nu*fd.sym(fd.nabla_grad(u)) - p*fd.Identity(len(u))
@@ -133,7 +135,7 @@ for mesh_name in all_mesh_names:
 
     # Define variational forms
     F1 = fd.inner((u - u_now)/k, v) * fd.dx \
-        + fd.inner(fd.dot(u_now, fd.nabla_grad(u_mid)), v) * fd.dx \
+        + fd.inner(fd.dot(u_adv, fd.nabla_grad(u_mid)), v) * fd.dx \
         + fd.inner(sigma(u_mid, p_now), fd.sym(fd.nabla_grad(v))) * fd.dx \
         + fd.inner(p_now * n, v) * fd.ds \
         - fd.inner(nu * fd.dot(fd.nabla_grad(u_mid), n), v) * fd.ds \
@@ -160,12 +162,14 @@ for mesh_name in all_mesh_names:
     solve3 = fd.LinearVariationalSolver(prob3, solver_parameters={'ksp_type': 'cg', 'pc_type': 'sor'})  
 
     # Prep for saving solutions
-    # u_save = fd.Function(V).assign(u_now)
-    # p_save = fd.Function(Q).assign(p_now)
-    # outfile_u = fd.File("outputs_sim/cylinder/u.pvd")
-    # outfile_p = fd.File("outputs_sim/cylinder/p.pvd")
-    # outfile_u.write(u_save)
-    # outfile_p.write(p_save)
+    u_save = fd.Function(V).assign(u_now)
+    p_save = fd.Function(Q).assign(p_now)
+    outfile_u = fd.File(f"outputs_sim_ale/{exp_name}/u.pvd")
+    outfile_u_grid = fd.File(f"outputs_sim_ale/{exp_name}/u_grid.pvd")
+    outfile_p = fd.File(f"outputs_sim_ale/{exp_name}/p.pvd")
+    outfile_u.write(u_save)
+    outfile_u_grid.write(u_grid)
+    outfile_p.write(p_save)
 
     # Time loop
     t = 0.0
@@ -202,7 +206,7 @@ for mesh_name in all_mesh_names:
     adapted_coord = torch.tensor(init_coord)
     monitor_val = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
     exp_name = mesh_name.split(".msh")[0]
-    output_path = f"outputs_sim/{exp_name}/adapt_T_final/Re_{re_num}_total_{total_step}_save_{save_interval}"
+    output_path = f"outputs_sim_ale/{exp_name}/adapt_T_final/Re_{re_num}_total_{total_step}_save_{save_interval}"
     output_data_path = f"{output_path}/data"
     output_plot_path = f"{output_path}/plot"
     output_stat_path = f"{output_path}/stat"
@@ -216,16 +220,19 @@ for mesh_name in all_mesh_names:
         with torch.no_grad():
             while t < t_end :
 
+                start_time = time.perf_counter()
                 solve1.solve()
                 solve2.solve()
                 solve3.solve()
+                end_time = time.perf_counter()
+                print(f"PDE solve time: {(end_time - start_time)*1e3} ms")
 
                 t += dt
 
-                # u_save.assign(u_next)
-                # p_save.assign(p_next)
-                # outfile_u.write(u_save)
-                # outfile_p.write(p_save)
+                u_save.assign(u_next)
+                p_save.assign(p_next)
+                outfile_u.write(u_save)
+                outfile_p.write(p_save)
                 
                 # u_list.append(fd.Function(u_next))
 
@@ -233,10 +240,11 @@ for mesh_name in all_mesh_names:
                 u_now.assign(u_next)
                 p_now.assign(p_next)
 
+                start_time = time.perf_counter()
                 # Store the solutions to adapted meshes
                 # so that we can safely modify mesh coordinates later
-                u_adapted.project(u_next)
-                p_adapted.project(p_next)
+                end_time = time.perf_counter()
+                print(f"Project before time: {(end_time - start_time)*1e3} ms")
 
                 # TODO: interpolate might be faster however requries to update firedrake version
                 # u_adapted.interpolate(u_next)
@@ -267,15 +275,22 @@ for mesh_name in all_mesh_names:
                 # Recover the mesh back to init coord 
                 mesh.coordinates.dat.data[:] = init_coord
 
+                start_time = time.perf_counter()
                 # Project u_adapted back to uniform mesh for computing monitors
                 u_proj_from_adapted = fd.Function(V)
+                u_adapted.dat.data[:] = u_next.dat.data[:]
                 u_proj_from_adapted.project(u_adapted)
+                end_time = time.perf_counter()
+                print(f"Project for monitor time: {(end_time - start_time)*1e3} ms")
 
+                start_time = time.perf_counter()
                 monitor_val = monitor_func(mesh, u_proj_from_adapted)
                 filter_monitor_val = np.minimum(1e3, monitor_val.dat.data[:])
                 filter_monitor_val = np.maximum(0, filter_monitor_val)
                 monitor_val.dat.data[:] = filter_monitor_val / filter_monitor_val.max()
                 conv_feat = get_conv_feat(mesh, monitor_val)
+                end_time = time.perf_counter()
+                print(f"Compute monitor time: {(end_time - start_time)*1e3} ms")
                 start_time = time.perf_counter()
                 sample = InputPack(coord=coords, monitor_val=monitor_val.dat.data_ro.reshape(-1, 1), edge_index=edge_idx, bd_mask=bd_mask, conv_feat=conv_feat, stack_boundary=False)
                 adapted_coord = model(sample)
@@ -283,9 +298,23 @@ for mesh_name in all_mesh_names:
                 print(f"Model inference time: {(end_time - start_time)*1e3} ms")
                 # Update the mesh to adpated mesh
                 mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
+                u_grid.dat.data[:] = (mesh.coordinates.dat.data[:] - adapted_mesh.coordinates.dat.data[:])/dt
+                outfile_u_grid.write(u_grid)
                 # Project the u_adapted and p_adapted to new adapted mesh for next timestep solving
-                u_now.project(u_adapted)
-                p_now.project(p_adapted)
+                start_time = time.perf_counter()
+                u_grid_max = np.abs(u_grid.dat.data).max()
+                print(f"{u_grid_max=}")
+                if u_grid_max<2:
+                    u_now.assign(u_next)
+                    p_now.assign(p_next)
+                else:
+                    u_adapted.dat.data[:] = u_next.dat.data[:]
+                    p_adapted.dat.data[:] = p_next.dat.data[:]
+                    u_now.project(u_adapted)
+                    p_now.project(p_adapted)
+                    u_grid.dat.data[:] = 0.
+                end_time = time.perf_counter()
+                print(f"Project after time: {(end_time - start_time)*1e3} ms")
 
                 # TODO: interpolate might be faster however requries to update firedrake version
                 # u_now.interpolate(u_adapted)
