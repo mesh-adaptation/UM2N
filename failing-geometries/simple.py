@@ -52,7 +52,7 @@ def monitor(mesh):
 
 
 # Extract input features
-coords = mesh.coordinates.dat.data_ro
+coords = mesh.coordinates.dat.data_ro.copy()
 print(f"coords {coords.shape}")
 # print(f"conv feat {conv_feat.shape}")
 edge_idx = find_edges(mesh, Q)
