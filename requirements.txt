@@ -1,4 +1,4 @@
-numpy >= 1.13.0
+numpy
 pandas
 meshio
 matplotlib
@@ -7,9 +7,9 @@ pytest
 pytest-timeout
 jupyter
 ipython
-torch == 1.13.1
-torch_geometric == 2.5.3
-torch_sparse == 0.6.18
+torch
+torch_geometric
+torch_sparse
 tensorboardX
 torch_scatter
 rich

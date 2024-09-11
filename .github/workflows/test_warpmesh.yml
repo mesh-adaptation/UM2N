@@ -21,16 +21,20 @@ jobs:
           . /home/firedrake/firedrake/bin/activate
           git clone https://github.com/mesh-adaptation/movement.git
           cd movement
-          pip install -e .
+          python3 -m pip install -e .
+      - name: Install PyTorch
+        run: |
+          . /home/firedrake/firedrake/bin/activate
+          python3 -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Install other WarpMesh dependencies
         run: |
           . /home/firedrake/firedrake/bin/activate
-          pip install -r requirements.txt
+          python3 -m pip install -r requirements.txt
       - name: Install WarpMesh
         run: |
           . /home/firedrake/firedrake/bin/activate
-          pip install -e .
+          python3 -m pip install -e .
       - name: Run WarpMesh test suite
         run: |
           . /home/firedrake/firedrake/bin/activate
-          python -m pytest tests/test* -v
+          python3 -m pytest tests/test* -v
