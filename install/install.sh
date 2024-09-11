@@ -17,14 +17,14 @@ function green_log() {
 yellow_log "Please deactivate conda enviroment before running this script, otherwise it will fail."
 
 # Download mesh-adaptation/movement package.
-green_log "Start downloading movement..."
+green_log "Start downloading Movement..."
 
 if [ -d ./install/movement ]; then
-  yellow_log "movement dir exists, abort downloading"
+  yellow_log "Movement dir exists, abort downloading"
 fi
 
 if [ ! -d ./install/movement ]; then
-  yellow_log "movement does not exist, start downloading movement"
+  yellow_log "Movement does not exist, start downloading Movement"
   git submodule add https://github.com/mesh-adaptation/movement.git install/movement
 fi
 
@@ -39,17 +39,17 @@ fi
 if [ ! -d ./firedrake ]; then
   curl -O https://raw.githubusercontent.com/firedrakeproject/firedrake/master/scripts/firedrake-install
   python3 firedrake-install --disable-ssh
-  green_log "firedrake has been installed"
+  green_log "Firedrake has been installed"
 fi
 
-# activate firedrake enviroment
+# Activate Firedrake enviroment
 . ./firedrake/bin/activate
 
-# Install movement
+# Install Movement
 cd movement
 pip install -e .
 
-# Install warpmesh
+# Install WarpMesh
 cd ../..
 pip install -r requirements.txt
 pip install -e .
