@@ -7,6 +7,7 @@ pytest
 pytest-timeout
 jupyter
 ipython
+seaborn
 torch
 torch_geometric
 torch_sparse
