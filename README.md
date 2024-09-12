@@ -24,14 +24,14 @@ Just navigate to **project root** folder, open terminaland execute the `install/
 sh ./install/install.sh
 ```
 
-This will install [firedrake](https://www.firedrakeproject.org/download.html) and [movement](https://github.com/pyroteus/movement) under `install` folder, as well as the `WarpMesh` package.
+This will install [firedrake](https://www.firedrakeproject.org/download.html) and [movement](https://github.com/mesh-adaptation/movement) under `install` folder, as well as the `WarpMesh` package.
 
 
 ### The hard way (in case the easy way did not went well or you want to challenge yourself):
 
 1. The mesh generation relies on firedrake, which is a python package. To install firedrake, please follow the instructions on [firedrakeproject.org](https://www.firedrakeproject.org/download.html).
 
-2. The movement of the mesh is implemented by `pyroteus/movement`, install it in the firedrake venv. To install, run `pip install -e .` in the `pyroteus/movement` directory. Here is a link to that repo: [pyroteus/movement](https://github.com/pyroteus/movement).
+2. The movement of the mesh is implemented by `mesh-adaptation/movement`, install it in the firedrake venv. To install, run `pip install -e .` in the `mesh-adaptation/movement` directory. Here is a link to that repo: [mesh-adaptation/movement](https://github.com/mesh-adaptation/movement).
 
 3. Use the venv provided by firedrake to install the dependencies of this project. The venv is located at `~/firedrakevenv/bin/activate`. To activate the venv, run `source ~/firedrakevenv/bin/activate`. Then run `pip install -r requirements.txt` to install the dependencies.
 
