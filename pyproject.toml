@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "warpmesh"
+use_scm_version = True
+version = "1.0"
+dependencies = [
+  "numpy",
+  "pandas",
+  "meshio",
+  "matplotlib",
+  "mpltools",
+  "pytest",
+  "pytest-timeout",
+  "jupyter",
+  "ipython",
+  "seaborn",
+  "torch",
+  "torch_geometric",
+  "torch_sparse",
+  "tensorboardX",
+  "torch_scatter",
+  "rich",
+  "flake8",
+  "ipython",
+  "pep8",
+  "sphinx",
+  "einops",
+  "gmsh",
+]
+authors = [
+  {name = "Chunyang Wang"},
+  {name = "Mingrui Zhang"},
+  {name = "Stephan C. Kramer"},
+  {name = "Joseph G. Wallwork"},
+]
+maintainers = []  # TODO: Who will be the maintainers?
+description="PDE mesh r-adaptation tool"
+readme = "README.md"
+# TODO: license = {file = "LICENSE"}
+keywords = ["python", "meshing", "machine-learning", "firedrake"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+]
+
+[project.urls]
+Homepage = "https://erizmr.github.io/UM2N"
+# TODO: Documentation
+Repository = "https://github.com/erizmr/UM2N"
+
+[tools.setuptools]
+packages = ["warpmesh"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "E", "W",  # Pycodestyle
+  "F",  # Pyflakes
+  "I",  # Isort
+]
