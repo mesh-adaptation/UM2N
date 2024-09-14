@@ -42,7 +42,7 @@ Homepage = "https://erizmr.github.io/UM2N"
 # TODO: Documentation
 Repository = "https://github.com/erizmr/UM2N"
 
-[tools.setuptools]
+[tool.setuptools]
 packages = ["warpmesh"]
 
 [tool.ruff]
