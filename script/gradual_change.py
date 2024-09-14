@@ -3,20 +3,20 @@
 # %% importimport warnings
 import warpmesh as wm
 import torch
-import pandas as pd # noqa
+import pandas as pd  # noqa
 import numpy as np  # noqa
 import matplotlib.pyplot as plt  # noqa
 import firedrake as fd
 import warnings
-from torch_geometric.data import DataLoader # noqa
+from torch_geometric.data import DataLoader  # noqa
 
 torch.no_grad()
-warnings.filterwarnings('ignore') # noqa
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+warnings.filterwarnings("ignore")  # noqa
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # %% load model
 n_elem = 20
-data_dir = f'/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{n_elem}x{n_elem}>_n=400_smpl/val' # noqa
+data_dir = f"/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{n_elem}x{n_elem}>_n=400_smpl/val"  # noqa
 
 M2N_weight_path = "/Users/cw1722/Downloads/M2N__15,20__cmplx/weight/model_999.pth"  # noqa
 # MRN_path = "/Users/cw1722/Downloads/MRN_r=5_15,20__smpl/weight/model_999.pth"  # noqa
@@ -76,19 +76,19 @@ def plot_gradual_change(idx, data_set=data_set, model=model_MRN):
 
     img_size = 10
 
-    fig, axs = plt.subplots(
-        1, total_iter, figsize=(img_size*total_iter, img_size))
+    fig, axs = plt.subplots(1, total_iter, figsize=(img_size * total_iter, img_size))
 
     for i in range(total_iter):
         print(i)
-        out = model.move(data, i+1)
-        loss = 1000*loss_func(out, data.y).item()
+        out = model.move(data, i + 1)
+        loss = 1000 * loss_func(out, data.y).item()
         out = out.detach().cpu().numpy()
         mesh = fd.UnitSquareMesh(n_elem, n_elem)
         mesh.coordinates.dat.data[:] = out[:]
         fd.triplot(mesh, axes=axs[i])
         axs[i].set_title(f"n={i}, Loss: {loss:.2f}", fontsize=30)
     return fig, axs
+
 
 # %%
 
@@ -105,17 +105,21 @@ total_iter = 5
 res = np.zeros((len(n_nodes), total_iter))
 
 dataset_list = [
-    f'/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{n_node}x{n_node}>_n=40_cmplx/train' for n_node in n_nodes  # noqa
+    f"/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{n_node}x{n_node}>_n=40_cmplx/train"
+    for n_node in n_nodes  # noqa
 ]
 
-data_sets = [wm.MeshDataset(
-    data_dir,
-    transform=wm.normalise if normalise else None,
-    x_feature=x_feat,
-    mesh_feature=mesh_feat,
-    conv_feature=conv_feat,
-    load_analytical=True,
-) for data_dir in dataset_list]
+data_sets = [
+    wm.MeshDataset(
+        data_dir,
+        transform=wm.normalise if normalise else None,
+        x_feature=x_feat,
+        mesh_feature=mesh_feat,
+        conv_feature=conv_feat,
+        load_analytical=True,
+    )
+    for data_dir in dataset_list
+]
 
 for i in range(len(n_nodes)):
     ds = data_sets[i]
@@ -124,8 +128,8 @@ for i in range(len(n_nodes)):
         data = ds[j]
         for k in range(total_iter):
             model_MRN.eval()
-            out = model_MRN.move(data, k+1)
-            loss = 1000*(loss_func(out, data.y).item())
+            out = model_MRN.move(data, k + 1)
+            loss = 1000 * (loss_func(out, data.y).item())
             loss_arr[0, k] += loss
         loss_arr = loss_arr / len(ds)
     res[i, :] = loss_arr

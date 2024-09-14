@@ -220,9 +220,7 @@ class TransformerEncoder(torch.nn.Module):
         # state size
         # self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
 
-    def _transformer_forward(
-        self, batch_size, input_q, input_kv, get_attens=False
-    ):
+    def _transformer_forward(self, batch_size, input_q, input_kv, get_attens=False):
         """
         Forward pass for MRN.
 

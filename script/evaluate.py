@@ -271,7 +271,6 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
     print(f"problem type: {problem_type}, domain: {domain}, meshtype: {meshtype}")
 
     if problem_type == "helmholtz" or problem_type == "poisson":
-
         ds_info_df_path = os.path.join(ds_root, "info.csv")
         df_info_df = pd.read_csv(ds_info_df_path)
         n_grid = None
@@ -439,7 +438,6 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
             plt.close()
 
     elif problem_type == "swirl":
-
         n_grid = None
         if int(meshtype) == 0:
             n_grid = int(ds_root.split("/")[-1].split("ngrid_")[-1][:2])
@@ -471,7 +469,6 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
             mesh_ma = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_fine = fd.UnitSquareMesh(100, 100)
-        
 
         # solver defination
         swril_solver = wm.SwirlSolver(
@@ -521,18 +518,15 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
         model_name = config.model_used
         if config.model_used == "MRTransform":
             model_name = "M2T"
-        eval_res = swril_solver.eval_problem(model,
-                                             ds_root=ds_root, 
-                                             eval_dir=eval_dir,
-                                             model_name=model_name)  # noqa
+        eval_res = swril_solver.eval_problem(
+            model, ds_root=ds_root, eval_dir=eval_dir, model_name=model_name
+        )  # noqa
 
     elif problem_type == "burgers":
         # Select params to generate burgers bump
         case_idxs = [1]
         for idx in case_idxs:
-            gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(
-                idx
-            )  # noqa
+            gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
             mesh = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_new = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_fine = fd.Mesh(os.path.join(ds_root, "mesh_fine", "mesh.msh"))
@@ -680,7 +674,6 @@ def write_sumo(eval_dir, ds_root):
 
 
 if __name__ == "__main__":
-
     entity = "mz-team"
     # entity = 'w-chunyang'
     project_name = "warpmesh"
@@ -742,7 +735,6 @@ if __name__ == "__main__":
     run_id_m2n_hessian_norm = "1cu4qw9u"  # M2N hessian norm
     run_id_m2n_area_loss_hessian_norm = "u4uxcz1e"  # M2N area loss hessian norm
 
-
     # run_ids = ['8ndi2teh', 'x9woqsnn']
     # run_ids = ['0l8ujpdr', 'hmgwx4ju', '8ndi2teh']
 
@@ -799,7 +791,7 @@ if __name__ == "__main__":
     run_id_MRT_largeset = "kgr0nicn"
     run_id_PIMRT_largeset = "6wkt13wp"
     run_id_M2T_largeset = "gywsmly9"  # pre-train using "rud1gsge"
-    run_id_M2T_largeset = "ig1np6kx"  # pre-train using "kgr0nicn", this is the good one 
+    run_id_M2T_largeset = "ig1np6kx"  # pre-train using "kgr0nicn", this is the good one
     run_id_M2T_largeset = "72esorfm"  # pre-train using "99zrohiu"
 
     run_ids_largeset = [
@@ -861,7 +853,7 @@ if __name__ == "__main__":
     # ds_roots = [*ds_root_burgers]
     # ds_roots = ['./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6']
     # ds_roots = [*ds_root_swirl, *ds_root_helmholtz]
-    
+
     ds_roots = [*ds_root_swirl]
     # ds_roots = [*ds_root_helmholtz]
     # ds_roots = [*ds_root_helmholtz]
@@ -898,10 +890,9 @@ if __name__ == "__main__":
     run_ids = ["d9h5uzcp"]
     run_ids = ["yx0h8mfm"]
 
+    run_ids = ["6qa5jius"]  # Ablation of coord trained
 
-    run_ids = ["6qa5jius"] # Ablation of coord trained
-
-    # comparisons 
+    # comparisons
     # M2N large set, small scale, type 6, g86hj04w
     # M2N-en large set, small scale, type 6, c0z773gi
     # M2N-en large set, small scale, type 6, monitor, ta0c8b3u
@@ -928,8 +919,8 @@ if __name__ == "__main__":
     # run_ids = [latest_run.id]
     # run_ids = ["g86hj04w", "n4t1fqq2"]
     run_ids = ["g86hj04w"]
-    run_ids = ["8os8zve7"] # abalation for solution vs monitor
-    run_ids = ["6qa5jius"] # Ablation of coord trained
+    run_ids = ["8os8zve7"]  # abalation for solution vs monitor
+    run_ids = ["6qa5jius"]  # Ablation of coord trained
     run_ids = ["n4t1fqq2", "6qa5jius", "8os8zve7"]
 
     # run_ids = ["n4t1fqq2", "g86hj04w"]
@@ -960,9 +951,7 @@ if __name__ == "__main__":
             print("# Evaluation Pipeline Started\n")
             print(config)
             # init
-            eval_dir = init_dir(
-                config, run_id, epoch, ds_root, problem_type, domain
-            )  # noqa
+            eval_dir = init_dir(config, run_id, epoch, ds_root, problem_type, domain)  # noqa
             dataset = load_dataset(config, ds_root, tar_folder="data")
             model = load_model(config, epoch, eval_dir)
 

@@ -2,17 +2,17 @@
 # GitHub Username: chunyang-w
 
 import firedrake as fd
-import numpy as np                          # noqa
-import matplotlib.pyplot as plt             # noqa
+import numpy as np  # noqa
+import matplotlib.pyplot as plt  # noqa
 import movement as mv
-import warpmesh as wm                       # noqa
-import random                               # noqa
+import warpmesh as wm  # noqa
+import random  # noqa
 import time
 
 __all__ = ["BurgersSolver"]
 
 
-class BurgersSolver():
+class BurgersSolver:
     """
     Solves the Burgers equation
     Input:
@@ -37,7 +37,9 @@ class BurgersSolver():
         self.idx = idx
 
         self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
-        self.init_coord_fine = self.mesh_fine.coordinates.vector().array().reshape(-1, 2) # noqa
+        self.init_coord_fine = (
+            self.mesh_fine.coordinates.vector().array().reshape(-1, 2)
+        )  # noqa
         self.best_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
         self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
         self.error_adapt_list = []
@@ -75,7 +77,7 @@ class BurgersSolver():
         # simulation params
         self.nu = kwargs.pop("nu", 1e-3)
         self.gauss_list = kwargs.pop("gauss_list", None)
-        self.dt = kwargs.get('dt', 1.0/30)
+        self.dt = kwargs.get("dt", 1.0 / 30)
         self.sim_len = kwargs.get("T", 2.0)
         self.T = self.sim_len
         self.dtc = fd.Constant(self.dt)
@@ -84,39 +86,36 @@ class BurgersSolver():
         self.u_init_fine = 0
         num_of_gauss = len(self.gauss_list)
         for counter in range(num_of_gauss):
-            c_x, c_y, w = self.gauss_list[counter]["cx"], self.gauss_list[counter]["cy"], self.gauss_list[counter]["w"]  # noqa
+            c_x, c_y, w = (
+                self.gauss_list[counter]["cx"],
+                self.gauss_list[counter]["cy"],
+                self.gauss_list[counter]["w"],
+            )  # noqa
             self.u_init += fd.exp(-((self.x - c_x) ** 2 + (self.y - c_y) ** 2) / w)  # noqa
-            self.u_init_fine += fd.exp(-((self.x_fine - c_x) ** 2 + (self.y_fine - c_y) ** 2) / w)  # noqa
+            self.u_init_fine += fd.exp(
+                -((self.x_fine - c_x) ** 2 + (self.y_fine - c_y) ** 2) / w
+            )  # noqa
 
         # solution vars
-        self.u_og = fd.Function(self.P2_vec)        # u_{0}
-        self.u = fd.Function(self.P2_vec)           # u_{n+1}
-        self.u_ = fd.Function(self.P2_vec)          # u_{n}
+        self.u_og = fd.Function(self.P2_vec)  # u_{0}
+        self.u = fd.Function(self.P2_vec)  # u_{n+1}
+        self.u_ = fd.Function(self.P2_vec)  # u_{n}
         self.F = (
-            fd.inner(
-                (self.u - self.u_) / self.dtc, self.phi_p2_vec
-                ) +
-            fd.inner(
-                fd.dot(self.u, fd.nabla_grad(self.u)), self.phi_p2_vec
-                ) +
-            self.nu * fd.inner(
-                fd.grad(self.u), fd.grad(self.phi_p2_vec)
-                )
-            ) * fd.dx(domain=self.mesh)
+            fd.inner((self.u - self.u_) / self.dtc, self.phi_p2_vec)
+            + fd.inner(fd.dot(self.u, fd.nabla_grad(self.u)), self.phi_p2_vec)
+            + self.nu * fd.inner(fd.grad(self.u), fd.grad(self.phi_p2_vec))
+        ) * fd.dx(domain=self.mesh)
 
-        self.u_fine = fd.Function(self.P2_vec_fine)             # u_{0}
-        self.u_fine_ = fd.Function(self.P2_vec_fine)            # u_{n+1}
+        self.u_fine = fd.Function(self.P2_vec_fine)  # u_{0}
+        self.u_fine_ = fd.Function(self.P2_vec_fine)  # u_{n+1}
         self.F_fine = (
-            fd.inner(
-                (self.u_fine - self.u_fine_) / self.dtc, self.phi_p2_vec_fine
-                ) +
-            fd.inner(
-                fd.dot(self.u_fine, fd.nabla_grad(self.u_fine)), self.phi_p2_vec_fine  # noqa
-                ) +
-            self.nu * fd.inner(
-                fd.grad(self.u_fine), fd.grad(self.phi_p2_vec_fine)
-                )
-            ) * fd.dx(domain=self.mesh_fine)
+            fd.inner((self.u_fine - self.u_fine_) / self.dtc, self.phi_p2_vec_fine)
+            + fd.inner(
+                fd.dot(self.u_fine, fd.nabla_grad(self.u_fine)),
+                self.phi_p2_vec_fine,  # noqa
+            )
+            + self.nu * fd.inner(fd.grad(self.u_fine), fd.grad(self.phi_p2_vec_fine))
+        ) * fd.dx(domain=self.mesh_fine)
 
         # initial vals
         self.initial_velocity = fd.as_vector([self.u_init, 0])
@@ -143,19 +142,16 @@ class BurgersSolver():
         self.normal = fd.FacetNormal(self.mesh)
         self.f_norm = fd.Function(self.P1)
         self.l2_projection = fd.Function(self.P1_ten)
-        self.H, self.τ = fd.TrialFunction(
-            self.P1_ten), fd.TestFunction(self.P1_ten)
+        self.H, self.τ = fd.TrialFunction(self.P1_ten), fd.TestFunction(self.P1_ten)
         self.a = fd.inner(self.τ, self.H) * fd.dx(domain=self.mesh)
 
-        self.L1 = -fd.inner(
-            fd.div(self.τ), fd.grad(self.u[0])
-        ) * fd.dx(domain=self.mesh)
-        self.L1 += fd.dot(
-            fd.grad(self.u[0]),
-            fd.dot(self.τ, self.normal)
-        ) * fd.ds(self.mesh)
-        self.prob = fd.LinearVariationalProblem(
-            self.a, self.L1, self.l2_projection)
+        self.L1 = -fd.inner(fd.div(self.τ), fd.grad(self.u[0])) * fd.dx(
+            domain=self.mesh
+        )
+        self.L1 += fd.dot(fd.grad(self.u[0]), fd.dot(self.τ, self.normal)) * fd.ds(
+            self.mesh
+        )
+        self.prob = fd.LinearVariationalProblem(self.a, self.L1, self.l2_projection)
         self.hessian_prob = fd.LinearVariationalSolver(
             self.prob, solver_parameters=self.sp
         )
@@ -172,10 +168,11 @@ class BurgersSolver():
         self.hessian_prob.solve()
 
         self.f_norm.project(
-            self.l2_projection[0, 0] ** 2 +
-            self.l2_projection[0, 1] ** 2 +
-            self.l2_projection[1, 0] ** 2 +
-            self.l2_projection[1, 1] ** 2)
+            self.l2_projection[0, 0] ** 2
+            + self.l2_projection[0, 1] ** 2
+            + self.l2_projection[1, 0] ** 2
+            + self.l2_projection[1, 1] ** 2
+        )
 
         self.f_norm /= self.f_norm.vector().max()
         monitor = self.f_norm
@@ -192,7 +189,7 @@ class BurgersSolver():
         self.step = 0
         self.best_error_iter = 0
         # for i in range(1):
-        while t < self.T - 0.5*self.dt:
+        while t < self.T - 0.5 * self.dt:
             self.error_adapt_list = []
             self.error_og_list = []
             mesh_new = self.mesh_new
@@ -225,16 +222,14 @@ class BurgersSolver():
             self.project_u_()
             fd.solve(self.F == 0, self.u)
             function_space_new = fd.FunctionSpace(mesh_new, "CG", 1)
-            function_space_vec_new = fd.VectorFunctionSpace(
-                mesh_new, "CG", 1)
+            function_space_vec_new = fd.VectorFunctionSpace(mesh_new, "CG", 1)
             uh_new = fd.Function(function_space_vec_new)
             uh_new.project(self.u)
             uh_new_0 = fd.Function(function_space_new)
             uh_new_0.project(uh_new[0])
 
             error_og, error_adapt = self.get_error()
-            print(
-                "error_og: {}, error_adapt: {}".format(error_og, error_adapt))
+            print("error_og: {}, error_adapt: {}".format(error_og, error_adapt))
 
             # put coords back to original position (for u sampling)
             self.mesh.coordinates.dat.data[:] = self.init_coord
@@ -244,8 +239,7 @@ class BurgersSolver():
             uh_fine_0.project(self.u_fine[0])
 
             func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-            uh_grad = fd.interpolate(
-                fd.grad(uh_0), func_vec_space)
+            uh_grad = fd.interpolate(fd.grad(uh_0), func_vec_space)
             hessian_norm = self.f_norm
             hessian = self.l2_projection
             phi = adapter.phi
@@ -253,23 +247,28 @@ class BurgersSolver():
             sigma = adapter.sigma
             I = fd.Identity(2)  # noqa
             jacobian = I + sigma
-            jacobian_det = fd.Function(
-                function_space, name="jacobian_det")
+            jacobian_det = fd.Function(function_space, name="jacobian_det")
             jacobian_det.project(
-                jacobian[0, 0] * jacobian[1, 1] -
-                jacobian[0, 1] * jacobian[1, 0])
+                jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
+            )
             self.jacob_det = fd.project(
-                jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1))
+                jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1)
+            )
             self.jacob = fd.project(
                 jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
             )
 
             callback(
-                uh=uh_0, uh_grad=uh_grad, hessian_norm=hessian_norm,
+                uh=uh_0,
+                uh_grad=uh_grad,
+                hessian_norm=hessian_norm,
                 hessian=hessian,
-                phi=phi, grad_phi=phi_grad,
-                jacobian=self.jacob, jacobian_det=self.jacob_det,
-                nu=self.nu, gauss_list=self.gauss_list,
+                phi=phi,
+                grad_phi=phi_grad,
+                jacobian=self.jacob,
+                jacobian_det=self.jacob_det,
+                nu=self.nu,
+                gauss_list=self.gauss_list,
                 mesh_new=mesh_new,
                 mesh_og=self.mesh,
                 uh_new=uh_new_0,
@@ -312,8 +311,7 @@ class BurgersSolver():
         u_0_coarse.project(self.u[0])
         u_0_fine.project(u_0_coarse)
         # print('u_0_fine sum 1: ', np.sum(u_0_fine.dat.data[:]))
-        error_og = fd.errornorm(
-            u_0_fine, u_f, norm_type="L2")
+        error_og = fd.errornorm(u_0_fine, u_f, norm_type="L2")
 
         # solve on coarse adapt mesh
         self.mesh.coordinates.dat.data[:] = self.adapt_coord
@@ -326,8 +324,7 @@ class BurgersSolver():
         u_adapt_coarse_0.project(self.u[0])
         u_adapt_fine_0.project(u_adapt_coarse_0)
         # print('u sum 2: ', np.sum(u_adapt_fine_0.dat.data[:]))
-        error_adapt = fd.errornorm(
-            u_adapt_fine_0, u_f, norm_type="L2")
+        error_adapt = fd.errornorm(u_adapt_fine_0, u_f, norm_type="L2")
 
         self.mesh.coordinates.dat.data[:] = self.init_coord
 

@@ -19,11 +19,11 @@ import warpmesh as wm
 import torch
 import numpy as np  # noqa
 import matplotlib.pyplot as plt  # noqa
-from torch_geometric.data import DataLoader # noqa
+from torch_geometric.data import DataLoader  # noqa
 
 torch.no_grad()
-warnings.filterwarnings('ignore')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+warnings.filterwarnings("ignore")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model_weight_path = "/Users/cw1722/Downloads/M2N__15,20__cmplx/weight/model_999.pth"  # noqa
 
@@ -48,7 +48,7 @@ conv_feat = [
     # "conv_hessian_norm",
 ]
 
-# %% load model 
+# %% load model
 model = wm.M2N_og(
     deform_in_c=7,
     gfe_in_c=1,

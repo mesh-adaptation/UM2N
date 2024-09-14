@@ -283,26 +283,17 @@ if __name__ == "__main__":
             uh = solver.solve_eq()
             # Generate Mesh
             hessian = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": mesh
-                }
+                params={"eq": helmholtz_eq, "mesh": mesh}
             ).get_hessian(mesh)
 
             hessian_norm = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": mesh
-                    }
+                params={"eq": helmholtz_eq, "mesh": mesh}
             ).get_hessian_norm(mesh)
             hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 
             # Get monitor val
             monitor_val = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": mesh
-                }
+                params={"eq": helmholtz_eq, "mesh": mesh}
             ).monitor_func(mesh)
 
             # grad_uh_norm = wm.MeshGenerator(
@@ -322,12 +313,7 @@ if __name__ == "__main__":
             grad_norm /= grad_norm.vector().max()
             grad_uh_norm = grad_norm
 
-            mesh_gen = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": mesh
-                }
-            )
+            mesh_gen = wm.MeshGenerator(params={"eq": helmholtz_eq, "mesh": mesh})
 
             start = time.perf_counter()
             new_mesh = mesh_gen.move_mesh()  # noqa

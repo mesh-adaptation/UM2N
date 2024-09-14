@@ -11,14 +11,16 @@ import sys
 import os
 import torch
 import torch.nn.functional as F
+
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from extractor import (  # noqa: E402
-    LocalFeatExtractor, GlobalFeatExtractor
+    LocalFeatExtractor,
+    GlobalFeatExtractor,
 )
 from gatdeformer import DeformGAT  # noqa: E402
 
-__all__ = ['M2N_dynamic_drop']
+__all__ = ["M2N_dynamic_drop"]
 
 
 class NetGATDeform(torch.nn.Module):
@@ -36,24 +38,20 @@ class NetGATDeform(torch.nn.Module):
         lin_1 = F.selu(lin_1)
         together_1 = torch.cat([coords_tensor, lin_1], dim=1)
 
-        out_coord_1, out_feature_1 = self.gat_1(
-            coords_tensor, together_1, edge_idx)
+        out_coord_1, out_feature_1 = self.gat_1(coords_tensor, together_1, edge_idx)
 
-        together_2 = torch.cat(
-            [out_coord_1, coords_tensor, out_feature_1], dim=1)
-        out_coord_2, out_feature_2 = self.gat_2(
-            out_coord_1, together_2, edge_idx)
+        together_2 = torch.cat([out_coord_1, coords_tensor, out_feature_1], dim=1)
+        out_coord_2, out_feature_2 = self.gat_2(out_coord_1, together_2, edge_idx)
         # 下面是第三层gat的准备层了啊。。
         together_3 = torch.cat(
-            [out_coord_2, out_coord_1, coords_tensor, out_feature_2], dim=1)
-        out_coord_3, out_feature_3 = self.gat_3(
-            out_coord_2, together_3, edge_idx)
+            [out_coord_2, out_coord_1, coords_tensor, out_feature_2], dim=1
+        )
+        out_coord_3, out_feature_3 = self.gat_3(out_coord_2, together_3, edge_idx)
         # 下面是第四层gat的准备层了啊。。
         together_4 = torch.cat(
-            [out_coord_3, out_coord_2, out_coord_1,
-             coords_tensor, out_feature_3], dim=1)
-        out_coord_4, out_feature_4 = self.gat_4(
-            out_coord_3, together_4, edge_idx)
+            [out_coord_3, out_coord_2, out_coord_1, coords_tensor, out_feature_3], dim=1
+        )
+        out_coord_4, out_feature_4 = self.gat_4(out_coord_3, together_4, edge_idx)
 
         return out_coord_4
 
@@ -71,7 +69,6 @@ class M2N_dynamic_drop(torch.nn.Module):
         # self.deformer = GATDeformerBlock(in_dim=self.deformer_in_feat)
 
     def forward(self, data):
-
         x = data.x  # [num_nodes * batch_size, 2]
         conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
@@ -79,8 +76,7 @@ class M2N_dynamic_drop(torch.nn.Module):
         node_num = data.node_num
 
         conv_feat = self.gfe(conv_feat_in)
-        conv_feat = conv_feat.repeat_interleave(
-            node_num.reshape(-1), dim=0)
+        conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
 
         local_feat = self.lfe(mesh_feat, edge_idx)
 

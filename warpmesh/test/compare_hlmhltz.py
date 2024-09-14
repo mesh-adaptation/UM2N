@@ -115,7 +115,7 @@ def compare_error(
             }
         )
         uh_model = model_solver.solve_eq()
-    
+
     # a high_res mesh
     high_res_mesh = mesh_fine
     high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)

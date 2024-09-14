@@ -7,11 +7,12 @@ import random
 __all__ = ["RandPolyMesh"]
 
 
-class RandPolyMesh():
+class RandPolyMesh:
     """
     Create a random polygonal mesh by spliting the edge of a
     square randomly.
     """
+
     def __init__(self, scale=1.0, mesh_type=2):
         # params setup
         self.mesh_type = mesh_type
@@ -69,51 +70,37 @@ class RandPolyMesh():
         points = []
         split_p = np.random.uniform(0, 1, 4)
         # edge 1
-        if (split_p[0] < self.split_threshold):
-            points.append(
-                [self.get_rand(self.quater, self.quater_interval), 0])
-            points.append(
-                [self.get_rand(self.three_quater, self.quater_interval), 0]
-            )
+        if split_p[0] < self.split_threshold:
+            points.append([self.get_rand(self.quater, self.quater_interval), 0])
+            points.append([self.get_rand(self.three_quater, self.quater_interval), 0])
         else:
             points.append([self.get_rand(self.mid, self.mid_interval), 0])
         # edge 2
-        if (split_p[1] < self.split_threshold):
+        if split_p[1] < self.split_threshold:
             points.append(
                 [self.scale, self.get_rand(self.quater, self.quater_interval)]
             )
             points.append(
-                [self.scale, self.get_rand(
-                    self.three_quater, self.quater_interval)])
-        else:
-            points.append(
-                [self.scale, self.get_rand(self.mid, self.mid_interval)]
+                [self.scale, self.get_rand(self.three_quater, self.quater_interval)]
             )
+        else:
+            points.append([self.scale, self.get_rand(self.mid, self.mid_interval)])
         # edge 3
-        if (split_p[2] < self.split_threshold):
+        if split_p[2] < self.split_threshold:
             points.append(
-                [self.get_rand(self.three_quater, self.quater_interval),
-                 self.scale]
+                [self.get_rand(self.three_quater, self.quater_interval), self.scale]
             )
             points.append(
-                [self.get_rand(self.quater, self.quater_interval),
-                 self.scale]
+                [self.get_rand(self.quater, self.quater_interval), self.scale]
             )
         else:
-            points.append(
-                [self.get_rand(self.mid, self.mid_interval),
-                 self.scale]
-            )
+            points.append([self.get_rand(self.mid, self.mid_interval), self.scale])
         # edge 4
-        if (split_p[3] < self.split_threshold):
-            points.append([
-                0, self.get_rand(self.three_quater, self.quater_interval)])
-            points.append([
-                0, self.get_rand(self.quater, self.quater_interval)])
+        if split_p[3] < self.split_threshold:
+            points.append([0, self.get_rand(self.three_quater, self.quater_interval)])
+            points.append([0, self.get_rand(self.quater, self.quater_interval)])
         else:
-            points.append(
-                [0, self.get_rand(self.mid, self.mid_interval)]
-            )
+            points.append([0, self.get_rand(self.mid, self.mid_interval)])
             # points.append(p1)
         self.raw_points = points
         return
@@ -121,15 +108,17 @@ class RandPolyMesh():
     def get_points(self):
         temp = []
         for i in range(len(self.raw_points)):
-            temp.append(gmsh.model.geo.addPoint(
-                self.raw_points[i][0], self.raw_points[i][1], 0, self.lc))
+            temp.append(
+                gmsh.model.geo.addPoint(
+                    self.raw_points[i][0], self.raw_points[i][1], 0, self.lc
+                )
+            )
         self.points = temp
 
     def get_line(self):
         for i in range(len(self.points)):
-            if (i < len(self.points) - 1):
-                line = gmsh.model.geo.addLine(
-                    self.points[i], self.points[i + 1])
+            if i < len(self.points) - 1:
+                line = gmsh.model.geo.addLine(self.points[i], self.points[i + 1])
                 self.lines.append(line)
             else:
                 line = gmsh.model.geo.addLine(self.points[i], self.points[0])
@@ -143,8 +132,7 @@ class RandPolyMesh():
             gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
 
     def get_curve(self):
-        gmsh.model.geo.addCurveLoop(
-            [i for i in range(1, len(self.points) + 1)], 1)
+        gmsh.model.geo.addCurveLoop([i for i in range(1, len(self.points) + 1)], 1)
 
     def get_plane(self):
         gmsh.model.geo.addPlaneSurface([1], 1)
@@ -157,9 +145,10 @@ class RandPolyMesh():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+
     mesh_gen = RandPolyMesh(mesh_type=2)
     mesh_coarse = mesh_gen.get_mesh(res=5e-2, file_path="./temp1.msh")
     mesh_fine = mesh_gen.get_mesh(res=4e-2, file_path="./temp2.msh")
-    mesh_gen.show('./temp1.msh')
-    mesh_gen.show('./temp2.msh')
+    mesh_gen.show("./temp1.msh")
+    mesh_gen.show("./temp2.msh")
     plt.show()

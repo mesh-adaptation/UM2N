@@ -18,7 +18,6 @@ def plot_compare(
     num_tangle,
     model_name,
 ):
-
     # Construct function space
     coarse_res_function_space = fd.FunctionSpace(mesh, "CG", 1)
     high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)

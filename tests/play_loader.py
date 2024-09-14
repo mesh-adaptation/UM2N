@@ -5,10 +5,9 @@ import warnings
 from torch_geometric.data import DataLoader
 
 warnings.filterwarnings("ignore")
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-project_dir = os.path.dirname(
-    os.path.dirname((os.path.abspath(__file__))))
+project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 data_set_path = (
     "/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/"
     "z=<0,1>_ndist=None_max_dist=6_<20x20>_n=400_cmplx"

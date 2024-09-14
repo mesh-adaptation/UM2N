@@ -75,7 +75,7 @@ problem = "swirl"
 T = 1
 # n_step = 1000 # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
 # dt = T / n_step
-dt = 1e-3 # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
+dt = 1e-3  # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
 n_step = 1000
 
 # mesh setup

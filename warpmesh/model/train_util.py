@@ -402,7 +402,7 @@ def train(
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
     total_area_loss = 0
-    total_chamfer_loss =0.0
+    total_chamfer_loss = 0.0
     for batch in loader:
         optimizer.zero_grad()
         data = batch.to(device)
@@ -425,9 +425,15 @@ def train(
             )
         if use_area_loss:
             area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
-        
+
         chamfer_loss = 100 * chamfer_distance(out.unsqueeze(0), data.y.unsqueeze(0))[0]
-        loss = weight_deform_loss * deform_loss + inversion_loss + inversion_diff_loss + weight_area_loss * area_loss + weight_chamfer_loss * chamfer_loss
+        loss = (
+            weight_deform_loss * deform_loss
+            + inversion_loss
+            + inversion_diff_loss
+            + weight_area_loss * area_loss
+            + weight_chamfer_loss * chamfer_loss
+        )
         # Jacobian loss
         if use_jacob:
             loss.backward(retain_graph=True)
@@ -439,9 +445,7 @@ def train(
         optimizer.step()
         total_loss += loss.item()
         total_deform_loss += weight_deform_loss * deform_loss.item()
-        total_inversion_loss += (
-            inversion_loss.item() if use_inversion_loss else 0
-        )  # noqa
+        total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
         total_inversion_diff_loss += (
             inversion_diff_loss.item() if use_inversion_diff_loss else 0
         )  # noqa
@@ -497,7 +501,7 @@ def evaluate(
     total_inversion_loss = 0
     total_inversion_diff_loss = 0
     total_area_loss = 0
-    total_chamfer_loss =0.0
+    total_chamfer_loss = 0.0
     for batch in loader:
         data = batch.to(device)
         loss = 0
@@ -521,17 +525,25 @@ def evaluate(
             if use_area_loss:
                 area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
 
-            chamfer_loss = 100 * chamfer_distance(out.unsqueeze(0), data.y.unsqueeze(0))[0]
-            loss = weight_deform_loss * deform_loss + inversion_loss + inversion_diff_loss + weight_area_loss * area_loss + weight_chamfer_loss * chamfer_loss
+            chamfer_loss = (
+                100 * chamfer_distance(out.unsqueeze(0), data.y.unsqueeze(0))[0]
+            )
+            loss = (
+                weight_deform_loss * deform_loss
+                + inversion_loss
+                + inversion_diff_loss
+                + weight_area_loss * area_loss
+                + weight_chamfer_loss * chamfer_loss
+            )
             total_loss += loss.item()
             total_deform_loss += weight_deform_loss * deform_loss.item()
             total_inversion_diff_loss += (
                 inversion_diff_loss.item() if use_inversion_diff_loss else 0
             )  # noqa
-            total_inversion_loss += (
-                inversion_loss.item() if use_inversion_loss else 0
-            )  # noqa
-            total_area_loss += weight_area_loss * area_loss.item() if use_area_loss else 0
+            total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
+            total_area_loss += (
+                weight_area_loss * area_loss.item() if use_area_loss else 0
+            )
             total_chamfer_loss += weight_chamfer_loss * chamfer_loss.item()
     res = {
         "total_loss": total_loss / len(loader),
@@ -998,13 +1010,15 @@ def model_forward(bs, data, model, use_add_random_query=True):
 #     return chamfer_distance_val / batch_size
 
 
-def sample_nodes_by_monitor(meshes, meshes_target, monitors, num_samples_per_mesh=100, random_seed=666):
+def sample_nodes_by_monitor(
+    meshes, meshes_target, monitors, num_samples_per_mesh=100, random_seed=666
+):
     # Set random seed
     np.random.seed(random_seed)
     # resample according to the monitor values
     meshes_ = []
     meshes_target_ = []
-    monitors = torch.max(monitors, torch.tensor([0.]).to(device))
+    monitors = torch.max(monitors, torch.tensor([0.0]).to(device))
     for bs in range(monitors.shape[0]):
         prob = monitors[bs, :, 0] / torch.sum(monitors[bs, :, 0])
         index = np.random.choice(
@@ -1114,9 +1128,13 @@ def train_unsupervised(
         mesh_test_raw = output_coord.view(bs, -1, coord_dim)
         mesh_target_raw = data.y.view(bs, -1, coord_dim)
         monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
-        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors)
+        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(
+            meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors
+        )
         # chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
-        chamfer_loss = 100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
+        chamfer_loss = (
+            100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
+        )
         # print(output_coord.shape, data.y.shape, chamfer_loss)
 
         # Inversion loss
@@ -1152,9 +1170,7 @@ def train_unsupervised(
         total_convex_loss += loss_convex.item() if use_convex_loss else 0
         total_deform_loss += weight_deform_loss * deform_loss.item()
         total_chamfer_loss_loss += weight_chamfer_loss * chamfer_loss.item()
-        total_inversion_loss += (
-            inversion_loss.item() if use_inversion_loss else 0
-        )  # noqa
+        total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
         total_inversion_diff_loss += (
             inversion_diff_loss.item() if use_inversion_diff_loss else 0
         )  # noqa
@@ -1164,7 +1180,7 @@ def train_unsupervised(
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
         "equation_residual": total_eq_residual_loss / len(loader),
-        "chamfer_loss": total_chamfer_loss_loss / len(loader)
+        "chamfer_loss": total_chamfer_loss_loss / len(loader),
     }
     if use_convex_loss:
         res["convex_loss"] = total_convex_loss / len(loader)
@@ -1270,15 +1286,19 @@ def evaluate_unsupervised(
             )
         # if use_area_loss:
         area_loss = get_area_loss(output_coord, data.y, data.face, bs, scaler)
-        
+
         # Chamfer loss
         coord_dim = output_coord.shape[-1]
         # Sampling according to monitor values, sampled 100 nodes per mesh
         mesh_test_raw = output_coord.view(bs, -1, coord_dim)
         mesh_target_raw = data.y.view(bs, -1, coord_dim)
         monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
-        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors)
-        chamfer_loss = 100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
+        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(
+            meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors
+        )
+        chamfer_loss = (
+            100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
+        )
 
         loss = (
             weight_deform_loss * deform_loss
@@ -1298,15 +1318,13 @@ def evaluate_unsupervised(
         total_inversion_diff_loss += (
             inversion_diff_loss.item() if use_inversion_diff_loss else 0
         )  # noqa
-        total_inversion_loss += (
-            inversion_loss.item() if use_inversion_loss else 0
-        )  # noqa
+        total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
         total_area_loss += weight_area_loss * area_loss.item()
     res = {
         "total_loss": total_loss / len(loader),
         "deform_loss": total_deform_loss / len(loader),
         "equation_residual": total_eq_residual_loss / len(loader),
-        "chamfer_loss": total_chamfer_loss_loss / len(loader)
+        "chamfer_loss": total_chamfer_loss_loss / len(loader),
     }
     if use_convex_loss:
         res["convex_loss"] = total_convex_loss / len(loader)
@@ -1317,6 +1335,7 @@ def evaluate_unsupervised(
     if use_area_loss:
         res["area_loss"] = total_area_loss / len(loader)
     return res
+
 
 def get_sample_tangle(out_coords, in_coords, face):
     """
@@ -1482,9 +1501,7 @@ def evaluate_repeat_sampling(
             total_inversion_diff_loss += (
                 inversion_diff_loss.item() if use_inversion_diff_loss else 0
             )  # noqa
-            total_inversion_loss += (
-                inversion_loss.item() if use_inversion_loss else 0
-            )  # noqa
+            total_inversion_loss += inversion_loss.item() if use_inversion_loss else 0  # noqa
             total_area_loss += area_loss.item() if use_area_loss else 0
     res = {
         "total_loss": total_loss / len(loaders[0]),

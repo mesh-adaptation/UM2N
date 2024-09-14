@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import warnings
 
 warnings.filterwarnings("ignore")
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # put the path to your data here

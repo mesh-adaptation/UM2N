@@ -4,21 +4,24 @@
 from pytest import fixture
 
 
-@fixture(scope='module')
+@fixture(scope="module")
 def warpmesh():
     import warpmesh
+
     return warpmesh
 
 
-@fixture(scope='module')
+@fixture(scope="module")
 def firedrake():
     import firedrake
+
     return firedrake
 
 
-@fixture(scope='module')
+@fixture(scope="module")
 def movement():
     import movement
+
     return movement
 
 

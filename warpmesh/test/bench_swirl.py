@@ -17,7 +17,6 @@ from torch_geometric.loader import DataLoader
 from warpmesh.model.train_util import generate_samples, construct_graph, model_forward
 
 
-
 def get_log_og(log_path, idx):
     """
     Read log file from dataset log dir and return value in it
@@ -142,9 +141,7 @@ class SwirlEvaluator:
         self.u = fd.Function(self.scalar_space).assign(self.u_init)
         self.u1 = fd.Function(self.scalar_space)
         self.u2 = fd.Function(self.scalar_space)
-        self.u_fine = fd.Function(self.scalar_space_fine).assign(
-            self.u_init_fine
-        )  # noqa
+        self.u_fine = fd.Function(self.scalar_space_fine).assign(self.u_init_fine)  # noqa
         self.u1_fine = fd.Function(self.scalar_space_fine)
         self.u2_fine = fd.Function(self.scalar_space_fine)
         self.u_in = fd.Constant(0.0)
@@ -175,9 +172,7 @@ class SwirlEvaluator:
 
         # PDE problem RHS on coarse & fine mesh
         self.a = self.phi * self.du_trial * fd.dx(domain=self.mesh)
-        self.a_fine = (
-            self.phi_fine * self.du_trial_fine * fd.dx(domain=self.mesh_fine)
-        )  # noqa
+        self.a_fine = self.phi_fine * self.du_trial_fine * fd.dx(domain=self.mesh_fine)  # noqa
 
         # PDE problem LHS on coarse & fine mesh
         #       on coarse mesh
@@ -240,17 +235,11 @@ class SwirlEvaluator:
         }  # noqa
         #       On coarse mesh
         self.prob1 = fd.LinearVariationalProblem(self.a, self.L1, self.du)
-        self.solv1 = fd.LinearVariationalSolver(
-            self.prob1, solver_parameters=params
-        )  # noqa
+        self.solv1 = fd.LinearVariationalSolver(self.prob1, solver_parameters=params)  # noqa
         self.prob2 = fd.LinearVariationalProblem(self.a, self.L2, self.du)
-        self.solv2 = fd.LinearVariationalSolver(
-            self.prob2, solver_parameters=params
-        )  # noqa
+        self.solv2 = fd.LinearVariationalSolver(self.prob2, solver_parameters=params)  # noqa
         self.prob3 = fd.LinearVariationalProblem(self.a, self.L3, self.du)
-        self.solv3 = fd.LinearVariationalSolver(
-            self.prob3, solver_parameters=params
-        )  # noqa
+        self.solv3 = fd.LinearVariationalSolver(self.prob3, solver_parameters=params)  # noqa
         #       On fine mesh
         self.prob1_fine = fd.LinearVariationalProblem(
             self.a_fine, self.L1_fine, self.du_fine
@@ -302,9 +291,7 @@ class SwirlEvaluator:
         self.u1_fine.assign(self.u_fine + self.du_fine)
 
         self.solv2_fine.solve()
-        self.u2_fine.assign(
-            0.75 * self.u_fine + 0.25 * (self.u1_fine + self.du_fine)
-        )  # noqa
+        self.u2_fine.assign(0.75 * self.u_fine + 0.25 * (self.u1_fine + self.du_fine))  # noqa
 
         self.solv3_fine.solve()
         self.u_cur_fine.assign(
@@ -485,9 +472,7 @@ class SwirlEvaluator:
                 self.project_u_()
                 self.solve_u(self.t)
                 function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)  # noqa
-                self.uh_new = fd.Function(function_space_new).project(
-                    self.u_cur
-                )  # noqa
+                self.uh_new = fd.Function(function_space_new).project(self.u_cur)  # noqa
 
                 # calculate solution on model output mesh
                 self.adapt_coord = out.detach().cpu().numpy()
@@ -495,17 +480,11 @@ class SwirlEvaluator:
                 self.mesh_model.coordinates.dat.data[:] = self.adapt_coord
                 self.project_u_()
                 self.solve_u(self.t)
-                function_space_model = fd.FunctionSpace(
-                    self.mesh_model, "CG", 1
-                )  # noqa
-                self.uh_model = fd.Function(function_space_model).project(
-                    self.u_cur
-                )  # noqa
+                function_space_model = fd.FunctionSpace(self.mesh_model, "CG", 1)  # noqa
+                self.uh_model = fd.Function(function_space_model).project(self.u_cur)  # noqa
 
                 # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
-                num_tangle = wm.get_sample_tangle(
-                    out, sample.x[:, :2], sample.face
-                )  # noqa
+                num_tangle = wm.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
                 if isinstance(num_tangle, torch.Tensor):
                     num_tangle = num_tangle.item()
                 if num_tangle > 0:  # has tangled elems:
@@ -519,9 +498,7 @@ class SwirlEvaluator:
                 # solve on fine mesh
                 function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
                 # self.solve_u_fine(self.t)
-                u_fine = fd.Function(function_space_fine).project(
-                    self.u_cur_fine
-                )  # noqa
+                u_fine = fd.Function(function_space_fine).project(self.u_cur_fine)  # noqa
 
                 fig, plot_data_dict = wm.plot_compare(
                     self.mesh_fine,
@@ -540,9 +517,7 @@ class SwirlEvaluator:
                 res["deform_loss"] = 1000 * torch.nn.L1Loss()(out, sample.y).item()
                 plot_data_dict["deform_loss"] = res["deform_loss"]
 
-                fig.savefig(
-                    os.path.join(self.plot_more_path, f"plot_{idx:04d}.png")
-                )  # noqa
+                fig.savefig(os.path.join(self.plot_more_path, f"plot_{idx:04d}.png"))  # noqa
                 plt.close(fig)
 
                 # Save plot data
@@ -593,9 +568,7 @@ class SwirlEvaluator:
                 ]  # noqa
                 res["error_reduction_model"] = (
                     res["error_og"] - res["error_model"]
-                ) / res[
-                    "error_og"
-                ]  # noqa
+                ) / res["error_og"]  # noqa
 
                 # save file
                 df = pd.DataFrame(res, index=[0])
@@ -612,9 +585,7 @@ class SwirlEvaluator:
                     pde_loss_reduction_MA=res["error_reduction_MA"],
                     tangle=res["tangled_element"],
                 )
-                plot_fig.savefig(
-                    os.path.join(self.plot_path, f"plot_{idx:04d}.png")
-                )  # noqa
+                plot_fig.savefig(os.path.join(self.plot_path, f"plot_{idx:04d}.png"))  # noqa
 
                 # plotting (visulisation during sovling)
                 plot = False
@@ -672,9 +643,7 @@ class SwirlEvaluator:
 
         function_space_coarse = fd.FunctionSpace(self.mesh, "CG", 1)
         # u_adapt_2_coarse = fd.project(self.u_cur, function_space_coarse)
-        u_adapt_2_coarse = fd.Function(function_space_coarse).project(
-            self.u_cur
-        )  # noqa
+        u_adapt_2_coarse = fd.Function(function_space_coarse).project(self.u_cur)  # noqa
         u_adapt_2_fine = fd.project(self.u_cur, function_space_fine)
 
         # error calculation

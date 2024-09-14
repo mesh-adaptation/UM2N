@@ -22,7 +22,7 @@ import firedrake as fd
 
 
 # model_names = ["M2N", "MRTransformer", "M2T"]#, "M2T"]
-model_names = ["M2N", "M2N_T"]#, "M2T"]
+model_names = ["M2N", "M2N_T"]  # , "M2T"]
 # run_ids = ["cyzk2mna", "u4uxcz1e", "99zrohiu", "ig1np6kx"]
 # run_id_model_mapping = {
 #     "cyzk2mna": "M2N",
@@ -32,13 +32,13 @@ model_names = ["M2N", "M2N_T"]#, "M2T"]
 # }
 
 # run_ids = ["g86hj04w", "3sicl8ny", "npouut8z"]#, "32gs384i"]
-run_ids = ["g86hj04w", "n4t1fqq2"]#, "32gs384i"]
+run_ids = ["g86hj04w", "n4t1fqq2"]  # , "32gs384i"]
 run_id_model_mapping = {
     "g86hj04w": "M2N",
     # "4u40se08": "M2N-en",
     # "3sicl8ny": "MRN",
     # "npouut8z": "M2T-w-edge",
-    "n4t1fqq2": "UM2N"
+    "n4t1fqq2": "UM2N",
 }
 
 trained_epoch = 999
@@ -92,7 +92,7 @@ for dataset_path in dataset_paths:
 
     num_vis = 100
     rows = 3
-    head_cols = 3 -1 
+    head_cols = 3 - 1
     cols = head_cols + len(run_ids)
     for n_v in range(num_vis):
         print(f"=== Visualizing number {n_v} of {dataset_name} ===")

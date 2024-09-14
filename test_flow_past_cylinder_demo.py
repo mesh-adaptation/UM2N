@@ -11,12 +11,13 @@ import warpmesh as wm
 import matplotlib.pyplot as plt
 from types import SimpleNamespace
 from inference_utils import get_conv_feat, find_edges, find_bd, InputPack, load_model
+
 print("Setting up solver.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #################### Load trained model ####################
 
-with open(f'./pretrain_model/config.yaml', 'r') as file:
+with open(f"./pretrain_model/config.yaml", "r") as file:
     config_data = yaml.safe_load(file)
     # print(config_data)
 
@@ -49,7 +50,7 @@ nu = fd.Constant(nu_val)
 
 # time step
 dt = 0.001
-# define a firedrake constant equal to dt so that variation forms 
+# define a firedrake constant equal to dt so that variation forms
 # not regenerated if we change the time step
 k = fd.Constant(dt)
 
@@ -106,47 +107,56 @@ for mesh_name in all_mesh_names:
     # Expressions for the variational forms
     n = fd.FacetNormal(mesh)
     f = fd.Constant((0.0, 0.0))
-    u_mid = 0.5*(u_now + u)
+    u_mid = 0.5 * (u_now + u)
 
     def sigma(u, p):
-        return 2*nu*fd.sym(fd.nabla_grad(u)) - p*fd.Identity(len(u))
-
+        return 2 * nu * fd.sym(fd.nabla_grad(u)) - p * fd.Identity(len(u))
 
     x, y = fd.SpatialCoordinate(mesh)
 
-
     if "multiple" in mesh_name:
         # Define boundary conditions
-        bcu = [fd.DirichletBC(V, fd.Constant((0,0)), (1, 4, 5, 6, 7, 8)), # top-bottom and cylinder
-                fd.DirichletBC(V, ((4.0*1.5*y*(0.41 - y) / 0.41**2) ,0), 2)] # inflow
+        bcu = [
+            fd.DirichletBC(
+                V, fd.Constant((0, 0)), (1, 4, 5, 6, 7, 8)
+            ),  # top-bottom and cylinder
+            fd.DirichletBC(V, ((4.0 * 1.5 * y * (0.41 - y) / 0.41**2), 0), 2),
+        ]  # inflow
     else:
         # Define boundary conditions
-        bcu = [fd.DirichletBC(V, fd.Constant((0,0)), (1, 4)), # top-bottom and cylinder
-                fd.DirichletBC(V, ((4.0*1.5*y*(0.41 - y) / 0.41**2) ,0), 2)] # inflow
+        bcu = [
+            fd.DirichletBC(V, fd.Constant((0, 0)), (1, 4)),  # top-bottom and cylinder
+            fd.DirichletBC(V, ((4.0 * 1.5 * y * (0.41 - y) / 0.41**2), 0), 2),
+        ]  # inflow
     bcp = [fd.DirichletBC(Q, fd.Constant(0), 3)]  # outflow
 
     U_mean = 1.0
     re_num = int(U_mean * 0.1 / nu_val)
     print(f"Re = {re_num}")
 
-
     # Define variational forms
-    F1 = fd.inner((u - u_now)/k, v) * fd.dx \
-        + fd.inner(fd.dot(u_now, fd.nabla_grad(u_mid)), v) * fd.dx \
-        + fd.inner(sigma(u_mid, p_now), fd.sym(fd.nabla_grad(v))) * fd.dx \
-        + fd.inner(p_now * n, v) * fd.ds \
-        - fd.inner(nu * fd.dot(fd.nabla_grad(u_mid), n), v) * fd.ds \
+    F1 = (
+        fd.inner((u - u_now) / k, v) * fd.dx
+        + fd.inner(fd.dot(u_now, fd.nabla_grad(u_mid)), v) * fd.dx
+        + fd.inner(sigma(u_mid, p_now), fd.sym(fd.nabla_grad(v))) * fd.dx
+        + fd.inner(p_now * n, v) * fd.ds
+        - fd.inner(nu * fd.dot(fd.nabla_grad(u_mid), n), v) * fd.ds
         - fd.inner(f, v) * fd.dx
+    )
 
     a1, L1 = fd.system(F1)
 
     a2 = fd.inner(fd.nabla_grad(p), fd.nabla_grad(q)) * fd.dx
-    L2 = fd.inner(fd.nabla_grad(p_now), fd.nabla_grad(q)) * fd.dx \
-        - (1/k) * fd.inner(fd.div(u_star), q) * fd.dx
+    L2 = (
+        fd.inner(fd.nabla_grad(p_now), fd.nabla_grad(q)) * fd.dx
+        - (1 / k) * fd.inner(fd.div(u_star), q) * fd.dx
+    )
 
     a3 = fd.inner(u, v) * fd.dx
-    L3 = fd.inner(u_star, v) * fd.dx \
+    L3 = (
+        fd.inner(u_star, v) * fd.dx
         - k * fd.inner(fd.nabla_grad(p_next - p_now), v) * fd.dx
+    )
 
     # Define linear problems
     prob1 = fd.LinearVariationalProblem(a1, L1, u_star, bcs=bcu)
@@ -154,9 +164,15 @@ for mesh_name in all_mesh_names:
     prob3 = fd.LinearVariationalProblem(a3, L3, u_next)
 
     # Define solvers
-    solve1 = fd.LinearVariationalSolver(prob1, solver_parameters={'ksp_type': 'gmres', 'pc_type': 'sor'})  
-    solve2 = fd.LinearVariationalSolver(prob2, solver_parameters={'ksp_type': 'cg', 'pc_type': 'gamg'})  
-    solve3 = fd.LinearVariationalSolver(prob3, solver_parameters={'ksp_type': 'cg', 'pc_type': 'sor'})  
+    solve1 = fd.LinearVariationalSolver(
+        prob1, solver_parameters={"ksp_type": "gmres", "pc_type": "sor"}
+    )
+    solve2 = fd.LinearVariationalSolver(
+        prob2, solver_parameters={"ksp_type": "cg", "pc_type": "gamg"}
+    )
+    solve3 = fd.LinearVariationalSolver(
+        prob3, solver_parameters={"ksp_type": "cg", "pc_type": "sor"}
+    )
 
     # Prep for saving solutions
     # u_save = fd.Function(V).assign(u_now)
@@ -168,21 +184,24 @@ for mesh_name in all_mesh_names:
 
     # Time loop
     t = 0.0
-    t_end = 8.
+    t_end = 8.0
 
     total_step = int((t_end - t) / dt)
     print("Beginning time loop...")
-
 
     def monitor_func(mesh, u, alpha=5.0):
         tensor_space = fd.TensorFunctionSpace(mesh, "CG", 1)
         uh_grad = fd.interpolate(fd.grad(u), tensor_space)
         grad_norm = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
-        grad_norm.interpolate(uh_grad[0, 0] ** 2 + uh_grad[0, 1] ** 2 + uh_grad[1, 0] ** 2 + uh_grad[1, 1] ** 2)
+        grad_norm.interpolate(
+            uh_grad[0, 0] ** 2
+            + uh_grad[0, 1] ** 2
+            + uh_grad[1, 0] ** 2
+            + uh_grad[1, 1] ** 2
+        )
         # normalizer = (grad_norm.vector().max() + 1e-6)
         # grad_norm.interpolate(alpha * grad_norm / normalizer + 1.0)
         return grad_norm
-
 
     # Extract input features
     coords = mesh.coordinates.dat.data_ro
@@ -192,7 +211,6 @@ for mesh_name in all_mesh_names:
     print(f"edge idx {edge_idx.shape}")
     bd_mask, _, _, _, _ = find_bd(mesh, Q)
     print(f"boundary mask {bd_mask.shape}")
-
 
     u_list = []
     step_cnt = 0
@@ -210,11 +228,9 @@ for mesh_name in all_mesh_names:
     os.makedirs(output_plot_path, exist_ok=True)
     os.makedirs(output_stat_path, exist_ok=True)
 
-
     if RUN_SIM:
         with torch.no_grad():
-            while t < t_end :
-
+            while t < t_end:
                 solve1.solve()
                 solve2.solve()
                 solve3.solve()
@@ -225,7 +241,7 @@ for mesh_name in all_mesh_names:
                 # p_save.assign(p_next)
                 # outfile_u.write(u_save)
                 # outfile_p.write(p_save)
-                
+
                 # u_list.append(fd.Function(u_next))
 
                 # update solutions
@@ -241,9 +257,9 @@ for mesh_name in all_mesh_names:
                 # u_adapted.interpolate(u_next)
                 # p_adapted.interpolate(p_next)
 
-                if( np.abs( t - np.round(t,decimals=0) ) < 1.e-8): 
-                    print('time = {0:.3f}'.format(t))
-                
+                if np.abs(t - np.round(t, decimals=0)) < 1.0e-8:
+                    print("time = {0:.3f}".format(t))
+
                 if step_cnt % save_interval == 0:
                     # print(f"{step_cnt} steps done.")
                     vorticity = vortex.project(fd.curl(u_now)).dat.data[:]
@@ -260,10 +276,12 @@ for mesh_name in all_mesh_names:
                     if SAVE_DATA:
                         with open(ret_file, "wb") as file:
                             pickle.dump(plot_dict, file)
-                    print(f"{step_cnt} steps done. Max vorticity: {np.max(vorticity)}, Min vorticity: {np.min(vorticity)}")
+                    print(
+                        f"{step_cnt} steps done. Max vorticity: {np.max(vorticity)}, Min vorticity: {np.min(vorticity)}"
+                    )
 
                 step_cnt += 1
-                # Recover the mesh back to init coord 
+                # Recover the mesh back to init coord
                 mesh.coordinates.dat.data[:] = init_coord
 
                 # Project u_adapted back to uniform mesh for computing monitors
@@ -276,7 +294,14 @@ for mesh_name in all_mesh_names:
                 monitor_val.dat.data[:] = filter_monitor_val / filter_monitor_val.max()
                 conv_feat = get_conv_feat(mesh, monitor_val)
                 start_time = time.perf_counter()
-                sample = InputPack(coord=coords, monitor_val=monitor_val.dat.data_ro.reshape(-1, 1), edge_index=edge_idx, bd_mask=bd_mask, conv_feat=conv_feat, stack_boundary=False)
+                sample = InputPack(
+                    coord=coords,
+                    monitor_val=monitor_val.dat.data_ro.reshape(-1, 1),
+                    edge_index=edge_idx,
+                    bd_mask=bd_mask,
+                    conv_feat=conv_feat,
+                    stack_boundary=False,
+                )
                 adapted_coord = model(sample)
                 end_time = time.perf_counter()
                 print(f"Model inference time: {(end_time - start_time)*1e3} ms")
@@ -290,14 +315,15 @@ for mesh_name in all_mesh_names:
                 # u_now.interpolate(u_adapted)
                 # p_now.interpolate(p_adapted)
 
-                # The buffer for adapted mesh should also be updated 
-                adapted_mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
+                # The buffer for adapted mesh should also be updated
+                adapted_mesh.coordinates.dat.data[:] = (
+                    adapted_coord.cpu().detach().numpy()
+                )
 
                 if step_cnt % total_step == 0:
                     break
 
         print("Simulation complete")
-
 
     all_data_files = sorted(glob.glob(f"{output_data_path}/*.pkl"))
     C_D_list = []
@@ -315,11 +341,11 @@ for mesh_name in all_mesh_names:
             p = data_dict["p"]
             vorticity = data_dict["vortex"]
             monitor_val = data_dict["monitor_val"]
-            
+
             # Mesh coordinates
             mesh.coordinates.dat.data[:] = init_coord
             adapted_mesh.coordinates.dat.data[:] = mesh_adapt
-            
+
             # The velocity is extracted from adapted mesh, we need to define the function space based on adapted mesh
             function_space_adapted_vec = fd.VectorFunctionSpace(adapted_mesh, "CG", 2)
             function_space_adapted = fd.FunctionSpace(adapted_mesh, "CG", 1)
@@ -338,13 +364,13 @@ for mesh_name in all_mesh_names:
             n = fd.FacetNormal(adapted_mesh)
             F_D = fd.assemble(fd.dot(n, sigma(u_holder, p_holder))[0] * fd.ds(4))
             F_L = fd.assemble(fd.dot(n, sigma(u_holder, p_holder))[1] * fd.ds(4))
-            C_D = 2/(Umean**2*L)*F_D
-            C_L = 2/(Umean**2*L)*F_L
+            C_D = 2 / (Umean**2 * L) * F_D
+            C_L = 2 / (Umean**2 * L) * F_L
             C_D_list.append(C_D)
             C_L_list.append(C_L)
 
             if VIZ:
-                rows = 4 
+                rows = 4
                 fig, ax = plt.subplots(rows, 1, figsize=(16, 20))
                 # Uniform mesh
                 fd.triplot(mesh, axes=ax[0])
@@ -365,15 +391,15 @@ for mesh_name in all_mesh_names:
                 # # ax1.axis('equal')
 
                 ax1 = ax[2]
-                ax1.set_xlabel('$x$', fontsize=16)
-                ax1.set_ylabel('$y$', fontsize=16)
-                ax1.set_title('Navier-Stokes - channel flow - vorticity', fontsize=16)
-                fd.tripcolor(vortex_holder ,axes=ax1, cmap=cmap, vmax=100, vmin=-100)
+                ax1.set_xlabel("$x$", fontsize=16)
+                ax1.set_ylabel("$y$", fontsize=16)
+                ax1.set_title("Navier-Stokes - channel flow - vorticity", fontsize=16)
+                fd.tripcolor(vortex_holder, axes=ax1, cmap=cmap, vmax=100, vmin=-100)
 
                 ax2 = ax[3]
-                ax2.set_xlabel('$x$', fontsize=16)
-                ax2.set_ylabel('$y$', fontsize=16)
-                ax2.set_title('Navier-Stokes - channel flow - velocity', fontsize=16)
+                ax2.set_xlabel("$x$", fontsize=16)
+                ax2.set_ylabel("$y$", fontsize=16)
+                ax2.set_title("Navier-Stokes - channel flow - velocity", fontsize=16)
                 cb = fd.tripcolor(u_holder, axes=ax2, cmap=cmap)
                 # plt.colorbar(cb)
                 # ax2.axis('equal')
@@ -391,10 +417,13 @@ for mesh_name in all_mesh_names:
                 for rr in range(rows):
                     ax[rr].set_aspect("equal", "box")
                 # plt.tight_layout()
-                plt.savefig(f"{output_plot_path}/cylinder_Re_{re_num}_{idx:06d}_adapt.png")
+                plt.savefig(
+                    f"{output_plot_path}/cylinder_Re_{re_num}_{idx:06d}_adapt.png"
+                )
                 plt.close()
             print(f"Idx {idx} Done")
-    
+
     import pandas as pd
-    df_stat = pd.DataFrame({"C_D":C_D_list, "C_L":C_L_list})
+
+    df_stat = pd.DataFrame({"C_D": C_D_list, "C_L": C_L_list})
     df_stat.to_csv(f"{output_stat_path}/df_stat.csv")

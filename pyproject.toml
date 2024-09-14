@@ -3,7 +3,6 @@ requires = ["setuptools"]
 
 [project]
 name = "warpmesh"
-use_scm_version = True
 version = "1.0"
 dependencies = [
   "numpy",

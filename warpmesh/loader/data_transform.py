@@ -15,6 +15,7 @@ import glob
 import torch
 import numpy as np
 from argparse import ArgumentParser
+
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from cluster_utils import get_new_edges  # noqa
@@ -23,32 +24,30 @@ from cluster_utils import get_new_edges  # noqa
 def arg_parse():
     parser = ArgumentParser()
     parser.add_argument(
-        '--target', type=str, default=None,
+        "--target",
+        type=str,
+        default=None,
         help=(
-                ('target directory. This dir should contain '),
-                ('`train`, `test` and `val` subdirs.')
-            )
+            ("target directory. This dir should contain "),
+            ("`train`, `test` and `val` subdirs."),
+        ),
     )
+    parser.add_argument("--r", type=float, default=0.35, help="radius of a cluster")
+    parser.add_argument("--M", type=int, default=None, help="nodes in a cluster")
     parser.add_argument(
-        '--r', type=float, default=0.35,
-        help="radius of a cluster"
-    )
-    parser.add_argument(
-        '--M', type=int, default=None,
-        help="nodes in a cluster"
-    )
-    parser.add_argument(
-        '--dist_weight', type=bool, default=False,
+        "--dist_weight",
+        type=bool,
+        default=False,
         help=(
-                "use weighted probability to sample " +
-                "nodes (according to distance to source)"
-        )
+            "use weighted probability to sample "
+            + "nodes (according to distance to source)"
+        ),
     )
     parser.add_argument(
-        '--add_nei', type=bool, default=False,
-        help=(
-                "add original neighbors to the cluster"
-        )
+        "--add_nei",
+        type=bool,
+        default=False,
+        help=("add original neighbors to the cluster"),
     )
     args_ = parser.parse_args()
     print(args_)
@@ -69,17 +68,10 @@ def add_edges(file_path, r, M, dist_weight, add_nei):
     # read in data
     data = np.load(file_path, allow_pickle=True)
     data_object = data.item()
-    coords = torch.from_numpy(
-        data_object.get('coord')
-    )
+    coords = torch.from_numpy(data_object.get("coord"))
     num_nodes = coords.shape[0]
-    edge_index = torch.from_numpy(
-        data_object.get('edge_index_bi')
-    ).to(torch.int64)
-    new_edges = get_new_edges(
-        num_nodes, coords,
-        edge_index, r, M,
-        dist_weight, add_nei)
+    edge_index = torch.from_numpy(data_object.get("edge_index_bi")).to(torch.int64)
+    new_edges = get_new_edges(num_nodes, coords, edge_index, r, M, dist_weight, add_nei)
     data_object["cluster_edges"] = new_edges
     # save the file
     np.save(file_path, data_object)
@@ -87,7 +79,7 @@ def add_edges(file_path, r, M, dist_weight, add_nei):
 
 
 def process_subset(file_path, r, M, dist_weight, add_nei):
-    file_pattern = os.path.join(file_path, 'data_*.npy')
+    file_pattern = os.path.join(file_path, "data_*.npy")
     files = glob.glob(file_pattern)
     # print("files: ", files)
     print(f"processing {len(files)} files in{file_path}")
@@ -99,9 +91,7 @@ def process_subset(file_path, r, M, dist_weight, add_nei):
 if __name__ == "__main__":
     print("Processing the dataset...")
     # define all the subdirectories
-    all_folders = [
-        'data', 'test', 'train', 'val'
-    ]
+    all_folders = ["data", "test", "train", "val"]
     # parse arguments, get the target directory and cluster radius
     args_ = arg_parse()
     dataset_root = args_.target
@@ -112,9 +102,7 @@ if __name__ == "__main__":
     dist_weight = args_.dist_weight
     add_nei = args_.add_nei
     # get all the subdirectories
-    subsets_path = [
-        os.path.join(dataset_root, folder) for folder in all_folders
-    ]
+    subsets_path = [os.path.join(dataset_root, folder) for folder in all_folders]
     # iterate through all the subsets
     for i in range(len(subsets_path)):
         process_subset(subsets_path[i], r, M, dist_weight, add_nei)

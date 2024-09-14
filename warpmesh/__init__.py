@@ -1,7 +1,8 @@
 import os
-os.environ['OMP_NUM_THREADS'] = "1"
 
-from pkg_resources import DistributionNotFound, get_distribution # noqa
+os.environ["OMP_NUM_THREADS"] = "1"
+
+from pkg_resources import DistributionNotFound, get_distribution  # noqa
 
 from .processor import *  # noqa
 from .generator import *  # noqa

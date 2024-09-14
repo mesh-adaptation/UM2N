@@ -63,7 +63,9 @@ class M2N_T(torch.nn.Module):
         # self.gfe = GlobalFeatExtractor(
         #     in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop
         # )
-        self.gfe = TransformerEncoder(num_transformer_in=gfe_in_c, num_transformer_out=self.gfe_out_c)
+        self.gfe = TransformerEncoder(
+            num_transformer_in=gfe_in_c, num_transformer_out=self.gfe_out_c
+        )
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
         self.deformer = NetGATDeform(in_dim=self.deformer_in_feat)
 

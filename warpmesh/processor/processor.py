@@ -126,9 +126,7 @@ class MeshProcessor:
         self.raw_feature = raw_feature
         self.coordinates = self.mesh.coordinates.dat.data_ro  # (num_nodes, 2)
         self.x = self.coordinates
-        self.optimal_coordinates = (
-            self.optimal_mesh.coordinates.dat.data_ro
-        )  # noqa (num_nodes, 2)
+        self.optimal_coordinates = self.optimal_mesh.coordinates.dat.data_ro  # noqa (num_nodes, 2)
         self.y = self.optimal_coordinates  # (num_nodes, 2), ground truth
         self.cell_node_list = self.function_space.cell_node_list
         self.num_nodes = self.cell_node_list.shape[1]
@@ -432,9 +430,7 @@ class MeshProcessor:
             self.down_bd = (
                 (self.coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),
             )  # noqa
-            self.up_bd = (
-                (self.coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),
-            )  # noqa
+            self.up_bd = ((self.coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),)  # noqa
             self.bd_all = np.any(
                 [self.left_bd, self.right_bd, self.down_bd, self.up_bd], axis=0
             )
