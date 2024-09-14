@@ -1,3 +1,6 @@
+"""
+Utilities for plots comparing experimental results.
+"""
 import firedrake as fd
 import matplotlib.pyplot as plt
 
@@ -18,6 +21,7 @@ def plot_compare(
     num_tangle,
     model_name,
 ):
+    # TODO: Write docstring
 
     # Construct function space
     coarse_res_function_space = fd.FunctionSpace(mesh, "CG", 1)

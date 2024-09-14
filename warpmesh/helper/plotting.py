@@ -1,5 +1,9 @@
-# Author: Chunyang Wang
-# GitHub Username: acse-cw1722
+"""
+Utilities for plotting experimental results.
+
+Author: Chunyang Wang
+GitHub Username: acse-cw1722
+"""
 
 import torch
 import networkx as nx
@@ -72,7 +76,6 @@ def plot_hessian(coord, face, hessian, ax=None):
     return ax, fig
 
 
-
 def plot_attention(attentions, ax=None):
     fig = None
     if ax is None:
@@ -142,6 +145,7 @@ def plot_attentions_map(out_atten_collections, out_loss_collections):
     #     ax[n_sample, num_models], _ = plot_mesh(target_mesh[n_sample], target_face[n_sample], ax=ax[n_sample, num_models])
     #     ax[n_sample, num_models].set_title("Target", fontsize=16)
     return fig
+
 
 def plot_attention_on_mesh(coord, face, atten_weights, selected_node=200, ax=None):
     fig = None
