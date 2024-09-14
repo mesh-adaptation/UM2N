@@ -6,27 +6,20 @@ name = "warpmesh"
 version = "1.0"
 dependencies = [
   "einops",
-  "flake8",
   "gmsh",
   "jupyter",
   "ipython",
   "matplotlib",
   "meshio",
-  "mpltools",
   "numpy",
   "pandas",
-  "pep8",
   "pytest",
-  "pytest-timeout",
   "rich",
   "ruff",
   "seaborn",
-  "sphinx",
   "tensorboardX",
   "torch",
   "torch_geometric",
-  "torch_scatter",
-  "torch_sparse",
 ]
 authors = [
   {name = "Chunyang Wang"},
