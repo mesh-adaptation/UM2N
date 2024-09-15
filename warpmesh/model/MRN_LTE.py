@@ -87,11 +87,9 @@ class MRNLocalTransformerEncoder(torch.nn.Module):
         Returns:
             coord (Tensor): Deformed coordinates.
         """
-        coord = data.x[:, :2]  # [num_nodes * batch_size, 2]
         conv_feat_in = data.conv_feat  # [batch_size, feat, grid, grid]
         batch_size = conv_feat_in.shape[0]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 4]
-        edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
 
         conv_feat = self.gfe(conv_feat_in)

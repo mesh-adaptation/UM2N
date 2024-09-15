@@ -426,54 +426,6 @@ class SwirlSolver:
         self.monitor_values.project(1 + alpha * self.grad_norm)
         return self.monitor_values
 
-    def monitor_function(self, mesh, alpha=10, beta=5):
-        self.project_u_()
-        self.solve_u(self.t)
-        self.u_hess.project(self.u_cur)
-
-        self.hessian_prob.solve()
-        self.f_norm.project(
-            self.l2_projection[0, 0] ** 2
-            + self.l2_projection[0, 1] ** 2
-            + self.l2_projection[1, 0] ** 2
-            + self.l2_projection[1, 1] ** 2
-        )
-
-        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
-
-        # Normlize the hessian
-        self.f_norm /= self.f_norm.vector().max()
-        self.f_norm.dat.data[:] = 1 / (1 + np.exp(-self.f_norm.dat.data[:])) - 0.5
-        self.f_norm /= self.f_norm.vector().max()
-
-        # Normlize the grad
-        self.grad_norm /= self.grad_norm.vector().max()
-        self.grad_norm.dat.data[:] = 1 / (1 + np.exp(-self.grad_norm.dat.data[:])) - 0.5
-        self.grad_norm /= self.grad_norm.vector().max()
-
-        # Interpolate on P0 space and then project back to P1 to induce numerical diffusion
-        # p0_space = fd.FunctionSpace(self.mesh, "CG", 0)
-        # self.f_norm = fd.interpolate(self.f_norm, p0_space).project(self.f_norm)
-        # self.grad_norm = fd.interpolate(self.grad_norm, p0_space).project(self.grad_norm)
-
-        # Choose the max values between grad norm and hessian norm according to
-        # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
-        # self.monitor_values.dat.data[:] = np.maximum(
-        #     beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
-        # )
-
-        self.monitor_values.dat.data[:] = (
-            beta * self.f_norm.dat.data[:] + alpha * self.grad_norm.dat.data[:]
-        ) / 2
-
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
-
-        self.monitor_values.project(1 + self.monitor_values)
-
-        return self.monitor_values
-
     def monitor_function_for_merge(self, mesh, alpha=10, beta=5):
         self.project_u_()
         self.solve_u(self.t)

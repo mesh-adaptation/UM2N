@@ -21,8 +21,6 @@ def plot_compare(
     # Construct function space
     coarse_res_function_space = fd.FunctionSpace(mesh, "CG", 1)
     high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
-    ma_function_space = fd.FunctionSpace(mesh_MA, "CG", 1)
-    model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
 
     # projections
     uh_model_hr = None

@@ -65,11 +65,9 @@ def find_edges(mesh, function_space):
         dim=1,
     )
 
-    single_edges = edges_packed
     edges_packed_reverse = edges_packed.clone()[:, [1, 0]]
     edge_bi = torch.cat([edges_packed, edges_packed_reverse], dim=0)
 
-    edge_T = single_edges.T.numpy()
     edge_bi_T = edge_bi.T.numpy()
     return edge_bi_T
 
@@ -101,7 +99,6 @@ def find_bd(mesh, function_space, use_4_edge=False, poly_mesh=False):
         right_bd = ((coordinates[:, 0] == x_end).astype(int).reshape(-1, 1),)  # noqa
         down_bd = ((coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),)  # noqa
         up_bd = ((coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),)  # noqa
-        bd_all = np.any([left_bd, right_bd, down_bd, up_bd], axis=0)
         left_bd = left_bd[0]
         right_bd = right_bd[0]
         down_bd = down_bd[0]

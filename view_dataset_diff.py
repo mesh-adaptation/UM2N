@@ -78,21 +78,21 @@ def create_dataset(config, data_paths):
         for data_path in data_paths
     ]
 
-    val_sets = [
-        MeshDataset(
-            os.path.join(data_path, "val"),
-            transform=normalise if config.is_normalise else None,
-            x_feature=config.x_feat,
-            mesh_feature=config.mesh_feat,
-            conv_feature=config.conv_feat,
-            conv_feature_fix=config.conv_feat_fix,
-            load_jacobian=config.use_jacob,
-            use_cluster=config.use_cluster,
-            r=config.cluster_r,
-            load_analytical=True,
-        )
-        for data_path in data_paths
-    ]
+    # val_sets = [
+    #     MeshDataset(
+    #         os.path.join(data_path, "val"),
+    #         transform=normalise if config.is_normalise else None,
+    #         x_feature=config.x_feat,
+    #         mesh_feature=config.mesh_feat,
+    #         conv_feature=config.conv_feat,
+    #         conv_feature_fix=config.conv_feat_fix,
+    #         load_jacobian=config.use_jacob,
+    #         use_cluster=config.use_cluster,
+    #         r=config.cluster_r,
+    #         load_analytical=True,
+    #     )
+    #     for data_path in data_paths
+    # ]
 
     # for training, datasets preperation
     train_set = AggreateDataset(train_sets)

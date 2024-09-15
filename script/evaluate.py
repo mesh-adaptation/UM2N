@@ -272,8 +272,6 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
     print(f"problem type: {problem_type}, domain: {domain}, meshtype: {meshtype}")
 
     if problem_type == "helmholtz" or problem_type == "poisson":
-        ds_info_df_path = os.path.join(ds_root, "info.csv")
-        df_info_df = pd.read_csv(ds_info_df_path)
         n_grid = None
         if int(meshtype) == 0:
             n_grid = int(ds_root.split("/")[-1].split(">")[-2][-2:])
@@ -460,13 +458,13 @@ def benchmark_model(model, dataset, eval_dir, ds_root, start_idx=0, num_samples=
 
         if n_grid is None:
             mesh = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
-            mesh_coarse = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
+            # mesh_coarse = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_ma = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_model = fd.Mesh(os.path.join(ds_root, "mesh", "mesh.msh"))
             mesh_fine = fd.Mesh(os.path.join(ds_root, "mesh_fine", "mesh.msh"))
         else:
             mesh = fd.UnitSquareMesh(n_grid, n_grid)
-            mesh_coarse = fd.UnitSquareMesh(n_grid, n_grid)
+            # mesh_coarse = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_ma = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
             mesh_fine = fd.UnitSquareMesh(100, 100)
@@ -1024,7 +1022,7 @@ if __name__ == "__main__":
     #     # poisson square
     #     '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_6',  # noqa
     #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_6/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_6',  # noqa
-    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa,
+    #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.04_n=400_aniso_full_meshtype_2',  # noqa
     #     # '/Users/chunyang/projects/WarpMesh/data/dataset_meshtype_2/poisson/z=<0,1>_ndist=None_max_dist=6_lc=0.045_n=400_aniso_full_meshtype_2',  # noqa
 
     #     # # poisson poly

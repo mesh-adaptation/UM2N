@@ -935,12 +935,12 @@ def model_forward(bs, data, model, use_add_random_query=True):
         ).view(-1, 2)
 
         num_nodes = coord_ori.shape[-2] // bs
-        input_kv = generate_samples(
-            bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device
-        )
+        # input_kv = generate_samples(
+        #     bs=bs, num_samples_per_mesh=num_nodes, data=data, device=device
+        # )
     else:
         mesh_sampled_queries = None
-        input_kv = None
+        # input_kv = None
         sampled_queries_edge_index = None
 
     # input_q = data.mesh_feat[:, :4]

@@ -14,7 +14,7 @@ import torch  # noqa
 from torch_geometric.loader import DataLoader
 
 import warpmesh as wm  # noqa
-from warpmesh.model.train_util import construct_graph, generate_samples
+from warpmesh.model.train_util import generate_samples
 
 
 def get_log_og(log_path, idx):
@@ -262,9 +262,6 @@ class BurgersEvaluator:
                             data=sample,
                             device=self.device,
                         )
-                        sampled_queries_edge_index = construct_graph(
-                            sampled_queries[:, :, :2], num_neighbors=6
-                        )
 
                         mesh_sampled_queries_x = (
                             sampled_queries[:, :, 0].view(-1, 1).detach()
@@ -274,9 +271,6 @@ class BurgersEvaluator:
                         )
                         mesh_sampled_queries_x.requires_grad = True
                         mesh_sampled_queries_y.requires_grad = True
-                        mesh_sampled_queries = torch.cat(
-                            [mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1
-                        ).view(-1, 2)
 
                         coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
                         coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
@@ -286,13 +280,6 @@ class BurgersEvaluator:
 
                         num_nodes = coord_ori.shape[-2] // bs
                         input_q = sample.mesh_feat[:, :4]
-                        input_kv = generate_samples(
-                            bs=bs,
-                            num_samples_per_mesh=num_nodes,
-                            data=sample,
-                            device=self.device,
-                        )
-                        # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
 
                         (output_coord_all, output, out_monitor), (phix, phiy) = (
                             self.model(
@@ -304,7 +291,6 @@ class BurgersEvaluator:
                                 sampled_queries_edge_index=None,
                             )
                         )
-                        # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
                         out = output_coord_all[: num_nodes * bs]
                     elif self.model_used == "M2N":
                         out = self.model(sample)

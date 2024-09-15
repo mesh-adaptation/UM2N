@@ -157,6 +157,7 @@ class MRNAtten(torch.nn.Module):
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
+        batch_size = data.conv_feat.shape[0]
 
         conv_feat = self.gfe(conv_feat_in)
         conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)

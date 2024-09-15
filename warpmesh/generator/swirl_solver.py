@@ -735,7 +735,6 @@ class SwirlSolver:
         self.t = 0.0
         step = 0
         idx = 0
-        eval_cnt = 0
         res = {
             "deform_loss": None,  # nodal position loss
             "tangled_element": None,  # tangled elements on a mesh  # noqa
@@ -755,10 +754,8 @@ class SwirlSolver:
             # data loading from raw file
             raw_data_path = self.dataset.file_names[idx]
             raw_data = np.load(raw_data_path, allow_pickle=True).item()
-            data_t = raw_data.get("swirl_params")["t"]
             y = raw_data.get("y")
             # print("raw data ", raw_data.keys())
-            u_adapt = raw_data.get("u_adapt")
             # error tracking lists init
             self.error_adapt_list = []
             self.error_og_list = []

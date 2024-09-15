@@ -79,7 +79,6 @@ class M2N_T(torch.nn.Module):
         batch_size = data.conv_feat.shape[0]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
-        node_num = data.node_num
 
         feat_dim = mesh_feat.shape[-1]
         global_feat = self.gfe(mesh_feat.view(batch_size, -1, feat_dim))
