@@ -59,4 +59,5 @@ ignore = [
   "E402",  # module level import not at top of file
   "F403",  # unable to detect undefined names
   "F405",  # name may be undefined, or defined from star imports
+  "I001",  # import block is unsorted or unformatted
 ]
