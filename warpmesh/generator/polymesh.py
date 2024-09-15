@@ -1,8 +1,8 @@
-import firedrake as fd
-import numpy as np
-import gmsh
 import random
 
+import firedrake as fd
+import gmsh
+import numpy as np
 
 __all__ = ["RandPolyMesh"]
 

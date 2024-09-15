@@ -2,9 +2,10 @@
 # GitHub Username: acse-cw1722
 
 import os
+
+import firedrake as fd
 import numpy as np
 import torch
-import firedrake as fd
 from firedrake.cython.dmcommon import facet_closure_nodes
 
 os.environ["OMP_NUM_THREADS"] = "1"

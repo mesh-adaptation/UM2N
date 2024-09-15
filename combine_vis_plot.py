@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import pickle
 
 model_names = ["M2N", "M2N", "MRTransformer", "M2T"]

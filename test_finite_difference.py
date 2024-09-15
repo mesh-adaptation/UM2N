@@ -1,11 +1,12 @@
+import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from warpmesh.loader import MeshDataset, normalise, AggreateDataset
 from torch_geometric.data import DataLoader
-from torch_geometric.nn import knn_graph
+
+from warpmesh.loader import AggreateDataset, MeshDataset, normalise
 
 
 def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):
@@ -179,25 +180,25 @@ fig, ax = plt.subplots(
 ax[0, 0].scatter(coords[0, :, 0], coords[0, :, 1])
 ax[0, 0].set_title(r"$\xi_{query}$")
 ax[0, 1].scatter(meshes[0, :, 0], meshes[0, :, 1])
-title_str = f"xi_f"
+title_str = "xi_f"
 ax[0, 1].set_title(r"$\{}$".format(title_str))
 
 ax[1, 0].scatter(coords[0, :, 0], coords[0, :, 1], c=solution[0, :, 0])
 ax[1, 0].set_title(r"$u_{query}$")
 ax[1, 1].scatter(meshes[0, :, 0], meshes[0, :, 1], c=solution_struct_grid[0, :, 0])
-title_str_1 = f"u_f"
+title_str_1 = "u_f"
 ax[1, 1].set_title(r"${}$".format(title_str_1))
 
 ax[2, 0].scatter(coords[0, :, 0], coords[0, :, 1], c=solution_x[0, :, 0])
 ax[2, 0].set_title(r"$u_x$")
 ax[2, 1].scatter(meshes[0, :, 0], meshes[0, :, 1], c=solution_x_strut_grid[0, :, 0])
-title_str_2 = f"u_x"
+title_str_2 = "u_x"
 ax[2, 1].set_title(r"${}$".format(title_str_2))
 
 ax[3, 0].scatter(coords[0, :, 0], coords[0, :, 1], c=solution_y[0, :, 0])
 ax[3, 0].set_title(r"$u_y$")
 ax[3, 1].scatter(meshes[0, :, 0], meshes[0, :, 1], c=solution_y_strut_grid[0, :, 0])
-title_str_3 = f"u_y"
+title_str_3 = "u_y"
 ax[3, 1].set_title(r"${}$".format(title_str_3))
 
 # for i in range(1, num_show+1):

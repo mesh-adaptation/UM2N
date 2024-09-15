@@ -4,15 +4,15 @@
 # import packages
 import datetime
 import glob
-import torch
 import os
-import wandb
+from types import SimpleNamespace
 
 import firedrake as fd
 import pandas as pd
-import warpmesh as wm
+import torch
+import wandb
 
-from types import SimpleNamespace
+import warpmesh as wm
 
 os.environ["OMP_NUM_THREADS"] = "1"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -827,7 +827,7 @@ class SwirlSolver:
         # Solution on high resolution mesh
         cb = fd.tripcolor(self.u_cur_fine, cmap=cmap, axes=ax)
         plt.colorbar(cb)
-        ax.set_title(f"u_cur_fine")
+        ax.set_title("u_cur_fine")
         # cb = fd.tripcolor(self.u_fine, cmap=cmap, axes=ax[1])
         # plt.colorbar(cb)
         # ax[1].set_title(f"u_fine")

@@ -15,11 +15,13 @@
 
 # %% import packages and setup
 import warnings
-import warpmesh as wm
-import torch
-import numpy as np  # noqa
+
 import matplotlib.pyplot as plt  # noqa
+import numpy as np  # noqa
+import torch
 from torch_geometric.data import DataLoader  # noqa
+
+import warpmesh as wm
 
 torch.no_grad()
 warnings.filterwarnings("ignore")

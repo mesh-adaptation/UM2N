@@ -2,13 +2,15 @@
 # GitHub Username: chunyang-w
 
 import os
-import pandas as pd
-import warpmesh as wm
-import firedrake as fd
-import shutil
-import matplotlib.pyplot as plt
 import random
+import shutil
 from argparse import ArgumentParser
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import warpmesh as wm
 
 
 def arg_parse():

@@ -2,8 +2,9 @@
 # GitHub Username: acse-cw1722
 
 import firedrake as fd
-import warpmesh as wm
 import matplotlib.pyplot as plt  # noqa
+
+import warpmesh as wm
 
 __all__ = ["compare_error"]
 

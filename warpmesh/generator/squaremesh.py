@@ -1,7 +1,6 @@
 import firedrake as fd
 import gmsh
 
-
 __all__ = ["UnstructuredSquareMesh"]
 
 

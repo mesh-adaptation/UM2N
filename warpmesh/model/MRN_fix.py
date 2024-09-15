@@ -1,18 +1,19 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import sys
 import os
-from torch_geometric.nn import GATv2Conv, MessagePassing
+import sys
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.nn import GATv2Conv, MessagePassing
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from extractor import (  # noqa: E402
-    LocalFeatExtractor,
     GlobalFeatExtractor,
+    LocalFeatExtractor,
 )
 
 __all__ = ["MRN_fix"]

@@ -1,12 +1,13 @@
+import glob
 import os
 import pickle
-import glob
-import yaml
+
+import firedrake as fd
+import matplotlib.pyplot as plt
 
 # import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import firedrake as fd
+import yaml
 
 # model_names = ["M2N", "M2N", "M2T", "M2T"]
 # run_ids = ["jetaq10f", "dglbbrdq", "m9fqgqnb", "boj2eks9"]
@@ -114,12 +115,12 @@ for dataset_path in dataset_paths:
                 mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
                 mesh_fine = fd.UnitSquareMesh(100, 100)
             else:
-                mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
-                mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
+                mesh_og = fd.Mesh(os.path.join(dataset_path, "mesh", "mesh.msh"))
+                mesh_MA = fd.Mesh(os.path.join(dataset_path, "mesh", "mesh.msh"))
                 mesh_fine = fd.Mesh(
-                    os.path.join(dataset_path, "mesh_fine", f"mesh.msh")
+                    os.path.join(dataset_path, "mesh_fine", "mesh.msh")
                 )
-                mesh_model = fd.Mesh(os.path.join(dataset_path, "mesh", f"mesh.msh"))
+                mesh_model = fd.Mesh(os.path.join(dataset_path, "mesh", "mesh.msh"))
         else:
             raise Exception(f"{problem_type} not implemented.")
 
@@ -312,10 +313,10 @@ for dataset_path in dataset_paths:
 
         # High resolution mesh
         fd.triplot(mesh_fine, axes=ax[0, 0])
-        ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
+        ax[0, 0].set_title("High resolution Mesh (100 x 100)")
         # Orginal low resolution uniform mesh
         fd.triplot(mesh_og, axes=ax[0, 1])
-        ax[0, 1].set_title(f"Original uniform Mesh")
+        ax[0, 1].set_title("Original uniform Mesh")
         # # Adapted mesh (MA)
         # fd.triplot(mesh_MA, axes=ax[0, 2])
         # ax[0, 2].set_title(f"Adapted Mesh (MA)")
@@ -324,13 +325,13 @@ for dataset_path in dataset_paths:
         cb = fd.tripcolor(
             u_exact, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 0]
         )
-        ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
+        ax[1, 0].set_title("Solution on High Resolution (u_exact)")
         plt.colorbar(cb)
         # Solution on orginal low resolution uniform mesh
         cb = fd.tripcolor(
             u_og, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 1]
         )
-        ax[1, 1].set_title(f"Solution on uniform Mesh")
+        ax[1, 1].set_title("Solution on uniform Mesh")
         plt.colorbar(cb)
         # # Solution on adapted mesh (MA)
         # cb = fd.tripcolor(
@@ -341,7 +342,7 @@ for dataset_path in dataset_paths:
 
         # Monitor values
         cb = fd.tripcolor(monitor_values, cmap=cmap, axes=ax[2, 0])
-        ax[2, 0].set_title(f"Monitor values")
+        ax[2, 0].set_title("Monitor values")
         plt.colorbar(cb)
 
         # Error on orginal low resolution uniform mesh

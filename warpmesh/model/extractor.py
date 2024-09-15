@@ -1,11 +1,9 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-from torch_geometric.nn import MessagePassing
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
-import torch.nn.functional as F
+from torch_geometric.nn import MessagePassing
 from transformer_model import TransformerModel
 
 __all__ = ["LocalFeatExtractor", "GlobalFeatExtractor"]

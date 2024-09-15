@@ -1,5 +1,5 @@
 import torch
-from torch_geometric.utils import mask_to_index, index_to_mask
+from torch_geometric.utils import index_to_mask, mask_to_index
 
 __all__ = [
     "sampler",

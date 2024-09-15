@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 import torch
 import torch.nn.functional as F
 
@@ -7,7 +8,6 @@ cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from extractor import LocalFeatExtractor, TransformerEncoder  # noqa: E402
 from gatdeformer import DeformGAT  # noqa: E402
-
 
 __all__ = ["M2N_T"]
 

@@ -7,15 +7,16 @@
 # marker of this project may need to contact the original author for
 # original code base.
 
-from torch_geometric.nn.conv import MessagePassing
-from torch_geometric.utils import softmax
-from torch_geometric.nn.inits import glorot
-from torch_geometric.typing import OptPairTensor, Adj, OptTensor
+from typing import Optional, Union
+
 import torch
-from torch import Tensor
 import torch.nn.functional as F
-from torch.nn import Parameter, Linear
-from typing import Union, Optional
+from torch import Tensor
+from torch.nn import Linear, Parameter
+from torch_geometric.nn.conv import MessagePassing
+from torch_geometric.nn.inits import glorot
+from torch_geometric.typing import Adj, OptPairTensor, OptTensor
+from torch_geometric.utils import softmax
 
 __all__ = ["DeformGAT"]
 

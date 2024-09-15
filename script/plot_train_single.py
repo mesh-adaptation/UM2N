@@ -6,9 +6,10 @@
 
 # %% import packages and setup
 import os
-import pandas as pd
-import numpy as np  # noqa
+
 import matplotlib.pyplot as plt  # noqa
+import numpy as np  # noqa
+import pandas as pd
 
 # %% plot model training loss, test tangle
 model_name = "M2N_combo"

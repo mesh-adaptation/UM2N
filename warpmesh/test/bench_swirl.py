@@ -1,20 +1,20 @@
 # Author: Chunyang Wang
 # GitHub username: chunyang-w
 
-import firedrake as fd
 import os
-import time
-import torch
 import pickle
+import time
+from pprint import pprint  # noqa
 
+import firedrake as fd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import warpmesh as wm
-
-from pprint import pprint  # noqa
+import torch
 from torch_geometric.loader import DataLoader
-from warpmesh.model.train_util import generate_samples, construct_graph, model_forward
+
+import warpmesh as wm
+from warpmesh.model.train_util import model_forward
 
 
 def get_log_og(log_path, idx):

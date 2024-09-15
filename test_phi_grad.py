@@ -1,23 +1,19 @@
-import warpmesh as wm
-import wandb
-import firedrake as fd
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-import movement as mv
-import matplotlib.tri as tri
-from torch_geometric.data import DataLoader
-from torch.utils.data import SequentialSampler
-from types import SimpleNamespace
-from io import BytesIO
-from warpmesh.model.train_util import (
-    model_forward,
-    compute_phi_hessian,
-    compute_finite_difference,
-    generate_samples_structured_grid,
-)
-
 import warnings
+from types import SimpleNamespace
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import wandb
+from torch.utils.data import SequentialSampler
+from torch_geometric.data import DataLoader
+
+import warpmesh as wm
+from warpmesh.model.train_util import (
+    generate_samples_structured_grid,
+    model_forward,
+)
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -174,7 +170,7 @@ if dataset_name == "helmholtz":
 
     # dataset_dir = f"./data/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=10_aniso_full"
     # dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full"
-    dataset_dir = f"./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6"
+    dataset_dir = "./data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=50_aniso_full_algo_6"
     # dataset_dir = f"./data/dataset_meshtype_6/helmholtz/z=<0,1>_ndist=None_max_dist=6_lc=0.05_n=100_aniso_full_meshtype_6"
     # test_dir = f"./data/with_sampling/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
     # test_dir = f"./data/large_scale_test/helmholtz/z=<0,1>_ndist=None_max_dist=6_<{test_ms}x{test_ms}>_n=100_aniso_full/data"
@@ -182,7 +178,7 @@ if dataset_name == "helmholtz":
 elif dataset_name == "swirl":
     # dataset_dir = f"./data/dataset/swirl/sigma_0.017_alpha_1.0_r0_0.2_lc_0.05_interval_5"
     # Swirl
-    dataset_dir = f"./data/swirl/z=<0,1>_ndist=None_max_dist=6_<30x30>_n=iso_pad"
+    dataset_dir = "./data/swirl/z=<0,1>_ndist=None_max_dist=6_<30x30>_n=iso_pad"
 test_dir = f"{dataset_dir}/data"
 
 random_seed = 1
@@ -593,10 +589,10 @@ if dataset_name == "helmholtz":
     )
 elif dataset_name == "swirl":
     model_mesh = mesh_gen.load_mesh(
-        file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh.msh")
+        file_path=os.path.join(f"{dataset_dir}/mesh", "mesh.msh")
     )
     fd_mesh = mesh_gen.load_mesh(
-        file_path=os.path.join(f"{dataset_dir}/mesh", f"mesh.msh")
+        file_path=os.path.join(f"{dataset_dir}/mesh", "mesh.msh")
     )
 
 fig, axs = plt.subplots(num_variables, 6, figsize=(48, 8 * num_variables))

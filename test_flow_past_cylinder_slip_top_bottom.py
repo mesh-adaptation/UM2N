@@ -1,12 +1,14 @@
 import os
-import wandb
-import torch
 import pickle
-import firedrake as fd
-import numpy as np
-import matplotlib.pyplot as plt
 from types import SimpleNamespace
-from inference_utils import get_conv_feat, find_edges, find_bd, InputPack, load_model
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import wandb
+
+from inference_utils import InputPack, find_bd, find_edges, get_conv_feat, load_model
 
 print("Setting up solver.")
 

@@ -2,8 +2,9 @@
 # GitHub Username: acse-cw1722
 # Modified by Mingrui Zhang
 
-import sys
 import os
+import sys
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

@@ -1,18 +1,19 @@
 import datetime
 import glob
-import time
-import torch
 import os
-import wandb
 import pickle
+import time
+from types import SimpleNamespace
 
 import firedrake as fd
 import matplotlib.pyplot as plt  # noqa
 import pandas as pd
-import warpmesh as wm
+import torch
+import wandb
 from torch_geometric.loader import DataLoader
-from types import SimpleNamespace
-from warpmesh.model.train_util import generate_samples, construct_graph, model_forward
+
+import warpmesh as wm
+from warpmesh.model.train_util import model_forward
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

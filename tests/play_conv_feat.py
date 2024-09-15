@@ -1,6 +1,8 @@
-import warpmesh as wm
-import firedrake as fd
 import os
+
+import firedrake as fd
+
+import warpmesh as wm
 
 os.environ["OMP_NUM_THREADS"] = "1"
 

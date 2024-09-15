@@ -1,10 +1,12 @@
 import os
-import warpmesh as wm
-import torch
-import firedrake as fd
-import movement as mv
-import matplotlib.pyplot as plt
 import warnings
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import movement as mv
+import torch
+
+import warpmesh as wm
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

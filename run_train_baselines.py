@@ -2,44 +2,32 @@
 # %load_ext autoreload
 # %autoreload 2
 
-from warpmesh.model import (
-    M2N,
-    train,
-    train_unsupervised,
-    evaluate,
-    evaluate_unsupervised,
-    MRN,
-    count_dataset_tangle,
-    M2N_dynamic_drop,
-    M2N_dynamic_no_drop,
-    MRNAtten,
-    M2NAtten,
-)
-from warpmesh.model import (
-    MRNGlobalTransformerEncoder,
-    MRNLocalTransformerEncoder,
-    MRTransformer,
-    M2T,
-    M2N_T,
-)
-from warpmesh.helper import mkdir_if_not_exist, plot_loss, plot_tangle
-from warpmesh.helper import save_namespace_to_yaml, load_yaml_to_namespace
-from warpmesh.loader import MeshDataset, normalise, AggreateDataset
+# from google.colab import userdata
+import argparse
 
 # from google.colab import runtime
 import os
-import gc
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-from datetime import datetime
 import warnings
-from torch_geometric.data import DataLoader
-import wandb
+from datetime import datetime
 
-# from google.colab import userdata
-import argparse
-from argparse import Namespace
+import numpy as np
+import torch
+import wandb
+from torch_geometric.data import DataLoader
+
+from warpmesh.helper import load_yaml_to_namespace, save_namespace_to_yaml
+from warpmesh.loader import AggreateDataset, MeshDataset, normalise
+from warpmesh.model import (
+    M2N,
+    M2N_T,
+    M2T,
+    MRN,
+    MRTransformer,
+    evaluate,
+    evaluate_unsupervised,
+    train,
+    train_unsupervised,
+)
 
 random_seed = 666
 

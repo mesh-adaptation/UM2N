@@ -9,12 +9,13 @@
 #    1. Iterate through all the files in a directory, 'train', 'test' and 'val'
 #    2. For each file, we need to read the file, and add extra edges
 
+import glob
 import os
 import sys
-import glob
-import torch
-import numpy as np
 from argparse import ArgumentParser
+
+import numpy as np
+import torch
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)

@@ -1,20 +1,20 @@
 # Author: Chunyang Wang
 # GitHub Username: chunyang-w
 
-import firedrake as fd
-import numpy as np  # noqa
-import matplotlib.pyplot as plt  # noqa
 import os  # noqa
 import random  # noqa
 import time  # noqa
-import torch  # noqa
-import warpmesh as wm  # noqa
-
-import pandas as pd  # noqa
-
 from pprint import pprint  # noqa
+
+import firedrake as fd
+import matplotlib.pyplot as plt  # noqa
+import numpy as np  # noqa
+import pandas as pd  # noqa
+import torch  # noqa
 from torch_geometric.loader import DataLoader
-from warpmesh.model.train_util import generate_samples, construct_graph
+
+import warpmesh as wm  # noqa
+from warpmesh.model.train_util import construct_graph, generate_samples
 
 
 def get_log_og(log_path, idx):

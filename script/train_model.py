@@ -3,15 +3,17 @@
 # Code for training the model locally. May require modification to run this.
 
 import os
-import warpmesh as wm
-import torch
-import pandas as pd
-from datetime import datetime
-from rich.progress import Progress
-from rich.live import Live
-from rich.console import Console
 import warnings
+from datetime import datetime
+
+import pandas as pd
+import torch
+from rich.console import Console
+from rich.live import Live
+from rich.progress import Progress
 from torch_geometric.data import DataLoader
+
+import warpmesh as wm
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

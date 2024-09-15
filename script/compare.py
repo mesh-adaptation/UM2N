@@ -2,12 +2,14 @@
 # GitHub Username: acse-cw1722
 # %% import block
 import warnings
-import warpmesh as wm
-import torch
-import pandas as pd
-import numpy as np  # noqa
+
 import matplotlib.pyplot as plt  # noqa
+import numpy as np  # noqa
+import pandas as pd
+import torch
 from torch_geometric.data import DataLoader  # noqa
+
+import warpmesh as wm
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

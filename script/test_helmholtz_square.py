@@ -2,16 +2,18 @@
 # GitHub Username: chunyang-w
 
 import os
-import pandas as pd
-import warpmesh as wm
-import firedrake as fd
-import shutil
-import matplotlib.pyplot as plt
 import random
-from argparse import ArgumentParser
+import shutil
 import time
-import wandb
+from argparse import ArgumentParser
 from types import SimpleNamespace
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import pandas as pd
+import wandb
+
+import warpmesh as wm
 
 entity = "w-chunyang"
 project_name = "warpmesh"

@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch import einsum
-from einops import rearrange, repeat
+from einops import rearrange
 
 
 class MLP_model(torch.nn.Module):

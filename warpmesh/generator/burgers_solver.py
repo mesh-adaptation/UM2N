@@ -1,13 +1,15 @@
 # Author: Chunyang Wang
 # GitHub Username: chunyang-w
 
-import firedrake as fd
-import numpy as np  # noqa
-import matplotlib.pyplot as plt  # noqa
-import movement as mv
-import warpmesh as wm  # noqa
 import random  # noqa
 import time
+
+import firedrake as fd
+import matplotlib.pyplot as plt  # noqa
+import movement as mv
+import numpy as np  # noqa
+
+import warpmesh as wm  # noqa
 
 __all__ = ["BurgersSolver"]
 

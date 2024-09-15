@@ -1,7 +1,8 @@
 import os
-import numpy as np
+
 import firedrake as fd
 import movement as mv
+
 from warpmesh.generator.equation_solver import EquationSolver
 
 os.environ["OMP_NUM_THREADS"] = "1"

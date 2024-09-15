@@ -4,10 +4,10 @@
 
 import os
 import sys
-from torch_geometric.nn import GATv2Conv, MessagePassing
+
 import torch
 import torch.nn as nn
-
+from torch_geometric.nn import GATv2Conv, MessagePassing
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)

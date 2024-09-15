@@ -1,12 +1,13 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import torch
 import glob
 import os
 import sys
+
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+import torch
+from torch.utils.data import DataLoader, Dataset
 from torch_geometric.data import Data
 
 cur_dir = os.path.dirname(__file__)

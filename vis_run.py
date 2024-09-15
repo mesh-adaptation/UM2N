@@ -1,16 +1,11 @@
-import warpmesh as wm
-import wandb
-import firedrake as fd
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-import movement as mv
-import matplotlib.tri as tri
-from torch_geometric.data import DataLoader
-from types import SimpleNamespace
-from io import BytesIO
-
 import warnings
+from types import SimpleNamespace
+
+import torch
+import wandb
+from torch_geometric.data import DataLoader
+
+import warpmesh as wm
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

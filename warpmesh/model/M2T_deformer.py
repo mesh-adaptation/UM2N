@@ -1,10 +1,11 @@
 import os
 import sys
-from torch_geometric.nn import GATv2Conv, MessagePassing
+
 import torch
 import torch.nn as nn
-from M2N import NetGATDeform
 from extractor import LocalFeatExtractor
+from M2N import NetGATDeform
+from torch_geometric.nn import GATv2Conv, MessagePassing
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)

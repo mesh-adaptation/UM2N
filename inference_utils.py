@@ -1,10 +1,11 @@
 import os
+
+import firedrake as fd
 import numpy as np
 import torch
-import firedrake as fd
-import warpmesh as wm
 from firedrake.cython.dmcommon import facet_closure_nodes
 
+import warpmesh as wm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

@@ -1,11 +1,12 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import movement as mv
 import os
-import torch
+
 import firedrake as fd
 import matplotlib.pyplot as plt
+import movement as mv
+import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

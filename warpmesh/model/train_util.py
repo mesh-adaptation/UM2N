@@ -2,13 +2,12 @@
 # GitHub Username: acse-cw1722
 # Modified by Mingrui Zhang
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-from torch_geometric.loader import DataLoader
-from torch_geometric.nn import MessagePassing
-from torch_geometric.nn import knn_graph
 from pytorch3d.loss import chamfer_distance
+from torch_geometric.loader import DataLoader
+from torch_geometric.nn import MessagePassing, knn_graph
 
 __all__ = [
     "train",

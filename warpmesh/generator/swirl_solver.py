@@ -15,13 +15,12 @@ import pandas as pd
 from torch_geometric.loader import DataLoader
 import firedrake.function as ffunc
 import firedrake.functionspace as ffs
-import firedrake.mesh as fmesh
 import ufl
 
 import matplotlib.pyplot as plt  # noqa
 
 from tqdm import tqdm  # noqa
-from warpmesh.model.train_util import generate_samples, construct_graph, model_forward
+from warpmesh.model.train_util import model_forward
 
 
 def get_log_og(log_path, idx):

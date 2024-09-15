@@ -1,7 +1,9 @@
 import os
-import warpmesh as wm
-import torch
 import warnings
+
+import torch
+
+import warpmesh as wm
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

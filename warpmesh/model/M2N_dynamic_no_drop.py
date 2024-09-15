@@ -7,16 +7,17 @@
 # marker of this project may need to contact the original author for
 # original code base.
 
-import sys
 import os
+import sys
+
 import torch
 import torch.nn.functional as F
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from extractor import (  # noqa: E402
-    LocalFeatExtractor,
     GlobalFeatExtractor,
+    LocalFeatExtractor,
 )
 from gatdeformer import DeformGAT  # noqa: E402
 

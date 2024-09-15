@@ -1,6 +1,7 @@
 import glob
-import pandas as pd
+
 import matplotlib.pyplot as plt
+import pandas as pd
 
 log_files = glob.glob(
     "./eval/2024_01_24_00_17_49_MRTransformer_999_8ndi2teh/helmholtz_square/log/*.csv"

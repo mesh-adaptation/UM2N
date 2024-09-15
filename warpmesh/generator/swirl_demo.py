@@ -6,7 +6,6 @@
 #     1. Use discontinuous Galerkin (DG) FEM methods
 
 import firedrake as fd
-
 from matplotlib import pyplot as plt
 
 n_grid = 60

@@ -1,10 +1,10 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import torch
-import networkx as nx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import networkx as nx
+import torch
 from matplotlib.collections import PolyCollection
 
 __all__ = [
@@ -119,11 +119,11 @@ def plot_mesh_compare_benchmark(
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
     ax[0], _ = plot_mesh(coord_out, face, ax=ax[0])
     ax[0].set_title(
-        f"Output | Deform Loss: {deform_loss:.2f} | PDE Loss (model): {pde_loss_model:.5f} ({pde_loss_reduction_model*100:.2f}$\%$) |Tangle: {tangle:.2f}"
+        rf"Output | Deform Loss: {deform_loss:.2f} | PDE Loss (model): {pde_loss_model:.5f} ({pde_loss_reduction_model*100:.2f}$\%$) |Tangle: {tangle:.2f}"
     )
     ax[1], _ = plot_mesh(coord_target, face, ax=ax[1])
     ax[1].set_title(
-        f"Target | PDE Loss (MA): {pde_loss_MA:.5f} ({pde_loss_reduction_MA*100:.2f}$\%$)"
+        rf"Target | PDE Loss (MA): {pde_loss_MA:.5f} ({pde_loss_reduction_MA*100:.2f}$\%$)"
     )
     return fig
 

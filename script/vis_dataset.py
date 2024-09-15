@@ -2,10 +2,11 @@
 # GitHub Username: acse-cw1722
 
 # %% setup
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import warpmesh as wm
 import firedrake as fd
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+
+import warpmesh as wm
 
 x_feat = [
     "coord",

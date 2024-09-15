@@ -2,19 +2,20 @@
 # GitHub Username: acse-cw1722
 # Modified by Mingrui Zhang
 
-import sys
 import os
+import sys
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
-from extractor import (  # noqa: E402
-    LocalFeatExtractor,
-)
 from deformer import (  # noqa: E402
     RecurrentGATConv,
+)
+from extractor import (  # noqa: E402
+    LocalFeatExtractor,
 )
 from transformer_model import TransformerModel
 

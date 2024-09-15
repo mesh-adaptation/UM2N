@@ -1,14 +1,16 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 # %% importimport warnings
-import warpmesh as wm
-import torch
-import pandas as pd  # noqa
-import numpy as np  # noqa
-import matplotlib.pyplot as plt  # noqa
-import firedrake as fd
 import warnings
+
+import firedrake as fd
+import matplotlib.pyplot as plt  # noqa
+import numpy as np  # noqa
+import pandas as pd  # noqa
+import torch
 from torch_geometric.data import DataLoader  # noqa
+
+import warpmesh as wm
 
 torch.no_grad()
 warnings.filterwarnings("ignore")  # noqa

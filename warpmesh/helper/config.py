@@ -1,5 +1,6 @@
-import yaml
 import argparse
+
+import yaml
 
 
 def load_yaml_to_namespace(yaml_file_path):

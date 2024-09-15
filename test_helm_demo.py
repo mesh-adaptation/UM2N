@@ -1,22 +1,21 @@
-import os
-import glob
 import time
+from types import SimpleNamespace
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import yaml
-import pickle
-import firedrake as fd
-import numpy as np
+
 import warpmesh as wm
-import matplotlib.pyplot as plt
-from types import SimpleNamespace
-from inference_utils import get_conv_feat, find_edges, find_bd, InputPack, load_model
+from inference_utils import InputPack, find_bd, find_edges, get_conv_feat
 
 print("Setting up solver.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #################### Load trained model ####################
 
-with open(f"./pretrain_model/config.yaml", "r") as file:
+with open("./pretrain_model/config.yaml", "r") as file:
     config_data = yaml.safe_load(file)
     # print(config_data)
 
@@ -93,7 +92,6 @@ model = model.to(device)
 #
 # First, we always need a mesh. Let's have a :math:`10\times10` element unit square::
 
-import firedrake as fd
 
 # These meshes can be replaced by generated mesh
 mesh = fd.UnitSquareMesh(50, 50)
