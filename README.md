@@ -6,7 +6,11 @@
 
 ## 🔎 About this project:
 
-In the famous TV series Star Trek, the starship Enterprise is able to travel faster than light by warping space-time. In this project, we 'warp' the underlying mesh of a discretised PDE problem to win some computational time. The node of the mesh is moved to the ideal position guided by a GNN, which is supposed to be faster than numerical solvers.
+In the famous TV series Star Trek, the starship Enterprise is able to travel
+faster than light by warping space-time. In this project, we 'warp' the
+underlying mesh of a discretised PDE problem to win some computational time.
+The node of the mesh is moved to the ideal position guided by a Graph Neural
+Network (GNN), which is supposed to be faster than numerical solvers.
 
 
 The latest test status:
@@ -18,42 +22,63 @@ The latest test status:
 
 ### The easy way:
 
-Just navigate to **project root** folder, open terminal and execute the `install/install.sh` shell script:
+Just navigate to **project root** folder, open terminal and execute the
+`install/install.sh` shell script:
 
 ``` shell
 sh ./install/install.sh
 ```
 
-This will install [firedrake](https://www.firedrakeproject.org/download.html) and [movement](https://github.com/mesh-adaptation/movement) under `install` folder, as well as the `WarpMesh` package.
+This will install [Firedrake](https://www.firedrakeproject.org/download.html)
+and [Movement](https://github.com/mesh-adaptation/movement) under the `install`
+folder, as well as the `WarpMesh` package.
 
 
 ### The hard way (in case the easy way did not went well or you want to challenge yourself):
 
-1. The mesh generation relies on firedrake, which is a python package. To install firedrake, please follow the instructions on [firedrakeproject.org](https://www.firedrakeproject.org/download.html).
+1. The mesh generation relies on Firedrake, which is a Python package. To
+   install Firedrake, please follow the instructions on
+   [firedrakeproject.org](https://www.firedrakeproject.org/download.html).
 
-2. The movement of the mesh is implemented by `mesh-adaptation/movement`, install it in the firedrake venv. To install, run `pip install -e .` in the `mesh-adaptation/movement` directory. Here is a link to that repo: [mesh-adaptation/movement](https://github.com/mesh-adaptation/movement).
+2. The movement of the mesh is implemented by `mesh-adaptation/movement`,
+   install it in the Firedrake virtual environment. To install, run
+   `pip install -e .` in the `mesh-adaptation/movement` directory. Here is a
+   link to that repo: [mesh-adaptation/movement](https://github.com/mesh-adaptation/movement).
 
-3. Use the venv provided by firedrake to install the dependencies of this project. The venv is located at `~/firedrakevenv/bin/activate`. To activate the venv, run `source ~/firedrakevenv/bin/activate`. Then run `pip install -r requirements.txt` to install the dependencies.
+3. Use the virtual environment provided by Firedrake to install the dependencies
+   of this project. The virtual environment is located at
+   `~/firedrakevenv/bin/activate`. To activate the virtual environment, run
+   `source ~/firedrakevenv/bin/activate`.
 
-4. Run `pip install -e .` in the root directory of this project to install the package.
+4. Run `pip install -e .` in the root directory of this project to install the
+   package and its dependencies.
 
 
 ## 💿 Dataset generation
 
-In case you do not wish to generate the dataset by yourself, here is a pre-generated dataset on google drive: [link](https://drive.google.com/drive/folders/1sQ-9zWbTryCXwihqaqazrQ4Vp1MRdBPK?usp=sharing) In this folder you can find all cases used to train/test the model. The naming convention of the file is 'z=<0,1>_n_dist={number_of_distribution_used}_max_dist={maximum_distribution_used}_<{number_of_grid_in_x_direction}_{number_of_grid_in_y_direction}>_n={number_of_samples}_{data_set_type}'
+In case you do not wish to generate the dataset by yourself, here is a
+pre-generated dataset on Google Drive:
+[link](https://drive.google.com/drive/folders/1sQ-9zWbTryCXwihqaqazrQ4Vp1MRdBPK?usp=sharing).
+In this folder you can find all cases used to train/test the model. The naming
+convention of the file is 'z=<0,1>_n_dist={number_of_distribution_used}_max_dist={maximum_distribution_used}_<{number_of_grid_in_x_direction}_{number_of_grid_in_y_direction}>_n={number_of_samples}_{data_set_type}'
 
-if `n_dist = None`, then the number of gaussian distribution used will be randomly choosed from 1 to `max_dist`, otherwise, `n_dist` will be used to generate a fixed number of gaussian distribution version dataset.
+If `n_dist = None`, then the number of Gaussian distribution used will be
+randomly chosen from 1 to `max_dist`, otherwise, `n_dist` will be used to
+generate a fixed number of Gaussian distribution version dataset.
 
-the {data_set_type} will be either 'smpl' or 'cmplx', indicating whether the dataset is isotropic or anisotropic.
+The {data_set_type} will be either `'smpl'` or `'cmplx'`, indicating whether the
+dataset is isotropic or anisotropic.
 
-after download, you should put the downloaded folder `helmholtz` under `data/dataset` folder.
+After download, you should put the downloaded folder `helmholtz` under
+`data/dataset` folder.
 
 ### Generate the dataset by yourself
 
 ```{shell}
 . script/make_dataset.sh
 ```
-This command will make following datasets by solving Monge-Ampère eq with following PDEs:
+This command will make following datasets by solving Monge-Ampère equation with
+the following PDEs:
 
 + Burgers equation (on square domain)
 + Helmholtz equation (both square/random polygon domain)
@@ -66,25 +91,30 @@ n_dist_end=10
 n_grid_start=15
 n_grid_end=35
 ```
-
 defined in `script/make_dataset.sh` to generate datasets of different sizes.
 
-The number of samples in the dataset can be changed by modifying the variable `n_sample` in `script/build_helmholtz_dataset`.
+The number of samples in the dataset can be changed by modifying the variable
+`n_sample` in `script/build_helmholtz_dataset`.
 
 ## 🚀 Train the model
 
-A training notebook is provided: `script/train_warpmesh.ipynb`. Further training details can be found in the notebook.
+A training notebook is provided: `script/train_warpmesh.ipynb`. Further training
+details can be found in the notebook.
 
-Here is also a link to pretrained models: [link](https://drive.google.com/drive/folders/1P_JMpU1qmLdmbGTz8fL5VO-lEBoP3_2n?usp=sharing)
+Here is also a link to pre-trained models:
+[link](https://drive.google.com/drive/folders/1P_JMpU1qmLdmbGTz8fL5VO-lEBoP3_2n?usp=sharing)
 
 ## 📊 Evaluate the model
 
-There are a set of visulisation scipypt under `script/` folder. The script can be used to evaluate the model performance.
+There are a set of visualisation script under `script/` folder. The script can
+be used to evaluate the model performance.
 
-**Bear in mind that the path to datasets/model_weight in those files need calibration**
+**Bear in mind that the path to datasets/model_weight in those files need
+calibration**
 
 ## 📖 Documentation
-The documentation is generated by sphinx. To build the documentation,under the `docs` folder.
+The documentation is generated by Sphinx. To build the documentation,under the
+`docs` folder.
 
 
 ## 🧩 Project Layout
@@ -125,12 +155,9 @@ The documentation is generated by sphinx. To build the documentation,under the `
 ├── setup.py
 ├── requirements.txt
 ├── README.md
-
 ```
 
-
-## Useful thing: delete plot dir
-
+## Useful thing: delete plot directory
 
 ```
 find ./ -type d -name "plot" -exec rm -rf {} +
