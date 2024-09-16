@@ -16,17 +16,7 @@ function green_log() {
 
 yellow_log "Please deactivate conda enviroment before running this script, otherwise it will fail."
 
-# Download mesh-adaptation/movement package.
-green_log "Start downloading Movement..."
-
-if [ -d ./install/movement ]; then
-  yellow_log "Movement dir exists, abort downloading"
-fi
-
-if [ ! -d ./install/movement ]; then
-  yellow_log "Movement does not exist, start downloading Movement"
-  git submodule add https://github.com/mesh-adaptation/movement.git install/movement
-fi
+INSTALL_DIR=$(pwd)
 
 # Download & install firedrake
 cd ./install
@@ -38,18 +28,28 @@ fi
 
 if [ ! -d ./firedrake ]; then
   curl -O https://raw.githubusercontent.com/firedrakeproject/firedrake/master/scripts/firedrake-install
-  python3 firedrake-install --disable-ssh
+  python3 firedrake-install
   green_log "Firedrake has been installed"
 fi
 
 # Activate Firedrake enviroment
 . ./firedrake/bin/activate
 
+# Install PyTorch
+green_log "Downloading PyTorch..."
+python3 -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install PyTorch3d
+green_log "Downloading PyTorch3d..."
+python3 -m pip install "git+https://github.com/facebookresearch/pytorch3d"
+
 # Install Movement
+green_log "Downloading Movement..."
+cd ${VIRTUAL_ENV}/src
+git clone https://github.com/mesh-adaptation/movement.git
 cd movement
 pip install -e .
 
 # Install WarpMesh
-cd ../..
-pip install -r requirements.txt
+cd ${INSTALL_DIR}
 pip install -e .

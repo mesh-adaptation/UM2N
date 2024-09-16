@@ -18,7 +18,7 @@ The latest test status:
 
 ### The easy way:
 
-Just navigate to **project root** folder, open terminaland execute the `install/install.sh` shell script:
+Just navigate to **project root** folder, open terminal and execute the `install/install.sh` shell script:
 
 ``` shell
 sh ./install/install.sh
