@@ -1,11 +1,10 @@
 import firedrake as fd
 import gmsh
 
-
 __all__ = ["UnstructuredSquareMesh"]
 
 
-class UnstructuredSquareMesh():
+class UnstructuredSquareMesh:
     """
     Create a random polygonal mesh by spliting the edge of a
     square randomly.
@@ -61,15 +60,17 @@ class UnstructuredSquareMesh():
     def get_points(self):
         temp = []
         for i in range(len(self.raw_points)):
-            temp.append(gmsh.model.geo.addPoint(
-                self.raw_points[i][0], self.raw_points[i][1], 0, self.lc))
+            temp.append(
+                gmsh.model.geo.addPoint(
+                    self.raw_points[i][0], self.raw_points[i][1], 0, self.lc
+                )
+            )
         self.points = temp
 
     def get_line(self):
         for i in range(len(self.points)):
-            if (i < len(self.points) - 1):
-                line = gmsh.model.geo.addLine(
-                    self.points[i], self.points[i + 1])
+            if i < len(self.points) - 1:
+                line = gmsh.model.geo.addLine(self.points[i], self.points[i + 1])
                 self.lines.append(line)
             else:
                 line = gmsh.model.geo.addLine(self.points[i], self.points[0])
@@ -83,8 +84,7 @@ class UnstructuredSquareMesh():
             gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
 
     def get_curve(self):
-        gmsh.model.geo.addCurveLoop(
-            [i for i in range(1, len(self.points) + 1)], 1)
+        gmsh.model.geo.addCurveLoop([i for i in range(1, len(self.points) + 1)], 1)
 
     def get_plane(self):
         gmsh.model.geo.addPlaneSurface([1], 1)
@@ -100,10 +100,10 @@ class UnstructuredSquareMesh():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    
+
     mesh_gen = UnstructuredSquareMesh(mesh_type=1)
     mesh_coarse = mesh_gen.get_mesh(res=5e-2, file_path="./temp1.msh")
     mesh_fine = mesh_gen.get_mesh(res=4e-2, file_path="./temp2.msh")
-    mesh_gen.show('./temp1.msh')
-    mesh_gen.show('./temp2.msh')
+    mesh_gen.show("./temp1.msh")
+    mesh_gen.show("./temp2.msh")
     plt.show()

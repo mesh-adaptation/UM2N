@@ -2,14 +2,16 @@
 # GitHub Username: chunyang-w
 
 import os
-import pandas as pd
-import warpmesh as wm
-import firedrake as fd
-import shutil
-import matplotlib.pyplot as plt
 import random
-from argparse import ArgumentParser
+import shutil
 import time
+from argparse import ArgumentParser
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import warpmesh as wm
 
 
 def arg_parse():
@@ -283,26 +285,17 @@ if __name__ == "__main__":
             uh = solver.solve_eq()
             # Generate Mesh
             hessian = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": mesh
-                }
+                params={"eq": helmholtz_eq, "mesh": mesh}
             ).get_hessian(mesh)
 
             hessian_norm = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": mesh
-                    }
+                params={"eq": helmholtz_eq, "mesh": mesh}
             ).get_hessian_norm(mesh)
             hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 
             # Get monitor val
             monitor_val = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": mesh
-                }
+                params={"eq": helmholtz_eq, "mesh": mesh}
             ).monitor_func(mesh)
 
             # grad_uh_norm = wm.MeshGenerator(
@@ -322,12 +315,7 @@ if __name__ == "__main__":
             grad_norm /= grad_norm.vector().max()
             grad_uh_norm = grad_norm
 
-            mesh_gen = wm.MeshGenerator(
-                params={
-                    "eq": helmholtz_eq,
-                    "mesh": mesh
-                }
-            )
+            mesh_gen = wm.MeshGenerator(params={"eq": helmholtz_eq, "mesh": mesh})
 
             start = time.perf_counter()
             new_mesh = mesh_gen.move_mesh()  # noqa
@@ -477,26 +465,26 @@ if __name__ == "__main__":
 
             # High resolution mesh
             fd.triplot(high_res_mesh, axes=ax[0, 0])
-            ax[0, 0].set_title(f"High resolution Mesh ")
+            ax[0, 0].set_title("High resolution Mesh ")
             # Orginal low resolution uniform mesh
             fd.triplot(mesh, axes=ax[0, 1])
-            ax[0, 1].set_title(f"Original uniform Mesh")
+            ax[0, 1].set_title("Original uniform Mesh")
             # Adapted mesh
             fd.triplot(new_mesh, axes=ax[0, 2])
-            ax[0, 2].set_title(f"Adapted Mesh (MA)")
+            ax[0, 2].set_title("Adapted Mesh (MA)")
 
             cmap = "seismic"
             # Solution on high resolution mesh
             cb = fd.tripcolor(u_exact, cmap=cmap, axes=ax[1, 0])
-            ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
+            ax[1, 0].set_title("Solution on High Resolution (u_exact)")
             plt.colorbar(cb)
             # Solution on orginal low resolution uniform mesh
             cb = fd.tripcolor(uh, cmap=cmap, axes=ax[1, 1])
-            ax[1, 1].set_title(f"Solution on uniform Mesh")
+            ax[1, 1].set_title("Solution on uniform Mesh")
             plt.colorbar(cb)
             # Solution on adapted mesh
             cb = fd.tripcolor(uh_new, cmap=cmap, axes=ax[1, 2])
-            ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
+            ax[1, 2].set_title("Solution on Adapted Mesh (MA)")
             plt.colorbar(cb)
 
             err_orignal_mesh = fd.assemble(uh_proj - u_exact)
@@ -515,7 +503,7 @@ if __name__ == "__main__":
 
             # Error on high resolution mesh
             cb = fd.tripcolor(monitor_val, cmap=cmap, axes=ax[2, 0])
-            ax[2, 0].set_title(f"Monitor values")
+            ax[2, 0].set_title("Monitor values")
             plt.colorbar(cb)
             # Error on orginal low resolution uniform mesh
             cb = fd.tripcolor(

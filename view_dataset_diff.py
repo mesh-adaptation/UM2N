@@ -1,19 +1,15 @@
-from warpmesh.loader import MeshDataset, normalise, AggreateDataset
 import os
-import gc
-import torch
-import numpy as np
+from datetime import datetime
+
 import firedrake as fd
 import matplotlib.pyplot as plt
-from datetime import datetime
-import warnings
+import numpy as np
+import torch
 from torch_geometric.data import DataLoader
-from warpmesh.helper import save_namespace_to_yaml, load_yaml_to_namespace
-import wandb
-import argparse
-from argparse import Namespace
-import warpmesh as wm
 
+import warpmesh as wm
+from warpmesh.helper import load_yaml_to_namespace
+from warpmesh.loader import AggreateDataset, MeshDataset, normalise
 
 # parser = argparse.ArgumentParser(
 #     prog="Warpmesh", description="warp the mesh", epilog="warp the mesh"
@@ -82,21 +78,21 @@ def create_dataset(config, data_paths):
         for data_path in data_paths
     ]
 
-    val_sets = [
-        MeshDataset(
-            os.path.join(data_path, "val"),
-            transform=normalise if config.is_normalise else None,
-            x_feature=config.x_feat,
-            mesh_feature=config.mesh_feat,
-            conv_feature=config.conv_feat,
-            conv_feature_fix=config.conv_feat_fix,
-            load_jacobian=config.use_jacob,
-            use_cluster=config.use_cluster,
-            r=config.cluster_r,
-            load_analytical=True,
-        )
-        for data_path in data_paths
-    ]
+    # val_sets = [
+    #     MeshDataset(
+    #         os.path.join(data_path, "val"),
+    #         transform=normalise if config.is_normalise else None,
+    #         x_feature=config.x_feat,
+    #         mesh_feature=config.mesh_feat,
+    #         conv_feature=config.conv_feat,
+    #         conv_feature_fix=config.conv_feat_fix,
+    #         load_jacobian=config.use_jacob,
+    #         use_cluster=config.use_cluster,
+    #         r=config.cluster_r,
+    #         load_analytical=True,
+    #     )
+    #     for data_path in data_paths
+    # ]
 
     # for training, datasets preperation
     train_set = AggreateDataset(train_sets)
@@ -161,46 +157,46 @@ cmap = "seismic"
 ## Row-1
 # High resolution mesh old
 fd.triplot(mesh_old_fine, axes=ax[0, 0])
-ax[0, 0].set_title(f"Fine mesh (old)")
+ax[0, 0].set_title("Fine mesh (old)")
 # Orginal low resolution uniform mesh old
 fd.triplot(mesh_old, axes=ax[0, 1])
-ax[0, 1].set_title(f"Mesh (old)")
+ax[0, 1].set_title("Mesh (old)")
 # Solution
 mesh_function_space_old.dat.data[:] = (
     train_set_old[num_selected].mesh_feat[:, 2].reshape(-1)[:]
 )
 cb = fd.tripcolor(mesh_function_space_old, cmap=cmap, axes=ax[0, 2])
-ax[0, 2].set_title(f"Solution (Old)")
+ax[0, 2].set_title("Solution (Old)")
 plt.colorbar(cb)
 # Hessian norm
 mesh_function_space_old.dat.data[:] = (
     train_set_old[num_selected].mesh_feat[:, 3].reshape(-1)[:]
 )
 cb = fd.tripcolor(mesh_function_space_old, cmap=cmap, axes=ax[0, 3])
-ax[0, 3].set_title(f"Hessian norm (Old)")
+ax[0, 3].set_title("Hessian norm (Old)")
 plt.colorbar(cb)
 
 
 ## Row-2
 # High resolution mesh old
 fd.triplot(mesh_new_fine, axes=ax[1, 0])
-ax[1, 0].set_title(f"Fine mesh (old)")
+ax[1, 0].set_title("Fine mesh (old)")
 # Orginal low resolution uniform mesh old
 fd.triplot(mesh_new, axes=ax[1, 1])
-ax[1, 1].set_title(f"Mesh (new)")
+ax[1, 1].set_title("Mesh (new)")
 # Solution
 mesh_function_space_new.dat.data[:] = (
     train_set_new[num_selected].mesh_feat[:, 2].reshape(-1)[:]
 )
 cb = fd.tripcolor(mesh_function_space_new, cmap=cmap, axes=ax[1, 2])
-ax[1, 2].set_title(f"Solution (new)")
+ax[1, 2].set_title("Solution (new)")
 plt.colorbar(cb)
 # Hessian norm
 mesh_function_space_new.dat.data[:] = (
     train_set_new[num_selected].mesh_feat[:, 3].reshape(-1)[:]
 )
 cb = fd.tripcolor(mesh_function_space_new, cmap=cmap, axes=ax[1, 3])
-ax[1, 3].set_title(f"Hessian norm (new)")
+ax[1, 3].set_title("Hessian norm (new)")
 plt.colorbar(cb)
 
 
@@ -212,7 +208,7 @@ mesh_function_space_new.dat.data[:] = (
 )
 
 cb = fd.tripcolor(mesh_function_space_new, cmap=cmap, axes=ax[2, 0])
-ax[2, 0].set_title(f"Diff between Fine mesh (x-direction)")
+ax[2, 0].set_title("Diff between Fine mesh (x-direction)")
 plt.colorbar(cb)
 
 # Orginal low resolution uniform mesh old
@@ -221,7 +217,7 @@ mesh_function_space_new.dat.data[:] = (
     - train_set_new[num_selected].mesh_feat[:, 1].reshape(-1)[:]
 )
 cb = fd.tripcolor(mesh_function_space_new, cmap=cmap, axes=ax[2, 1])
-ax[2, 1].set_title(f"Diff between Fine mesh (y-direction)")
+ax[2, 1].set_title("Diff between Fine mesh (y-direction)")
 plt.colorbar(cb)
 
 # Solution
@@ -230,7 +226,7 @@ mesh_function_space_new.dat.data[:] = (
     - train_set_new[num_selected].mesh_feat[:, 2].reshape(-1)[:]
 )
 cb = fd.tripcolor(mesh_function_space_new, cmap=cmap, axes=ax[2, 2])
-ax[2, 2].set_title(f"Solution (u_old - u_new)")
+ax[2, 2].set_title("Solution (u_old - u_new)")
 plt.colorbar(cb)
 # Hessian norm
 mesh_function_space_new.dat.data[:] = (
@@ -238,7 +234,7 @@ mesh_function_space_new.dat.data[:] = (
     - train_set_new[num_selected].mesh_feat[:, 3].reshape(-1)[:]
 )
 cb = fd.tripcolor(mesh_function_space_new, cmap=cmap, axes=ax[2, 3])
-ax[2, 3].set_title(f"Hessian norm (h_old - h_new)")
+ax[2, 3].set_title("Hessian norm (h_old - h_new)")
 plt.colorbar(cb)
 
 # # Solution on high resolution mesh

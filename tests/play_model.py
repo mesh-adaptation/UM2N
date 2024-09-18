@@ -1,17 +1,16 @@
 import os
-import warpmesh as wm
-import torch
 import warnings
+
+import torch
 from torch_geometric.loader import DataLoader
 
+import warpmesh as wm
+
 warnings.filterwarnings("ignore")
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-model = wm.MRN(
-    deform_in_c=3,
-    num_loop=3
-)
+model = wm.MRN(deform_in_c=3, num_loop=3)
 
 x_feat = [
     "coord",
@@ -33,8 +32,7 @@ conv_feat = [
 
 is_normalise = True
 
-project_dir = os.path.dirname(
-    os.path.dirname((os.path.abspath(__file__))))
+project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 data_set_path = os.path.join(project_dir, "data/")
 data_path = data_set_path
 

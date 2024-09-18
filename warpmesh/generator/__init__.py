@@ -7,4 +7,3 @@ from .polymesh import *  # noqa
 from .squaremesh import *  # noqa
 from .burgers_solver import *  # noqa
 from .swirl_solver import *  # noqa
-

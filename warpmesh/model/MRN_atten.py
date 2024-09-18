@@ -1,19 +1,22 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import sys
 import os
-from torch_geometric.nn import GATv2Conv, MessagePassing
+import sys
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.nn import GATv2Conv, MessagePassing
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from extractor import (  # noqa: E402
-    LocalFeatExtractor, GlobalFeatExtractor
+    GlobalFeatExtractor,
+    LocalFeatExtractor,
 )
-__all__ = ['MRNAtten']
+
+__all__ = ["MRNAtten"]
 
 
 class RecurrentGATConv(MessagePassing):
@@ -25,17 +28,15 @@ class RecurrentGATConv(MessagePassing):
         to_coord (nn.Sequential): Output layer for coordinates.
         activation (nn.SELU): Activation function.
     """
-    def __init__(self, coord_size=2,
-                 hidden_size=512,
-                 heads=6, concat=False
-                 ):
+
+    def __init__(self, coord_size=2, hidden_size=512, heads=6, concat=False):
         super(RecurrentGATConv, self).__init__()
         # GAT layer
         self.to_hidden = GATv2Conv(
-            in_channels=coord_size+hidden_size,
+            in_channels=coord_size + hidden_size,
             out_channels=hidden_size,
             heads=heads,
-            concat=concat
+            concat=concat,
         )
         # output coord layer
         self.to_coord = nn.Sequential(
@@ -85,8 +86,8 @@ class MRNAtten(torch.nn.Module):
         lin (nn.Linear): Linear layer for feature transformation.
         deformer (RecurrentGATConv): GAT-based deformer block.
     """
-    def __init__(self, gfe_in_c=2, lfe_in_c=4,
-                 deform_in_c=7, num_loop=3):
+
+    def __init__(self, gfe_in_c=2, lfe_in_c=4, deform_in_c=7, num_loop=3):
         """
         Initialize MRN.
 
@@ -102,19 +103,23 @@ class MRNAtten(torch.nn.Module):
         self.lfe_out_c = 16
         self.hidden_size = 512  # set here
         # minus 2 because we are not using x,y coord (first 2 channels)
-        self.all_feat_c = (
-            (deform_in_c-2) + self.gfe_out_c + self.lfe_out_c)
+        self.all_feat_c = (deform_in_c - 2) + self.gfe_out_c + self.lfe_out_c
 
         self.gfe = GlobalFeatExtractor(in_c=gfe_in_c, out_c=self.gfe_out_c)
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
 
-        #=======================================================
+        # =======================================================
         # Define the self attention layer
         self.embed_dim = 512
         self.num_heads = 1
         self.dense_dim = 512
         assert self.embed_dim % self.num_heads == 0
-        self.atten = nn.MultiheadAttention(embed_dim=self.embed_dim, dropout=0.1, num_heads=self.num_heads, batch_first=True)
+        self.atten = nn.MultiheadAttention(
+            embed_dim=self.embed_dim,
+            dropout=0.1,
+            num_heads=self.num_heads,
+            batch_first=True,
+        )
         self.pre_attn_norm = nn.LayerNorm(self.embed_dim)
         self.post_attn_norm = nn.LayerNorm(self.embed_dim)
         self.post_attn_dropout = nn.Dropout(0.1)
@@ -123,18 +128,15 @@ class MRNAtten(torch.nn.Module):
         self.dense_2 = nn.Linear(self.dense_dim, self.embed_dim)
         self.pre_dense_norm = nn.LayerNorm(self.embed_dim)
         self.post_dense_norm = nn.LayerNorm(self.dense_dim)
-        activation="GELU"
+        activation = "GELU"
         self.activation = getattr(nn, activation)()
-        #=======================================================
+        # =======================================================
 
         # use a linear layer to transform the input feature to hidden
         # state size
         self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
         self.deformer = RecurrentGATConv(
-            coord_size=2,
-            hidden_size=self.hidden_size,
-            heads=6,
-            concat=False
+            coord_size=2, hidden_size=self.hidden_size, heads=6, concat=False
         )
         # self.deformer = GATDeformerBlock(in_dim=self.deformer_in_feat)
 
@@ -155,27 +157,26 @@ class MRNAtten(torch.nn.Module):
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
         node_num = data.node_num
+        batch_size = data.conv_feat.shape[0]
 
         conv_feat = self.gfe(conv_feat_in)
-        conv_feat = conv_feat.repeat_interleave(
-            node_num.reshape(-1), dim=0)
+        conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
 
         local_feat = self.lfe(mesh_feat, edge_idx)
 
-        hidden_in = torch.cat(
-            [data.x[:, 2:], local_feat, conv_feat], dim=1)
+        hidden_in = torch.cat([data.x[:, 2:], local_feat, conv_feat], dim=1)
         hidden = F.selu(self.lin(hidden_in))
 
         # Reshape back to [batch size, node num, feature dim] for transformer
         feat_dim = hidden.shape[-1]
         hidden = hidden.reshape(batch_size, -1, feat_dim)
-        #=======================================================
+        # =======================================================
         # A transformer encoder block
         residual = hidden
         hidden = self.pre_attn_norm(hidden)
         # compute self-attention
         hidden, atten_scores = self.atten(hidden, hidden, hidden)
-        hidden = self.post_attn_norm(hidden) # TODO: This seems to be optional
+        hidden = self.post_attn_norm(hidden)  # TODO: This seems to be optional
         hidden = self.post_attn_dropout(hidden)
         hidden = hidden + residual
 
@@ -184,12 +185,12 @@ class MRNAtten(torch.nn.Module):
         hidden = self.activation(self.dense_1(hidden))
         hidden = self.act_dropout(hidden)
 
-        hidden = self.post_dense_norm(hidden) # TODO: This seems to be optional
+        hidden = self.post_dense_norm(hidden)  # TODO: This seems to be optional
 
         hidden = self.dense_2(hidden)
         hidden = self.post_attn_dropout(hidden)
         hidden = hidden + residual
-        #=======================================================
+        # =======================================================
 
         # Reshape to [batch size * node num, feature dim] for pyG
         bs, node_num = hidden.shape[0], hidden.shape[1]
@@ -219,27 +220,24 @@ class MRNAtten(torch.nn.Module):
         node_num = data.node_num
 
         conv_feat = self.gfe(conv_feat_in)
-        conv_feat = conv_feat.repeat_interleave(
-            node_num.reshape(-1), dim=0)
+        conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
 
         local_feat = self.lfe(mesh_feat, edge_idx)
 
-
-        hidden_in = torch.cat(
-            [data.x[:, 2:], local_feat, conv_feat], dim=1)
+        hidden_in = torch.cat([data.x[:, 2:], local_feat, conv_feat], dim=1)
         hidden = F.selu(self.lin(hidden_in))
         # print(hidden.shape, hidden_in.shape, local_feat.shape, conv_feat.shape)
 
         # Reshape back to [batch size, node num, feature dim] for transformer
         feat_dim = hidden.shape[-1]
         hidden = hidden.reshape(batch_size, -1, feat_dim)
-        #=======================================================
+        # =======================================================
         # A transformer encoder block
         residual = hidden
         hidden = self.pre_attn_norm(hidden)
         # compute self-attention
         hidden, atten_scores = self.atten(hidden, hidden, hidden)
-        hidden = self.post_attn_norm(hidden) # TODO: This seems to be optional
+        hidden = self.post_attn_norm(hidden)  # TODO: This seems to be optional
         hidden = self.post_attn_dropout(hidden)
         hidden = hidden + residual
 
@@ -248,12 +246,12 @@ class MRNAtten(torch.nn.Module):
         hidden = self.activation(self.dense_1(hidden))
         hidden = self.act_dropout(hidden)
 
-        hidden = self.post_dense_norm(hidden) # TODO: This seems to be optional
+        hidden = self.post_dense_norm(hidden)  # TODO: This seems to be optional
 
         hidden = self.dense_2(hidden)
         hidden = self.post_attn_dropout(hidden)
         hidden = hidden + residual
-        #=======================================================
+        # =======================================================
 
         # Reshape to [batch size * node num, feature dim] for pyG
         bs, node_num = hidden.shape[0], hidden.shape[1]
@@ -262,5 +260,5 @@ class MRNAtten(torch.nn.Module):
         # Recurrent GAT deform
         for i in range(self.num_loop):
             coord, hidden = self.deformer(coord, hidden, edge_idx)
-        
+
         return coord

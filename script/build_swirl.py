@@ -2,12 +2,14 @@
 # GitHub Username: chunyang-w
 
 import os
-import pandas as pd
-import warpmesh as wm
-import firedrake as fd
 import shutil
-import matplotlib.pyplot as plt
 from argparse import ArgumentParser
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import warpmesh as wm
 
 
 def arg_parse():
@@ -75,7 +77,7 @@ problem = "swirl"
 T = 1
 # n_step = 1000 # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
 # dt = T / n_step
-dt = 1e-3 # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
+dt = 1e-3  # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
 n_step = 1000
 
 # mesh setup
@@ -338,26 +340,26 @@ def sample_from_loop(
 
     # High resolution mesh
     fd.triplot(mesh_fine, axes=ax[0, 0])
-    ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
+    ax[0, 0].set_title("High resolution Mesh (100 x 100)")
     # Orginal low resolution uniform mesh
     fd.triplot(mesh_og, axes=ax[0, 1])
-    ax[0, 1].set_title(f"Original uniform Mesh")
+    ax[0, 1].set_title("Original uniform Mesh")
     # Adapted mesh
     fd.triplot(mesh_new, axes=ax[0, 2])
-    ax[0, 2].set_title(f"Adapted Mesh (MA)")
+    ax[0, 2].set_title("Adapted Mesh (MA)")
 
     cmap = "seismic"
     # Solution on high resolution mesh
     cb = fd.tripcolor(uh_fine, cmap=cmap, axes=ax[1, 0])
-    ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
+    ax[1, 0].set_title("Solution on High Resolution (u_exact)")
     plt.colorbar(cb)
     # Solution on orginal low resolution uniform mesh
     cb = fd.tripcolor(uh, cmap=cmap, axes=ax[1, 1])
-    ax[1, 1].set_title(f"Solution on uniform Mesh")
+    ax[1, 1].set_title("Solution on uniform Mesh")
     plt.colorbar(cb)
     # Solution on adapted mesh
     cb = fd.tripcolor(uh_new, cmap=cmap, axes=ax[1, 2])
-    ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
+    ax[1, 2].set_title("Solution on Adapted Mesh (MA)")
     plt.colorbar(cb)
 
     err_orignal_mesh = fd.assemble(uh_proj - uh_fine)
@@ -379,7 +381,7 @@ def sample_from_loop(
 
     # Monitor values
     cb = fd.tripcolor(monitor_values, cmap=cmap, axes=ax[2, 0])
-    ax[2, 0].set_title(f"Monitor Values")
+    ax[2, 0].set_title("Monitor Values")
     plt.colorbar(cb)
 
     # Error on orginal low resolution uniform mesh

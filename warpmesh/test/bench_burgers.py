@@ -1,20 +1,20 @@
 # Author: Chunyang Wang
 # GitHub Username: chunyang-w
 
-import firedrake as fd
-import numpy as np  # noqa
-import matplotlib.pyplot as plt  # noqa
 import os  # noqa
 import random  # noqa
 import time  # noqa
-import torch  # noqa
-import warpmesh as wm  # noqa
-
-import pandas as pd  # noqa
-
 from pprint import pprint  # noqa
+
+import firedrake as fd
+import matplotlib.pyplot as plt  # noqa
+import numpy as np  # noqa
+import pandas as pd  # noqa
+import torch  # noqa
 from torch_geometric.loader import DataLoader
-from warpmesh.model.train_util import generate_samples, construct_graph
+
+import warpmesh as wm  # noqa
+from warpmesh.model.train_util import generate_samples
 
 
 def get_log_og(log_path, idx):
@@ -139,9 +139,7 @@ class BurgersEvaluator:
                 self.gauss_list[counter]["cy"],
                 self.gauss_list[counter]["w"],
             )  # noqa
-            self.u_init += fd.exp(
-                -((self.x - c_x) ** 2 + (self.y - c_y) ** 2) / w
-            )  # noqa
+            self.u_init += fd.exp(-((self.x - c_x) ** 2 + (self.y - c_y) ** 2) / w)  # noqa
             self.u_init_fine += fd.exp(
                 -((self.x_fine - c_x) ** 2 + (self.y_fine - c_y) ** 2) / w
             )  # noqa
@@ -264,9 +262,6 @@ class BurgersEvaluator:
                             data=sample,
                             device=self.device,
                         )
-                        sampled_queries_edge_index = construct_graph(
-                            sampled_queries[:, :, :2], num_neighbors=6
-                        )
 
                         mesh_sampled_queries_x = (
                             sampled_queries[:, :, 0].view(-1, 1).detach()
@@ -276,9 +271,6 @@ class BurgersEvaluator:
                         )
                         mesh_sampled_queries_x.requires_grad = True
                         mesh_sampled_queries_y.requires_grad = True
-                        mesh_sampled_queries = torch.cat(
-                            [mesh_sampled_queries_x, mesh_sampled_queries_y], dim=-1
-                        ).view(-1, 2)
 
                         coord_ori_x = sample.mesh_feat[:, 0].view(-1, 1)
                         coord_ori_y = sample.mesh_feat[:, 1].view(-1, 1)
@@ -288,13 +280,6 @@ class BurgersEvaluator:
 
                         num_nodes = coord_ori.shape[-2] // bs
                         input_q = sample.mesh_feat[:, :4]
-                        input_kv = generate_samples(
-                            bs=bs,
-                            num_samples_per_mesh=num_nodes,
-                            data=sample,
-                            device=self.device,
-                        )
-                        # print(f"batch size: {bs}, num_nodes: {num_nodes}, input q", input_q.shape, "input_kv ", input_kv.shape)
 
                         (output_coord_all, output, out_monitor), (phix, phiy) = (
                             self.model(
@@ -306,7 +291,6 @@ class BurgersEvaluator:
                                 sampled_queries_edge_index=None,
                             )
                         )
-                        # (output_coord_all, output, out_monitor), (phix, phiy) = model(data, input_q, input_kv, mesh_query, sampled_queries, sampled_queries_edge_index)
                         out = output_coord_all[: num_nodes * bs]
                     elif self.model_used == "M2N":
                         out = self.model(sample)
@@ -318,9 +302,7 @@ class BurgersEvaluator:
                     dur_ms = (end - start) * 1000
 
                 # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
-                num_tangle = wm.get_sample_tangle(
-                    out, sample.x[:, :2], sample.face
-                )  # noqa
+                num_tangle = wm.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
                 if isinstance(num_tangle, torch.Tensor):
                     num_tangle = num_tangle.item()
                 if num_tangle > 0:  # has tangled elems:
@@ -370,9 +352,7 @@ class BurgersEvaluator:
                 uh_new_0.project(uh_new[0])
 
                 error_og, error_adapt = self.get_error()
-                print(
-                    "error_og: {}, error_adapt: {}".format(error_og, error_adapt)
-                )  # noqa
+                print("error_og: {}, error_adapt: {}".format(error_og, error_adapt))  # noqa
 
                 res["error_og"] = error_og
                 res["error_ma"] = error_adapt
@@ -381,15 +361,11 @@ class BurgersEvaluator:
                 ]  # noqa
                 res["error_reduction_model"] = (
                     res["error_og"] - res["error_model"]
-                ) / res[
-                    "error_og"
-                ]  # noqa
+                ) / res["error_og"]  # noqa
 
                 # save file
                 df = pd.DataFrame(res, index=[0])
-                df.to_csv(
-                    os.path.join(self.log_path, f"log{self.idx}_{cur_step}.csv")
-                )  # noqa
+                df.to_csv(os.path.join(self.log_path, f"log{self.idx}_{cur_step}.csv"))  # noqa
 
                 # plot compare mesh
                 compare_plot = wm.plot_mesh_compare_benchmark(
@@ -419,12 +395,8 @@ class BurgersEvaluator:
                 fd.trisurf(uh_new_0, axes=ax1)
                 if num_tangle == 0:
                     # solve on coarse adapt mesh
-                    function_space_fine = fd.FunctionSpace(
-                        self.mesh_fine, "CG", 1
-                    )  # noqa
-                    self.mesh.coordinates.dat.data[:] = (
-                        out.detach().cpu().numpy()
-                    )  # noqa
+                    function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)  # noqa
+                    self.mesh.coordinates.dat.data[:] = out.detach().cpu().numpy()  # noqa
                     function_space = fd.FunctionSpace(self.mesh, "CG", 1)
                     self.project_u_()
                     fd.solve(self.F == 0, self.u)
@@ -446,9 +418,7 @@ class BurgersEvaluator:
                     ax4 = fig.add_subplot(2, 2, 4)
                     ax4.set_title("Soultion on Model mesh")
                     fd.tripcolor(u_adapt_coarse_0, cmap="coolwarm", axes=ax4)
-                    self.mesh_new.coordinates.dat.data[:] = (
-                        out.detach().cpu().numpy()
-                    )  # noqa
+                    self.mesh_new.coordinates.dat.data[:] = out.detach().cpu().numpy()  # noqa
                     fd.triplot(self.mesh_new, axes=ax4)
 
                 # 2d plot and mesh for MA

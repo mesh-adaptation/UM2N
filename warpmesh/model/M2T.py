@@ -1,8 +1,8 @@
-import sys
 import os
+import sys
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)

@@ -1,4 +1,0 @@
-[submodule "install/movement"]
-	path = install/movement
-	url = https://github.com/mesh-adaptation/movement.git
-

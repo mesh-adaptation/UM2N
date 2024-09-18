@@ -1,11 +1,9 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-from torch_geometric.nn import MessagePassing
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
-import torch.nn.functional as F
+from torch_geometric.nn import MessagePassing
 from transformer_model import TransformerModel
 
 __all__ = ["LocalFeatExtractor", "GlobalFeatExtractor"]
@@ -220,9 +218,7 @@ class TransformerEncoder(torch.nn.Module):
         # state size
         # self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
 
-    def _transformer_forward(
-        self, batch_size, input_q, input_kv, get_attens=False
-    ):
+    def _transformer_forward(self, batch_size, input_q, input_kv, get_attens=False):
         """
         Forward pass for MRN.
 

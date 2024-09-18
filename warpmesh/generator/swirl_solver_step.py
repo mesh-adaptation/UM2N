@@ -12,7 +12,6 @@ import numpy as np
 
 import firedrake.function as ffunc
 import firedrake.functionspace as ffs
-import firedrake.mesh as fmesh
 import ufl
 
 import matplotlib.pyplot as plt  # noqa
@@ -93,9 +92,7 @@ class SwirlSolver:
         )  # noqa
         self.best_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
         self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
-        self.adapt_coord_prev = (
-            self.mesh.coordinates.vector().array().reshape(-1, 2)
-        )  # noqa
+        self.adapt_coord_prev = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
         # error measuring vars
         self.error_adapt_list = []
         self.error_og_list = []
@@ -148,9 +145,7 @@ class SwirlSolver:
         self.y_0 = kwargs.pop("y_0", 0.25)
 
         # initital condition of u on coarse / fine mesh
-        u_init_exp = get_u_0(
-            self.x, self.y, self.r_0, self.x_0, self.y_0, self.sigma
-        )  # noqa
+        u_init_exp = get_u_0(self.x, self.y, self.r_0, self.x_0, self.y_0, self.sigma)  # noqa
         u_init_exp_fine = get_u_0(
             self.x_fine, self.y_fine, self.r_0, self.x_0, self.y_0, self.sigma
         )  # noqa
@@ -163,9 +158,7 @@ class SwirlSolver:
         self.u = fd.Function(self.scalar_space).assign(self.u_init)
         self.u1 = fd.Function(self.scalar_space)
         self.u2 = fd.Function(self.scalar_space)
-        self.u_fine = fd.Function(self.scalar_space_fine).assign(
-            self.u_init_fine
-        )  # noqa
+        self.u_fine = fd.Function(self.scalar_space_fine).assign(self.u_init_fine)  # noqa
         self.u1_fine = fd.Function(self.scalar_space_fine)
         self.u2_fine = fd.Function(self.scalar_space_fine)
         self.u_in = fd.Constant(0.0)
@@ -196,9 +189,7 @@ class SwirlSolver:
 
         # PDE problem RHS on coarse & fine mesh
         self.a = self.phi * self.du_trial * fd.dx(domain=self.mesh)
-        self.a_fine = (
-            self.phi_fine * self.du_trial_fine * fd.dx(domain=self.mesh_fine)
-        )  # noqa
+        self.a_fine = self.phi_fine * self.du_trial_fine * fd.dx(domain=self.mesh_fine)  # noqa
 
         # PDE problem LHS on coarse & fine mesh
         #       on coarse mesh
@@ -261,17 +252,11 @@ class SwirlSolver:
         }  # noqa
         #       On coarse mesh
         self.prob1 = fd.LinearVariationalProblem(self.a, self.L1, self.du)
-        self.solv1 = fd.LinearVariationalSolver(
-            self.prob1, solver_parameters=params
-        )  # noqa
+        self.solv1 = fd.LinearVariationalSolver(self.prob1, solver_parameters=params)  # noqa
         self.prob2 = fd.LinearVariationalProblem(self.a, self.L2, self.du)
-        self.solv2 = fd.LinearVariationalSolver(
-            self.prob2, solver_parameters=params
-        )  # noqa
+        self.solv2 = fd.LinearVariationalSolver(self.prob2, solver_parameters=params)  # noqa
         self.prob3 = fd.LinearVariationalProblem(self.a, self.L3, self.du)
-        self.solv3 = fd.LinearVariationalSolver(
-            self.prob3, solver_parameters=params
-        )  # noqa
+        self.solv3 = fd.LinearVariationalSolver(self.prob3, solver_parameters=params)  # noqa
         #       On fine mesh
         self.prob1_fine = fd.LinearVariationalProblem(
             self.a_fine, self.L1_fine, self.du_fine
@@ -305,8 +290,9 @@ class SwirlSolver:
         self.normal = fd.FacetNormal(self.mesh)
         self.f_norm = fd.Function(self.scalar_space)
         self.l2_projection = fd.Function(self.tensor_space)
-        self.H, self.τ = fd.TrialFunction(self.tensor_space), fd.TestFunction(
-            self.tensor_space
+        self.H, self.τ = (
+            fd.TrialFunction(self.tensor_space),
+            fd.TestFunction(self.tensor_space),
         )
         #     LHS & RHS
         self.a_hess = fd.inner(self.τ, self.H) * fd.dx(domain=self.mesh)
@@ -322,7 +308,6 @@ class SwirlSolver:
         self.hessian_prob = fd.LinearVariationalSolver(
             self.prob_hess, solver_parameters=hess_param
         )
-    
 
     def _compute_gradient_and_hessian(self, field, solver_parameters=None):
         mesh = self.tensor_space.mesh()
@@ -372,7 +357,6 @@ class SwirlSolver:
                 solver_parameters["fieldsplit_1_mg_levels_sub_pc_type"] = "ilu"
         fd.solve(a == L, sol, solver_parameters=solver_parameters)
         return sol.subfunctions
-    
 
     def solve_u(self, t):
         """
@@ -407,9 +391,7 @@ class SwirlSolver:
         self.u1_fine.assign(self.u_fine + self.du_fine)
 
         self.solv2_fine.solve()
-        self.u2_fine.assign(
-            0.75 * self.u_fine + 0.25 * (self.u1_fine + self.du_fine)
-        )  # noqa
+        self.u2_fine.assign(0.75 * self.u_fine + 0.25 * (self.u1_fine + self.du_fine))  # noqa
 
         self.solv3_fine.solve()
         self.u_cur_fine.assign(
@@ -513,54 +495,6 @@ class SwirlSolver:
         self.monitor_values.project(1 + alpha * self.grad_norm)
         return self.monitor_values
 
-    def monitor_function(self, mesh, alpha=10, beta=5):
-        self.project_u_()
-        self.solve_u(self.t)
-        self.u_hess.project(self.u_cur)
-
-        self.hessian_prob.solve()
-        self.f_norm.project(
-            self.l2_projection[0, 0] ** 2
-            + self.l2_projection[0, 1] ** 2
-            + self.l2_projection[1, 0] ** 2
-            + self.l2_projection[1, 1] ** 2
-        )
-
-        func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
-        self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
-
-        # Normlize the hessian
-        self.f_norm /= self.f_norm.vector().max()
-        self.f_norm.dat.data[:] = 1 / (1 + np.exp(-self.f_norm.dat.data[:])) - 0.5
-        self.f_norm /= self.f_norm.vector().max()
-
-        # Normlize the grad
-        self.grad_norm /= self.grad_norm.vector().max()
-        self.grad_norm.dat.data[:] = 1 / (1 + np.exp(-self.grad_norm.dat.data[:])) - 0.5
-        self.grad_norm /= self.grad_norm.vector().max()
-
-        # Interpolate on P0 space and then project back to P1 to induce numerical diffusion
-        # p0_space = fd.FunctionSpace(self.mesh, "CG", 0)
-        # self.f_norm = fd.interpolate(self.f_norm, p0_space).project(self.f_norm)
-        # self.grad_norm = fd.interpolate(self.grad_norm, p0_space).project(self.grad_norm)
-
-        # Choose the max values between grad norm and hessian norm according to
-        # [Clare et al 2020] Multi-scale hydro-morphodynamic modelling using mesh movement methods
-        # self.monitor_values.dat.data[:] = np.maximum(
-        #     beta * self.f_norm.dat.data[:], alpha * self.grad_norm.dat.data[:]
-        # )
-
-        self.monitor_values.dat.data[:] = (
-            beta * self.f_norm.dat.data[:] + alpha * self.grad_norm.dat.data[:]
-        ) / 2
-
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
-
-        self.monitor_values.project(1 + self.monitor_values)
-
-        return self.monitor_values
-
     def monitor_function_for_merge(self, mesh, alpha=10, beta=5):
         self.project_u_()
         self.solve_u(self.t)
@@ -642,7 +576,7 @@ class SwirlSolver:
         self.f_norm /= self.f_norm.vector().max()
         # Normlize the grad
         self.grad_norm /= self.grad_norm.vector().max()
-        
+
         monitor_values_dg = fd.Function(fd.FunctionSpace(mesh, "DG", 1))
         monitor_values = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
         # Choose the max values between grad norm and hessian norm according to
@@ -757,7 +691,6 @@ class SwirlSolver:
             if ((step + 1) % self.save_interval == 0) or (step == 0):
                 print(f"---- getting samples: step: {step}, t: {self.t:.5f}")
                 try:
-
                     monitor_values = self.monitor_function_on_coarse_mesh(self.mesh)
                     hessian_norm = self.f_norm
                     grad_u_norm = self.grad_norm
@@ -767,7 +700,10 @@ class SwirlSolver:
                     # mesh movement - calculate the adapted coords
                     start = time.perf_counter()
                     adapter = mv.MongeAmpereMover(
-                        self.mesh, monitor_function=self.monitor_function, rtol=1e-3, maxiter=100
+                        self.mesh,
+                        monitor_function=self.monitor_function,
+                        rtol=1e-3,
+                        maxiter=100,
                     )
                     adapter.move()
                     end = time.perf_counter()
@@ -786,18 +722,16 @@ class SwirlSolver:
                     self.mesh.coordinates.dat.data[:] = self.adapt_coord
                     self.project_u_()
                     self.solve_u(self.t)
-                    function_space_new = fd.FunctionSpace(
-                        self.mesh_new, "CG", 1
-                    )  # noqa
-                    self.uh_new = fd.Function(function_space_new).project(
-                        self.u_cur
-                    )  # noqa
+                    function_space_new = fd.FunctionSpace(self.mesh_new, "CG", 1)  # noqa
+                    self.uh_new = fd.Function(function_space_new).project(self.u_cur)  # noqa
 
                     # error measuring
                     error_og_cur, error_adapt_cur = self.get_error_currstep()
                     error_og, error_adapt = self.get_error()
 
-                    print(f"error_og before solve: {error_og_cur}, \terror_adapt before solve: {error_adapt_cur}")
+                    print(
+                        f"error_og before solve: {error_og_cur}, \terror_adapt before solve: {error_adapt_cur}"
+                    )
                     print(f"error_og: {error_og}, \terror_adapt: {error_adapt}")
 
                     # put coords back to init state and sampling for datasets
@@ -811,9 +745,7 @@ class SwirlSolver:
 
                     # retrive info from original mesh and save data
                     function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-                    function_space_fine = fd.FunctionSpace(
-                        self.mesh_fine, "CG", 1
-                    )  # noqa
+                    function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)  # noqa
                     uh_fine = fd.Function(function_space_fine)
                     uh_fine.project(self.u_cur_fine)
 
@@ -841,10 +773,14 @@ class SwirlSolver:
 
                     # Project from DG to CG
                     function_scalar_space_cg = fd.FunctionSpace(self.mesh, "CG", 1)
-                    
+
                     uh_cg = fd.Function(function_scalar_space_cg).project(self.uh)
-                    grad_u_norm_cg = fd.Function(function_scalar_space_cg).project(grad_u_norm)
-                    hessian_norm_cg = fd.Function(function_scalar_space_cg).project(hessian_norm)
+                    grad_u_norm_cg = fd.Function(function_scalar_space_cg).project(
+                        grad_u_norm
+                    )
+                    hessian_norm_cg = fd.Function(function_scalar_space_cg).project(
+                        hessian_norm
+                    )
 
                     callback(
                         uh=uh_cg,
@@ -871,7 +807,6 @@ class SwirlSolver:
                         r_0=self.r_0,
                         t=self.t,
                     )
-
 
                     # callback(
                     #     uh=self.uh,
@@ -945,7 +880,7 @@ class SwirlSolver:
         self.mesh.coordinates.dat.data[:] = self.init_coord
 
         return error_og, error_adapt
-    
+
     def get_error(self):
         # solve on fine mesh
         function_space_fine = fd.FunctionSpace(self.mesh_fine, "CG", 1)
@@ -977,7 +912,6 @@ class SwirlSolver:
         self.mesh.coordinates.dat.data[:] = self.init_coord
 
         return error_og, error_adapt
-    
 
     # def plot_fine_solution(self, index):
     #     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
@@ -997,7 +931,7 @@ class SwirlSolver:
         # Solution on high resolution mesh
         cb = fd.tripcolor(self.u_cur_fine, cmap=cmap, axes=ax)
         plt.colorbar(cb)
-        ax.set_title(f"u_cur_fine")
+        ax.set_title("u_cur_fine")
         # cb = fd.tripcolor(self.u_fine, cmap=cmap, axes=ax[1])
         # plt.colorbar(cb)
         # ax[1].set_title(f"u_fine")

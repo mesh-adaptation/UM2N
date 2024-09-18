@@ -1,19 +1,22 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import sys
 import os
-from torch_geometric.nn import GATv2Conv, MessagePassing
+import sys
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.nn import GATv2Conv, MessagePassing
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from extractor import (  # noqa: E402
-    LocalFeatExtractor, GlobalFeatExtractor
+    GlobalFeatExtractor,
+    LocalFeatExtractor,
 )
-__all__ = ['MRN_fix']
+
+__all__ = ["MRN_fix"]
 
 
 class RecurrentGATConv(MessagePassing):
@@ -25,17 +28,15 @@ class RecurrentGATConv(MessagePassing):
         to_coord (nn.Sequential): Output layer for coordinates.
         activation (nn.SELU): Activation function.
     """
-    def __init__(self, coord_size=2,
-                 hidden_size=512,
-                 heads=6, concat=False
-                 ):
+
+    def __init__(self, coord_size=2, hidden_size=512, heads=6, concat=False):
         super(RecurrentGATConv, self).__init__()
         # GAT layer
         self.to_hidden = GATv2Conv(
-            in_channels=coord_size+hidden_size,
+            in_channels=coord_size + hidden_size,
             out_channels=hidden_size,
             heads=heads,
-            concat=concat
+            concat=concat,
         )
         # output coord layer
         self.to_coord = nn.Sequential(
@@ -85,8 +86,8 @@ class MRN_fix(torch.nn.Module):
         lin (nn.Linear): Linear layer for feature transformation.
         deformer (RecurrentGATConv): GAT-based deformer block.
     """
-    def __init__(self, gfe_in_c=2, lfe_in_c=4,
-                 deform_in_c=7, num_loop=3):
+
+    def __init__(self, gfe_in_c=2, lfe_in_c=4, deform_in_c=7, num_loop=3):
         """
         Initialize MRN.
 
@@ -102,8 +103,7 @@ class MRN_fix(torch.nn.Module):
         self.lfe_out_c = 16
         self.hidden_size = 512  # set here
         # minus 2 because we are not using x,y coord (first 2 channels)
-        self.all_feat_c = (
-            (deform_in_c-2) + self.gfe_out_c + self.lfe_out_c)
+        self.all_feat_c = (deform_in_c - 2) + self.gfe_out_c + self.lfe_out_c
 
         self.gfe = GlobalFeatExtractor(in_c=gfe_in_c, out_c=self.gfe_out_c)
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
@@ -111,10 +111,7 @@ class MRN_fix(torch.nn.Module):
         # state size
         self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
         self.deformer = RecurrentGATConv(
-            coord_size=2,
-            hidden_size=self.hidden_size,
-            heads=6,
-            concat=False
+            coord_size=2, hidden_size=self.hidden_size, heads=6, concat=False
         )
         # self.deformer = GATDeformerBlock(in_dim=self.deformer_in_feat)
 
@@ -137,13 +134,11 @@ class MRN_fix(torch.nn.Module):
         node_num = data.node_num
 
         conv_feat = self.gfe(conv_feat_in)
-        conv_feat = conv_feat.repeat_interleave(
-            node_num.reshape(-1), dim=0)
+        conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
 
         local_feat = self.lfe(mesh_feat, edge_idx)
 
-        hidden_in = torch.cat(
-            [data.x[:, 2:], local_feat, conv_feat], dim=1)
+        hidden_in = torch.cat([data.x[:, 2:], local_feat, conv_feat], dim=1)
         hidden = F.selu(self.lin(hidden_in))
 
         # Recurrent GAT deform
@@ -169,13 +164,11 @@ class MRN_fix(torch.nn.Module):
         node_num = data.node_num
 
         conv_feat = self.gfe(conv_feat_in)
-        conv_feat = conv_feat.repeat_interleave(
-            node_num.reshape(-1), dim=0)
+        conv_feat = conv_feat.repeat_interleave(node_num.reshape(-1), dim=0)
 
         local_feat = self.lfe(mesh_feat, edge_idx)
 
-        hidden_in = torch.cat(
-            [data.x[:, 2:], local_feat, conv_feat], dim=1)
+        hidden_in = torch.cat([data.x[:, 2:], local_feat, conv_feat], dim=1)
         hidden = F.selu(self.lin(hidden_in))
 
         # Recurrent GAT deform

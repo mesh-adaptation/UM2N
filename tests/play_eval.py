@@ -1,18 +1,19 @@
-import warpmesh as wm
+import warnings
+
 import torch
 from torch_geometric.data import DataLoader
 
-import warnings
-warnings.filterwarnings('ignore')
-device = torch.device('cuda' if torch.cuda.is_available()
-else 'cpu') # noqa
+import warpmesh as wm
+
+warnings.filterwarnings("ignore")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # noqa
 
 batch_size = 10
 
 loss_func = torch.nn.L1Loss()
 
 
-data_dir = '/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=400_smpl/val'  # noqa
+data_dir = "/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/z=<0,1>_ndist=None_max_dist=6_<20x20>_n=400_smpl/val"  # noqa
 
 weight_path = "/Users/cw1722/Downloads/model_1499 (7).pth"
 
@@ -20,12 +21,7 @@ weight_path = "/Users/cw1722/Downloads/model_1499 (7).pth"
 prediction_dir = "/Users/cw1722/Documents/irp/irp-cw1722/data/temp"
 
 
-model = wm.MRN(
-    deform_in_c=7,
-    gfe_in_c=2,
-    lfe_in_c=4,
-    num_loop=3
-).to(device)
+model = wm.MRN(deform_in_c=7, gfe_in_c=2, lfe_in_c=4, num_loop=3).to(device)
 
 model = wm.load_model(model, weight_path)
 

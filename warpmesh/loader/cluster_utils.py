@@ -1,10 +1,12 @@
 import torch
-from torch_geometric.utils import (
-    mask_to_index, index_to_mask
-)
+from torch_geometric.utils import index_to_mask, mask_to_index
 
-__all__ = ['sampler', 'get_neighbors', 'calc_dist',
-           'get_new_edges',]
+__all__ = [
+    "sampler",
+    "get_neighbors",
+    "calc_dist",
+    "get_new_edges",
+]
 
 
 # vectorize version
@@ -41,9 +43,7 @@ def calc_dist(coords, node_idx, neighbors_mask):
     """
     node_coords = coords[node_idx]
     nei_coords = coords[neighbors_mask]
-    dist = torch.linalg.vector_norm(
-        nei_coords - node_coords, dim=1
-    )
+    dist = torch.linalg.vector_norm(nei_coords - node_coords, dim=1)
     return dist
 
 
@@ -83,17 +83,19 @@ def sampler(num_nodes, coords, edge_idx, node_idx, r=0.25, N=100):
     For a single node, sample N neighbours within radius r.
     return the indices of the neighbours
     """
-    dist = torch.linalg.vector_norm(
-        coords - coords[node_idx], dim=1
-    )
+    dist = torch.linalg.vector_norm(coords - coords[node_idx], dim=1)
     return dist < r
 
 
 def get_new_edges(
-        num_nodes, coords, edge_idx,
-        r=0.35, M=None, dist_weight=False,
-        add_nei=False,
-        ):
+    num_nodes,
+    coords,
+    edge_idx,
+    r=0.35,
+    M=None,
+    dist_weight=False,
+    add_nei=False,
+):
     """
     Get the new edges for the graph.
     A useful knowledge for setting r and M:
@@ -107,32 +109,32 @@ def get_new_edges(
     for i in range(num_nodes):
         mask = sampler(num_nodes, coords, edge_idx, i, r=r)
         cluster_idx = mask_to_index(mask)
-        if (M is not None):
+        if M is not None:
             # check if sampling is valid
             num_nei = len(cluster_idx)
             mini = min(mini, num_nei)
             if num_nei < M:
                 raise ValueError(
-                    f"The number of neighbors {num_nei} is less than M ({M})")
+                    f"The number of neighbors {num_nei} is less than M ({M})"
+                )
             if not dist_weight:
                 # so the sampling
                 filter_idx = torch.randperm(num_nei)[:M]
                 cluster_idx = cluster_idx[filter_idx]
                 # print("after sampling, ", len(cluster_idx))
             else:
-                print('use dist_weight')
+                print("use dist_weight")
                 dist = calc_dist(coords, i, mask)
                 probs = 1 / dist
                 probs = probs / probs.sum()  # normalize
-                filter_idx = torch.multinomial(
-                    probs, num_samples=25, replacement=False)
+                filter_idx = torch.multinomial(probs, num_samples=25, replacement=False)
                 cluster_idx = cluster_idx[filter_idx]
         source_idx = torch.ones(cluster_idx.shape[0], dtype=torch.long) * i
         new_edge = torch.stack([source_idx, cluster_idx], dim=0)
         new_edges.append(new_edge)
         # break
     new_edges = torch.cat(new_edges, dim=1)
-    if (add_nei):
+    if add_nei:
         nei_edges = torch.cat([edge_idx, new_edges], dim=1)
         return nei_edges
     else:

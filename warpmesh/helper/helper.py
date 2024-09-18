@@ -2,7 +2,7 @@
 # GitHub Username: acse-cw1722
 import os
 
-__all__ = ['mkdir_if_not_exist']
+__all__ = ["mkdir_if_not_exist"]
 
 
 def mkdir_if_not_exist(dir):

@@ -1,12 +1,13 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import torch
 import glob
 import os
 import sys
+
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+import torch
+from torch.utils.data import DataLoader, Dataset
 from torch_geometric.data import Data
 
 cur_dir = os.path.dirname(__file__)
@@ -220,9 +221,7 @@ class MeshDataset(Dataset):
 
         # advance version
         train_data = MeshData(
-            x=self.get_x_feature(
-                data
-            ),  # noqa: x here is the coordinate related features
+            x=self.get_x_feature(data),  # noqa: x here is the coordinate related features
             bd_mask=torch.from_numpy(data.item().get("bd_mask")).int(),
             conv_feat=self.get_conv_feature(data),
             # conv_feat_fix=self.get_conv_feature_fix(data),
@@ -284,9 +283,7 @@ class MeshDataset(Dataset):
         if self.transform:
             train_data = self.transform(train_data)
         if self.use_cluster:
-            train_data.edge_index = (
-                data.item().get("cluster_edges").to(torch.int64)
-            )  # noqa
+            train_data.edge_index = data.item().get("cluster_edges").to(torch.int64)  # noqa
         if self.use_run_time_cluster:
             train_data.edge_index = get_new_edges(
                 num_nodes,

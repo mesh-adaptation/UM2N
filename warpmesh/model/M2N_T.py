@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 import torch
 import torch.nn.functional as F
 
@@ -7,7 +8,6 @@ cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from extractor import LocalFeatExtractor, TransformerEncoder  # noqa: E402
 from gatdeformer import DeformGAT  # noqa: E402
-
 
 __all__ = ["M2N_T"]
 
@@ -63,7 +63,9 @@ class M2N_T(torch.nn.Module):
         # self.gfe = GlobalFeatExtractor(
         #     in_c=gfe_in_c, out_c=self.gfe_out_c, use_drop=use_drop
         # )
-        self.gfe = TransformerEncoder(num_transformer_in=gfe_in_c, num_transformer_out=self.gfe_out_c)
+        self.gfe = TransformerEncoder(
+            num_transformer_in=gfe_in_c, num_transformer_out=self.gfe_out_c
+        )
         self.lfe = LocalFeatExtractor(num_feat=lfe_in_c, out=self.lfe_out_c)
         self.deformer = NetGATDeform(in_dim=self.deformer_in_feat)
 
@@ -77,7 +79,6 @@ class M2N_T(torch.nn.Module):
         batch_size = data.conv_feat.shape[0]
         mesh_feat = data.mesh_feat  # [num_nodes * batch_size, 2]
         edge_idx = data.edge_index  # [num_edges * batch_size, 2]
-        node_num = data.node_num
 
         feat_dim = mesh_feat.shape[-1]
         global_feat = self.gfe(mesh_feat.view(batch_size, -1, feat_dim))

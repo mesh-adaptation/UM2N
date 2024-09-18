@@ -1,21 +1,23 @@
 # Author: Chunyang Wang
 # GitHub Username: acse-cw1722
 
-import sys
 import os
-from torch_geometric.nn import GATv2Conv, MessagePassing
+import sys
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.nn import GATv2Conv, MessagePassing
 
 cur_dir = os.path.dirname(__file__)
 sys.path.append(cur_dir)
 from extractor import (  # noqa
-    LocalFeatExtractor, GlobalFeatExtractor
+    LocalFeatExtractor,
+    GlobalFeatExtractor,
 )
-from transformer_model import TransformerModel # noqa
+from transformer_model import TransformerModel  # noqa
 
-__all__ = ['MRT_phi']
+__all__ = ["MRT_phi"]
 
 
 class RecurrentGATConv(MessagePassing):
@@ -27,17 +29,15 @@ class RecurrentGATConv(MessagePassing):
         to_coord (nn.Sequential): Output layer for coordinates.
         activation (nn.SELU): Activation function.
     """
-    def __init__(self, in_size=1,
-                 hidden_size=512,
-                 heads=6, concat=False
-                 ):
+
+    def __init__(self, in_size=1, hidden_size=512, heads=6, concat=False):
         super(RecurrentGATConv, self).__init__()
         # GAT layer
         self.to_hidden = GATv2Conv(
-            in_channels=in_size+hidden_size,
+            in_channels=in_size + hidden_size,
             out_channels=hidden_size,
             heads=heads,
-            concat=concat
+            concat=concat,
         )
         # output coord layer
         self.to_out = nn.Sequential(
@@ -112,8 +112,8 @@ class MRT_phi(torch.nn.Module):
         lin (nn.Linear): Linear layer for feature transformation.
         deformer (RecurrentGATConv): GAT-based deformer block.
     """
-    def __init__(self, gfe_in_c=2, lfe_in_c=4,
-                 deform_in_c=7, num_loop=3):
+
+    def __init__(self, gfe_in_c=2, lfe_in_c=4, deform_in_c=7, num_loop=3):
         """
         Initialize MRN.
 
@@ -135,18 +135,18 @@ class MRT_phi(torch.nn.Module):
         self.transformer_in_dim = 4
         self.transformer_out_dim = 16
         self.transformer_encoder = TransformerModel(
-            input_dim=self.transformer_in_dim, embed_dim=64,
-            output_dim=self.transformer_out_dim, num_heads=4, num_layers=1)
-        self.all_feat_c = (
-            (deform_in_c-2) + self.transformer_out_dim)
+            input_dim=self.transformer_in_dim,
+            embed_dim=64,
+            output_dim=self.transformer_out_dim,
+            num_heads=4,
+            num_layers=1,
+        )
+        self.all_feat_c = (deform_in_c - 2) + self.transformer_out_dim
         # use a linear layer to transform the input feature to hidden
         # state size
         self.lin = nn.Linear(self.all_feat_c, self.hidden_size)
         self.deformer = RecurrentGATConv(
-            in_size=1,
-            hidden_size=self.hidden_size,
-            heads=6,
-            concat=False
+            in_size=1, hidden_size=self.hidden_size, heads=6, concat=False
         )
 
     def _forward(self, data):

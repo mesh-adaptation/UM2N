@@ -1,7 +1,7 @@
 import wandb
 
-entity = 'w-chunyang'
-project_name = 'warpmesh'
+entity = "w-chunyang"
+project_name = "warpmesh"
 
 dataset_path = "/Users/chunyang/projects/WarpMesh/data/dataset.tar.gz"
 

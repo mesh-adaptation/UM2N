@@ -4,13 +4,15 @@
 # This file plot the conv_feat and conv_feat_fix for a given
 # training sample, to see if the conv_feat_fix and conv_feat are similar.
 
-import warpmesh as wm
-import torch
-import matplotlib.pyplot as plt
 import warnings
 
+import matplotlib.pyplot as plt
+import torch
+
+import warpmesh as wm
+
 warnings.filterwarnings("ignore")
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # put the path to your data here

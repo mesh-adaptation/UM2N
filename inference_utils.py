@@ -1,10 +1,11 @@
 import os
+
+import firedrake as fd
 import numpy as np
 import torch
-import firedrake as fd
-import warpmesh as wm
 from firedrake.cython.dmcommon import facet_closure_nodes
 
+import warpmesh as wm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -64,11 +65,9 @@ def find_edges(mesh, function_space):
         dim=1,
     )
 
-    single_edges = edges_packed
     edges_packed_reverse = edges_packed.clone()[:, [1, 0]]
     edge_bi = torch.cat([edges_packed, edges_packed_reverse], dim=0)
 
-    edge_T = single_edges.T.numpy()
     edge_bi_T = edge_bi.T.numpy()
     return edge_bi_T
 
@@ -93,24 +92,13 @@ def find_bd(mesh, function_space, use_4_edge=False, poly_mesh=False):
     right_bd = None
     down_bd = None
     up_bd = None
-    
+
     # boundary nodes solved using location of nodes
     if not poly_mesh and use_4_edge:
-        left_bd = (
-            (coordinates[:, 0] == x_start).astype(int).reshape(-1, 1),
-        )  # noqa
-        right_bd = (
-            (coordinates[:, 0] == x_end).astype(int).reshape(-1, 1),
-        )  # noqa
-        down_bd = (
-            (coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),
-        )  # noqa
-        up_bd = (
-            (coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),
-        )  # noqa
-        bd_all = np.any(
-            [left_bd, right_bd, down_bd, up_bd], axis=0
-        )
+        left_bd = ((coordinates[:, 0] == x_start).astype(int).reshape(-1, 1),)  # noqa
+        right_bd = ((coordinates[:, 0] == x_end).astype(int).reshape(-1, 1),)  # noqa
+        down_bd = ((coordinates[:, 1] == y_start).astype(int).reshape(-1, 1),)  # noqa
+        up_bd = ((coordinates[:, 1] == y_end).astype(int).reshape(-1, 1),)  # noqa
         left_bd = left_bd[0]
         right_bd = right_bd[0]
         down_bd = down_bd[0]
@@ -120,22 +108,44 @@ def find_bd(mesh, function_space, use_4_edge=False, poly_mesh=False):
 
 
 class InputPack:
-    def __init__(self, coord, monitor_val, edge_index, bd_mask, conv_feat, poly_mesh=False, stack_boundary=True) -> None:
+    def __init__(
+        self,
+        coord,
+        monitor_val,
+        edge_index,
+        bd_mask,
+        conv_feat,
+        poly_mesh=False,
+        stack_boundary=True,
+    ) -> None:
         self.coord = torch.tensor(coord).float().to(device)
         self.conv_feat = torch.tensor(conv_feat).float().to(device)
-        self.mesh_feat = torch.concat([torch.tensor(coord), torch.tensor(monitor_val)], dim=1).float().to(device)
+        self.mesh_feat = (
+            torch.concat([torch.tensor(coord), torch.tensor(monitor_val)], dim=1)
+            .float()
+            .to(device)
+        )
         self.edge_index = torch.tensor(edge_index).to(torch.int64).to(device)
         self.bd_mask = torch.tensor(bd_mask).reshape(-1, 1).to(device)
         self.node_num = torch.tensor(self.coord.shape[0]).to(device)
         self.poly_mesh = poly_mesh
         if stack_boundary:
-            self.x = torch.concat([self.coord, self.bd_mask, self.bd_mask, self.bd_mask, self.bd_mask, self.bd_mask], dim=1).to(device)
+            self.x = torch.concat(
+                [
+                    self.coord,
+                    self.bd_mask,
+                    self.bd_mask,
+                    self.bd_mask,
+                    self.bd_mask,
+                    self.bd_mask,
+                ],
+                dim=1,
+            ).to(device)
         else:
             self.x = torch.concat([self.coord, self.bd_mask], dim=1).to(device)
-    
+
     def __repr__(self) -> str:
         return f"coord: {self.coord.shape}, conv_feat: {self.conv_feat.shape}, mesh_feat: {self.mesh_feat.shape}, edge_index: {self.edge_index.shape}, bd_mask: {self.bd_mask.shape}, node_num: {self.node_num}"
-
 
 
 def load_model(run, config, epoch, experiment_dir):

@@ -18,12 +18,9 @@ def plot_compare(
     num_tangle,
     model_name,
 ):
-
     # Construct function space
     coarse_res_function_space = fd.FunctionSpace(mesh, "CG", 1)
     high_res_function_space = fd.FunctionSpace(mesh_fine, "CG", 1)
-    ma_function_space = fd.FunctionSpace(mesh_MA, "CG", 1)
-    model_function_space = fd.FunctionSpace(mesh_model, "CG", 1)
 
     # projections
     uh_model_hr = None
@@ -59,14 +56,14 @@ def plot_compare(
 
     # High resolution mesh
     fd.triplot(mesh_fine, axes=ax[0, 0])
-    ax[0, 0].set_title(f"High resolution Mesh (100 x 100)")
+    ax[0, 0].set_title("High resolution Mesh (100 x 100)")
 
     # Orginal low resolution uniform mesh
     fd.triplot(mesh, axes=ax[0, 1])
-    ax[0, 1].set_title(f"Original uniform Mesh")
+    ax[0, 1].set_title("Original uniform Mesh")
     # Adapted mesh (MA)
     fd.triplot(mesh_MA, axes=ax[0, 2])
-    ax[0, 2].set_title(f"Adapted Mesh (MA)")
+    ax[0, 2].set_title("Adapted Mesh (MA)")
     # Adapted mesh (Model)
     fd.triplot(mesh_model, axes=ax[0, 3])
     ax[0, 3].set_title(f"Adapted Mesh ({model_name})")
@@ -90,19 +87,19 @@ def plot_compare(
     cb = fd.tripcolor(
         u_exact, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 0]
     )
-    ax[1, 0].set_title(f"Solution on High Resolution (u_exact)")
+    ax[1, 0].set_title("Solution on High Resolution (u_exact)")
     plt.colorbar(cb)
     # Solution on orginal low resolution uniform mesh
     cb = fd.tripcolor(
         uh_og, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 1]
     )
-    ax[1, 1].set_title(f"Solution on uniform Mesh")
+    ax[1, 1].set_title("Solution on uniform Mesh")
     plt.colorbar(cb)
     # Solution on adapted mesh (MA)
     cb = fd.tripcolor(
         uh_ma, cmap=cmap, vmax=solution_v_max, vmin=solution_v_min, axes=ax[1, 2]
     )
-    ax[1, 2].set_title(f"Solution on Adapted Mesh (MA)")
+    ax[1, 2].set_title("Solution on Adapted Mesh (MA)")
     plt.colorbar(cb)
 
     if uh_model:
@@ -156,7 +153,7 @@ def plot_compare(
     monitor_val_vis_holder.dat.data[:] = monitor_val  # [:, 0].detach().cpu().numpy()
     # Monitor values
     cb = fd.tripcolor(monitor_val_vis_holder, cmap=cmap, axes=ax[2, 0])
-    ax[2, 0].set_title(f"Monitor values")
+    ax[2, 0].set_title("Monitor values")
     plt.colorbar(cb)
     # Error on orginal low resolution uniform mesh
     cb = fd.tripcolor(

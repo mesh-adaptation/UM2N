@@ -1,13 +1,15 @@
 import os
-import warpmesh as wm
-import torch
-import firedrake as fd
-import movement as mv
-import matplotlib.pyplot as plt
 import warnings
 
+import firedrake as fd
+import matplotlib.pyplot as plt
+import movement as mv
+import torch
+
+import warpmesh as wm
+
 warnings.filterwarnings("ignore")
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 problem = "helmholtz"
@@ -59,13 +61,13 @@ conv_feat = [
     "conv_hessian_norm",
 ]
 
-project_dir = os.path.dirname(
-    os.path.dirname((os.path.abspath(__file__))))
+project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 data_set_path = os.path.join(project_dir, "data/dataset/helmholtz")
 data_path = os.path.join(
     data_set_path,
-    "z=<0,1>_ndist={}_max_dist={}_<{}x{}>_n={}_{}/"
-    .format(n_dist, max_dist, n_elem_x, n_elem_y, num_samples, data_type)
+    "z=<0,1>_ndist={}_max_dist={}_<{}x{}>_n={}_{}/".format(
+        n_dist, max_dist, n_elem_x, n_elem_y, num_samples, data_type
+    ),
 )
 
 
@@ -75,14 +77,13 @@ def plot_prediction(data_set, model, prediction_dir, mode):
         val_item = data_set[idx]
         out = model(val_item.to(device))
         # calculate the loss
-        loss = 1000*torch.functional.F.mse_loss(
-            out, val_item.y).item()
+        loss = 1000 * torch.functional.F.mse_loss(out, val_item.y).item()
         out = out.detach().numpy()
         # construct the mesh
         val_mesh = fd.UnitSquareMesh(n_elem_x, n_elem_y)
         val_new_mesh = fd.UnitSquareMesh(n_elem_x, n_elem_y)
         # init checker
-        checker = mv.MeshTanglingChecker(val_new_mesh, mode='warn')
+        checker = mv.MeshTanglingChecker(val_new_mesh, mode="warn")
         # construct the predicted/target mesh
         val_mesh.coordinates.dat.data[:] = val_item.y[:]
         val_new_mesh.coordinates.dat.data[:] = out[:]
@@ -93,15 +94,17 @@ def plot_prediction(data_set, model, prediction_dir, mode):
         fd.triplot(val_new_mesh, axes=ax2)
         ax1.set_title("Target mesh")
         ax2.set_title("Predicted mesh")
-        ax2.text(0.5, -0.05, f"Num Tangle: {num_tangle}",
-                 ha='center', va='center', transform=ax2.transAxes,
-                 fontsize=14)
-        fig.text(0.5, 0.01, f'Loss: {loss:.4f}',
-                 ha='center', va='center', fontsize=16)
-        fig.savefig(
-            os.path.join(
-                prediction_dir, f"{mode}_plot_{idx}.png")
+        ax2.text(
+            0.5,
+            -0.05,
+            f"Num Tangle: {num_tangle}",
+            ha="center",
+            va="center",
+            transform=ax2.transAxes,
+            fontsize=14,
         )
+        fig.text(0.5, 0.01, f"Loss: {loss:.4f}", ha="center", va="center", fontsize=16)
+        fig.savefig(os.path.join(prediction_dir, f"{mode}_plot_{idx}.png"))
 
 
 prediction_dir = "/Users/cw1722/Documents/irp/irp-cw1722/data/temp"
@@ -133,9 +136,7 @@ model = model.to(device)
 
 
 if __name__ == "__main__":
-    state_dict = torch.load(
-        weight_path,
-        map_location=torch.device('cpu'))
+    state_dict = torch.load(weight_path, map_location=torch.device("cpu"))
     model.load_state_dict(state_dict)
     plot_prediction(test_set, model, prediction_dir, mode="test")
     plot_prediction(val_set, model, prediction_dir, mode="val")

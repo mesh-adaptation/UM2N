@@ -2,44 +2,32 @@
 # %load_ext autoreload
 # %autoreload 2
 
-from warpmesh.model import (
-    M2N,
-    train,
-    train_unsupervised,
-    evaluate,
-    evaluate_unsupervised,
-    MRN,
-    count_dataset_tangle,
-    M2N_dynamic_drop,
-    M2N_dynamic_no_drop,
-    MRNAtten,
-    M2NAtten,
-)
-from warpmesh.model import (
-    MRNGlobalTransformerEncoder,
-    MRNLocalTransformerEncoder,
-    MRTransformer,
-    M2T,
-    M2N_T
-)
-from warpmesh.helper import mkdir_if_not_exist, plot_loss, plot_tangle
-from warpmesh.helper import save_namespace_to_yaml, load_yaml_to_namespace
-from warpmesh.loader import MeshDataset, normalise, AggreateDataset
+# from google.colab import userdata
+import argparse
 
 # from google.colab import runtime
 import os
-import gc
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-from datetime import datetime
 import warnings
-from torch_geometric.data import DataLoader
-import wandb
+from datetime import datetime
 
-# from google.colab import userdata
-import argparse
-from argparse import Namespace
+import numpy as np
+import torch
+import wandb
+from torch_geometric.data import DataLoader
+
+from warpmesh.helper import load_yaml_to_namespace, save_namespace_to_yaml
+from warpmesh.loader import AggreateDataset, MeshDataset, normalise
+from warpmesh.model import (
+    M2N,
+    M2N_T,
+    M2T,
+    MRN,
+    MRTransformer,
+    evaluate,
+    evaluate_unsupervised,
+    train,
+    train_unsupervised,
+)
 
 random_seed = 666
 
@@ -137,7 +125,9 @@ if hasattr(config, "use_pre_train") and config.use_pre_train:
     # run_id = "rud1gsge"
     # run_id = "kgr0nicn"
     # run_id = "j8s7l3kw"  # MRN train on monitor val only
-    run_id = "3sicl8ny" # MRN train on monitor val only, mesh type 6, 0.05, 0.055, coord
+    run_id = (
+        "3sicl8ny"  # MRN train on monitor val only, mesh type 6, 0.05, 0.055, coord
+    )
     # run_id = "99zrohiu"
     api = wandb.Api()
     run_loaded = api.run(f"{entity}/{project_name}/{run_id}")
@@ -323,7 +313,7 @@ for epoch in range(config.num_epochs + 1):
             weight_deform_loss = config.weight_deform_loss
         if "weight_area_loss" in config:
             weight_area_loss = config.weight_area_loss
-        
+
         weight_chamfer_loss = 0.0
         if "weight_chamfer_loss" in config:
             weight_chamfer_loss = config.weight_chamfer_loss
@@ -425,7 +415,7 @@ for epoch in range(config.num_epochs + 1):
         test_chamfer_loss = test_loss["chamfer_loss"]
     else:
         test_chamfer_loss = 0.0
-    
+
     wandb.log(
         {
             "Chamfer loss/Train": train_chamfer_loss,
@@ -442,7 +432,7 @@ for epoch in range(config.num_epochs + 1):
         test_equation_residual = test_loss["equation_residual"]
     else:
         test_equation_residual = 0.0
-    
+
     wandb.log(
         {
             "Equation residual/Train": train_equation_residual,

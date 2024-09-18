@@ -2,10 +2,11 @@
 # GitHub Username: acse-cw1722
 
 # %% setup
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import warpmesh as wm
 import firedrake as fd
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+
+import warpmesh as wm
 
 x_feat = [
     "coord",
@@ -41,7 +42,8 @@ data_set_type = "cmplx"
 data_dir = (
     f"/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/"
     f"z=<0,1>_ndist=None_max_dist=6_<{n_grid}x{n_grid}>_n=400_"
-    f"{data_set_type}/train")
+    f"{data_set_type}/train"
+)
 print(data_dir)
 
 data_set = wm.MeshDataset(
@@ -69,12 +71,18 @@ for i in range(n_row):
         plot_obj = fd.tripcolor(u, axes=ax, cmap=cmap)
         cbar = plt.colorbar(plot_obj, ax=ax)
         cbar.ax.tick_params(labelsize=fontsize)
-        ax.tick_params(axis='both', which='major', labelsize=fontsize)
+        ax.tick_params(axis="both", which="major", labelsize=fontsize)
         fd.triplot(mesh, axes=ax)
         border = patches.Rectangle(
-            (0, 0), 1, 1, transform=fig.transFigure,
-            color='black',
-            fill=False, zorder=10, linewidth=3)
+            (0, 0),
+            1,
+            1,
+            transform=fig.transFigure,
+            color="black",
+            fill=False,
+            zorder=10,
+            linewidth=3,
+        )
         fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
         fig.patches.append(border)
 
@@ -98,7 +106,8 @@ data_set_type = "smpl"
 data_dir = (
     f"/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/"
     f"z=<0,1>_ndist=None_max_dist=6_<{n_grid}x{n_grid}>_n=400_"
-    f"{data_set_type}/train")
+    f"{data_set_type}/train"
+)
 print(data_dir)
 
 data_set = wm.MeshDataset(

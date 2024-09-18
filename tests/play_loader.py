@@ -1,14 +1,15 @@
 import os
-import warpmesh as wm
-import torch
 import warnings
+
+import torch
 from torch_geometric.data import DataLoader
 
-warnings.filterwarnings("ignore")
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+import warpmesh as wm
 
-project_dir = os.path.dirname(
-    os.path.dirname((os.path.abspath(__file__))))
+warnings.filterwarnings("ignore")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 data_set_path = (
     "/Users/cw1722/Documents/irp/irp-cw1722/data/dataset/helmholtz/"
     "z=<0,1>_ndist=None_max_dist=6_<20x20>_n=400_cmplx"

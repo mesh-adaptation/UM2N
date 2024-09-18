@@ -1,21 +1,22 @@
 # Author: Chunyang Wang
 # GitHub Username: chunyang-w
 import os
+
 import firedrake as fd
 
-os.environ['OMP_NUM_THREADS'] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
 __all__ = [
     "RandHelmholtzEqGenerator",
     "RandPoissonEqGenerator",
     "HelmholtzEqGenerator",
-    "PoissonEqGenerator"
+    "PoissonEqGenerator",
 ]
 
 
 # Generate a random Helmholtz equation based on a Gaussian distribution.
 # The funnction has the form:
 # $-\delta^{2} \mu + \mu = f$
-class RandHelmholtzEqGenerator():
+class RandHelmholtzEqGenerator:
     def __init__(self, rand_u_generator):
         self.rand_u_generator = rand_u_generator
         self.problem_name = "rand_helmholtz"
@@ -31,14 +32,13 @@ class RandHelmholtzEqGenerator():
             params={
                 "x": x,
                 "y": y,
-            })
+            }
+        )
         # Discretised Eq Definition Start
         self.f = -1 * fd.div(fd.grad(self.u_exact)) + self.u_exact
         self.RHS = self.f * v * fd.dx(domain=mesh)
-        self.LHS = (fd.dot(
-            fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
-        self.bc = fd.DirichletBC(
-            self.function_space, self.u_exact, "on_boundary")
+        self.LHS = (fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+        self.bc = fd.DirichletBC(self.function_space, self.u_exact, "on_boundary")
         # Discretised Eq Definition End
         return {
             "mesh": mesh,
@@ -51,10 +51,13 @@ class RandHelmholtzEqGenerator():
         }
 
 
-class HelmholtzEqGenerator():
-    def __init__(self, params={
-        "u_exact_func": None,
-    }):
+class HelmholtzEqGenerator:
+    def __init__(
+        self,
+        params={
+            "u_exact_func": None,
+        },
+    ):
         self.u_exact_func = params["u_exact_func"]
 
     def discretise(self, mesh):
@@ -69,10 +72,8 @@ class HelmholtzEqGenerator():
         self.f = -1 * fd.div(fd.grad(self.u_exact)) + self.u_exact
         # self.f = self.f_func(x, y)
         self.RHS = self.f * v * fd.dx(domain=mesh)
-        self.LHS = (fd.dot(
-            fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
-        self.bc = fd.DirichletBC(
-            self.function_space, self.u_exact, "on_boundary")
+        self.LHS = (fd.dot(fd.grad(v), fd.grad(u)) + v * u) * fd.dx(domain=mesh)
+        self.bc = fd.DirichletBC(self.function_space, self.u_exact, "on_boundary")
         # Discretised Eq Definition End
         return {
             "mesh": mesh,
@@ -85,7 +86,7 @@ class HelmholtzEqGenerator():
         }
 
 
-class RandPoissonEqGenerator():
+class RandPoissonEqGenerator:
     def __init__(self, rand_u_generator):
         self.rand_u_generator = rand_u_generator
         self.problem_name = "rand_helmholtz"
@@ -101,14 +102,13 @@ class RandPoissonEqGenerator():
             params={
                 "x": x,
                 "y": y,
-            })
+            }
+        )
         # Discretised Eq Definition Start
         self.f = -1 * fd.div(fd.grad(self.u_exact))
         self.RHS = self.f * v * fd.dx(domain=mesh)
-        self.LHS = fd.dot(
-            fd.grad(v), fd.grad(u)) * fd.dx(domain=mesh)
-        self.bc = fd.DirichletBC(
-            self.function_space, self.u_exact, "on_boundary")
+        self.LHS = fd.dot(fd.grad(v), fd.grad(u)) * fd.dx(domain=mesh)
+        self.bc = fd.DirichletBC(self.function_space, self.u_exact, "on_boundary")
         # Discretised Eq Definition End
         return {
             "mesh": mesh,
@@ -121,10 +121,13 @@ class RandPoissonEqGenerator():
         }
 
 
-class PoissonEqGenerator():
-    def __init__(self, params={
-        "u_exact_func": None,
-    }):
+class PoissonEqGenerator:
+    def __init__(
+        self,
+        params={
+            "u_exact_func": None,
+        },
+    ):
         self.u_exact_func = params["u_exact_func"]
 
     def discretise(self, mesh):
@@ -138,10 +141,8 @@ class PoissonEqGenerator():
         # Discretised Eq Definition Start
         self.f = -1 * fd.div(fd.grad(self.u_exact))
         self.RHS = self.f * v * fd.dx(domain=mesh)
-        self.LHS = fd.dot(
-            fd.grad(v), fd.grad(u)) * fd.dx(domain=mesh)
-        self.bc = fd.DirichletBC(
-            self.function_space, self.u_exact, "on_boundary")
+        self.LHS = fd.dot(fd.grad(v), fd.grad(u)) * fd.dx(domain=mesh)
+        self.bc = fd.DirichletBC(self.function_space, self.u_exact, "on_boundary")
         # Discretised Eq Definition End
         return {
             "mesh": mesh,

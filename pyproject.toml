@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "warpmesh"
+version = "1.0"
+dependencies = [
+  "einops",
+  "gmsh",
+  "jupyter",
+  "ipython",
+  "matplotlib",
+  "meshio",
+  "numpy",
+  "pandas",
+  "pytest",
+  "rich",
+  "ruff",
+  "seaborn",
+  "tensorboardX",
+  "torch",
+  "torch_geometric",
+]
+authors = [
+  {name = "Chunyang Wang"},
+  {name = "Mingrui Zhang"},
+  {name = "Stephan C. Kramer"},
+  {name = "Joseph G. Wallwork"},
+]
+maintainers = []  # TODO: Who will be the maintainers?
+description="PDE mesh r-adaptation tool"
+readme = "README.md"
+# TODO: license = {file = "LICENSE"}
+keywords = ["python", "meshing", "machine-learning", "firedrake"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+]
+
+[project.urls]
+Homepage = "https://erizmr.github.io/UM2N"
+# TODO: Documentation
+Repository = "https://github.com/erizmr/UM2N"
+
+[tool.setuptools]
+packages = ["warpmesh"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "E", "W",  # Pycodestyle
+  "F",  # Pyflakes
+  "I",  # Isort
+]
+ignore = [
+  "E501",  # line too long
+  "E402",  # module level import not at top of file
+  "F403",  # unable to detect undefined names
+  "F405",  # name may be undefined, or defined from star imports
+  "I001",  # import block is unsorted or unformatted
+]

@@ -1,21 +1,21 @@
-import os
-import glob
 import time
+from types import SimpleNamespace
+
+import firedrake as fd
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import yaml
-import pickle
-import firedrake as fd
-import numpy as np
+
 import warpmesh as wm
-import matplotlib.pyplot as plt
-from types import SimpleNamespace
-from inference_utils import get_conv_feat, find_edges, find_bd, InputPack, load_model
+from inference_utils import InputPack, find_bd, find_edges, get_conv_feat
+
 print("Setting up solver.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #################### Load trained model ####################
 
-with open(f'./pretrain_model/config.yaml', 'r') as file:
+with open("./pretrain_model/config.yaml", "r") as file:
     config_data = yaml.safe_load(file)
     # print(config_data)
 
@@ -92,11 +92,11 @@ model = model.to(device)
 #
 # First, we always need a mesh. Let's have a :math:`10\times10` element unit square::
 
-import firedrake as fd
 
 # These meshes can be replaced by generated mesh
 mesh = fd.UnitSquareMesh(50, 50)
 mesh_adapted = fd.UnitSquareMesh(50, 50)
+
 
 def solve_helmholtz(mesh):
     # We need to decide on the function space in which we'd like to solve the
@@ -116,7 +116,9 @@ def solve_helmholtz(mesh):
 
     f = fd.Function(V)
     x, y = fd.SpatialCoordinate(mesh)
-    f.interpolate((1+8*fd.pi*fd.pi)*fd.cos(x*fd.pi*2)*fd.cos(y*fd.pi*2))
+    f.interpolate(
+        (1 + 8 * fd.pi * fd.pi) * fd.cos(x * fd.pi * 2) * fd.cos(y * fd.pi * 2)
+    )
 
     # We can now define the bilinear and linear forms for the left and right
     # hand sides of our equation respectively::
@@ -133,14 +135,16 @@ def solve_helmholtz(mesh):
     # symmetric, we instruct PETSc to employ the conjugate gradient method
     # and do not worry about preconditioning for the purposes of this demo ::
 
-    fd.solve(a == L, u, solver_parameters={'ksp_type': 'cg', 'pc_type': 'none'})
+    fd.solve(a == L, u, solver_parameters={"ksp_type": "cg", "pc_type": "none"})
 
-    f.interpolate(fd.cos(x*fd.pi*2)*fd.cos(y*fd.pi*2))
+    f.interpolate(fd.cos(x * fd.pi * 2) * fd.cos(y * fd.pi * 2))
     print("L2 error ", fd.sqrt(fd.assemble(fd.dot(u - f, u - f) * fd.dx)))
 
     return mesh, V, u
 
+
 mesh, V, u = solve_helmholtz(mesh)
+
 
 def monitor_func(mesh, u, alpha=5.0):
     vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
@@ -168,7 +172,14 @@ filter_monitor_val = np.maximum(0, filter_monitor_val)
 monitor_val.dat.data[:] = filter_monitor_val / filter_monitor_val.max()
 conv_feat = get_conv_feat(mesh, monitor_val)
 start_time = time.perf_counter()
-sample = InputPack(coord=coords, monitor_val=monitor_val.dat.data_ro.reshape(-1, 1), edge_index=edge_idx, bd_mask=bd_mask, conv_feat=conv_feat, stack_boundary=False)
+sample = InputPack(
+    coord=coords,
+    monitor_val=monitor_val.dat.data_ro.reshape(-1, 1),
+    edge_index=edge_idx,
+    bd_mask=bd_mask,
+    conv_feat=conv_feat,
+    stack_boundary=False,
+)
 adapted_coord = model(sample)
 end_time = time.perf_counter()
 print(f"Model inference time: {(end_time - start_time)*1e3} ms")
@@ -196,9 +207,8 @@ fd.tripcolor(u_adapted, axes=ax[1, 1], cmap=cmap)
 ax[1, 1].set_title("u_adapted")
 
 # Monitor val
-fd.tripcolor(monitor_val ,axes=ax[2, 0], cmap=cmap)
+fd.tripcolor(monitor_val, axes=ax[2, 0], cmap=cmap)
 ax[2, 0].set_title("Monitor val")
 
 plt.savefig("helm_example.png")
 plt.show()
-
