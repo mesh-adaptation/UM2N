@@ -20,7 +20,7 @@ The latest test status:
 
 ## 🛠️ Installation
 
-### The easy way:
+### All-in-one script
 
 Just navigate to **project root** folder, open terminal and execute the
 `install.sh` shell script:
@@ -32,24 +32,32 @@ and [Movement](https://github.com/mesh-adaptation/movement) under the `install`
 folder, as well as the `WarpMesh` package.
 
 
-### The hard way (in case the easy way did not went well or you want to challenge yourself):
+### Step-by-step approach
 
 1. The mesh generation relies on Firedrake, which is a Python package. To
    install Firedrake, please follow the instructions on
    [firedrakeproject.org](https://www.firedrakeproject.org/download.html).
 
-2. The movement of the mesh is implemented by `mesh-adaptation/movement`,
-   install it in the Firedrake virtual environment. To install, run
-   `pip install -e .` in the `mesh-adaptation/movement` directory. Here is a
-   link to that repo: [mesh-adaptation/movement](https://github.com/mesh-adaptation/movement).
-
-3. Use the virtual environment provided by Firedrake to install the dependencies
+2. Use the virtual environment provided by Firedrake to install the dependencies
    of this project. The virtual environment is located at
-   `~/firedrakevenv/bin/activate`. To activate the virtual environment, run
-   `source ~/firedrakevenv/bin/activate`.
+   `/path/to/firedrake/bin/activate`. To activate the virtual environment, run
+   `source /path/to/firedrake/bin/activate`.
 
-4. Run `pip install -e .` in the root directory of this project to install the
-   package and its dependencies.
+3. The movement of the mesh is implemented by
+   [mesh-adaptation/movement](https://github.com/mesh-adaptation/movement).
+   To install it in the Firedrake virtual environment, follow these
+   [instructions](https://github.com/mesh-adaptation/mesh-adaptation-docs/wiki/Installation-Instructions).
+
+4. Install PyTorch into the virtual environment by following the instructions
+   on the [PyTorch webpage](https://pytorch.org/get-started/locally).
+
+5. Install PyTorch3d into the virtual environment by running the command
+   ```
+   python3 -m pip install "git+https://github.com/facebookresearch/pytorch3d"
+   ```
+
+6. Run `pip install .` in the root directory of this project to install the
+   package and its other dependencies.
 
 
 ## 💿 Dataset generation
