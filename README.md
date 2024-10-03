@@ -1,17 +1,6 @@
-# 🚀 WarpMesh
+# 🚀 UM2N - Universal Mesh Movement Networks
 
-<img width="100%" src="https://raw.githubusercontent.com/chunyang-w/chunyang-w.github.io/pic/202306231902481.webp"/>
-
-(Image source: [Star Trek: Official Site](https://intl.startrek.com/article/warp-drive-a-reality-could-be-soon))
-
-## 🔎 About this project:
-
-In the famous TV series Star Trek, the starship Enterprise is able to travel
-faster than light by warping space-time. In this project, we 'warp' the
-underlying mesh of a discretised PDE problem to win some computational time.
-The node of the mesh is moved to the ideal position guided by a Graph Neural
-Network (GNN), which is supposed to be faster than numerical solvers.
-
+https://erizmr.github.io/UM2N/static/videos/UM2N_video.mp4
 
 The latest test status:
 
