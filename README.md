@@ -1,6 +1,6 @@
-# 🚀 UM2N - Universal Mesh Movement Networks
+# 🚀 UM2N - [Universal Mesh Movement Networks](https://erizmr.github.io/UM2N/)
 
-https://erizmr.github.io/UM2N/static/videos/UM2N_video.mp4
+https://github.com/user-attachments/assets/3471df18-1183-4881-add4-0a99929ac09b
 
 The latest test status:
 
