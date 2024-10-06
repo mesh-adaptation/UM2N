@@ -1,0 +1,1 @@
+docker build -t um2n -f ./docker/Dockerfile.UM2N .
