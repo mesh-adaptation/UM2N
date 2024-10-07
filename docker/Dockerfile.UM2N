@@ -1,23 +1,33 @@
 # Dockerfile for PyTorch3D with CPU support
 
-# Use an official Python base image
-FROM python:3.10-slim
+# Based on firedrake
+FROM firedrakeproject/firedrake:2024-10
+
+# set working directory
+WORKDIR /home/firedrake
 
 # Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
+USER firedrake
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libgl1-mesa-glx \
-    && rm -rf /var/lib/apt/lists/*
+# copy project
+COPY . ./UM2N
 
-# Install PyTorch and torchvision (CPU version)
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Install dependencies - pytorch
+RUN source ./firedrake/bin/activate &&\
+    pip install torch torchvision torchaudio
 
-# Install PyTorch3D
-RUN pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable"
+# Install dependencies - pytorch3d
+RUN source ./firedrake/bin/activate &&\
+    python3 -m pip install "git+https://github.com/facebookresearch/pytorch3d"
+
+# install dependencies - movement
+RUN source ./firedrake/bin/activate &&\
+    git clone https://github.com/mesh-adaptation/movement.git ./movement &&\
+    pip install -e ./movement
+
+# install dependencies - UM2N
+RUN source ./firedrake/bin/activate &&\
+    pip install -e ./UM2N
 
 # Set default command
 CMD ["python3"]
