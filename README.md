@@ -1,21 +1,27 @@
-# 🚀 WarpMesh
+# Toward Universal Mesh Movement Networks
 
-<img width="100%" src="https://raw.githubusercontent.com/chunyang-w/chunyang-w.github.io/pic/202306231902481.webp"/>
+placeholder for a teaser (can be a flow-past-cylinders)
+<!-- <img width="100%" src="https://raw.githubusercontent.com/chunyang-w/chunyang-w.github.io/pic/202306231902481.webp"/> -->
+<!-- (Image source: [Star Trek: Official Site](https://intl.startrek.com/article/warp-drive-a-reality-could-be-soon)) -->
 
-(Image source: [Star Trek: Official Site](https://intl.startrek.com/article/warp-drive-a-reality-could-be-soon))
+
+<!-- ## Abstract:
+Solving complex Partial Differential Equations (PDEs) accurately and efficiently is an essential and challenging problem in all scientific and engineering disciplines. Mesh movement methods provide the capability to improve the accuracy of the numerical solution without increasing the overall mesh degree of freedom count. Conventional sophisticated mesh movement methods are extremely expensive and struggle to handle scenarios with complex boundary geometries. However, existing learning-based methods require re-training from scratch given a different PDE type or boundary geometry, which limits their applicability, and also often suffer from robustness issues in the form of inverted elements. In this paper, we introduce the Universal Mesh Movement Network (UM2N), which -- once trained -- can be applied in a non-intrusive, zero-shot manner to move meshes with different size distributions and structures, for solvers applicable to different PDE types and boundary geometries. UM2N consists of a Graph Transformer (GT) encoder for extracting features and a Graph Attention Network (GAT) based decoder for moving the mesh. We evaluate our method on advection and Navier-Stokes based examples, as well as a real-world tsunami simulation case. Our method outperforms existing learning-based mesh movement methods in terms of the benchmarks described above. In comparison to the conventional sophisticated Monge-Ampère PDE-solver based method, our approach not only significantly accelerates mesh movement, but also proves effective in scenarios where the conventional method fails. -->
 
 ## 🔎 About this project:
+This is the official code repository for the NeurIPS 2024 Spotlight paper [Toward Universal Mesh Movement Networks](https://arxiv.org/abs/2407.00382). [[Project page]](https://erizmr.github.io/UM2N/)
 
-In the famous TV series Star Trek, the starship Enterprise is able to travel
+Solving complex Partial Differential Equations (PDEs) accurately and efficiently is an essential and challenging problem in all scientific and engineering disciplines. Mesh movement methods provide the capability to improve the accuracy of the numerical solution without increasing the overall mesh degree of freedom count. Conventional sophisticated mesh movement methods are extremely expensive and struggle to handle scenarios with complex boundary geometries. However, existing learning-based methods require re-training from scratch given a different PDE type or boundary geometry, which limits their applicability, and also often suffer from robustness issues in the form of inverted elements. In this paper, we introduce the Universal Mesh Movement Network (UM2N), which -- once trained -- can be applied in a non-intrusive, zero-shot manner to move meshes with different size distributions and structures, for solvers applicable to different PDE types and boundary geometries. UM2N consists of a Graph Transformer (GT) encoder for extracting features and a Graph Attention Network (GAT) based decoder for moving the mesh. We evaluate our method on advection and Navier-Stokes based examples, as well as a real-world tsunami simulation case. Our method outperforms existing learning-based mesh movement methods in terms of the benchmarks described above. In comparison to the conventional sophisticated Monge-Ampère PDE-solver based method, our approach not only significantly accelerates mesh movement, but also proves effective in scenarios where the conventional method fails.
+<!-- In the famous TV series Star Trek, the starship Enterprise is able to travel
 faster than light by warping space-time. In this project, we 'warp' the
 underlying mesh of a discretised PDE problem to win some computational time.
 The node of the mesh is moved to the ideal position guided by a Graph Neural
-Network (GNN), which is supposed to be faster than numerical solvers.
+Network (GNN), which is supposed to be faster than numerical solvers. -->
 
 
 The latest test status:
 
-[![WarpMesh](https://github.com/mesh-adaptation/UM2N/actions/workflows/test_warpmesh.yml/badge.svg)](https://github.com/mesh-adaptation/UM2N/actions/workflows/test_warpmesh.yml)
+[![UM2N](https://github.com/mesh-adaptation/UM2N/actions/workflows/test_warpmesh.yml/badge.svg)](https://github.com/mesh-adaptation/UM2N/actions/workflows/test_warpmesh.yml)
 
 
 ## 🛠️ Installation
@@ -60,7 +66,7 @@ folder, as well as the `WarpMesh` package.
    package and its other dependencies.
 
 
-## 💿 Dataset generation
+## 💿 Dataset generation (This is outdated)
 
 In case you do not wish to generate the dataset by yourself, here is a
 pre-generated dataset on Google Drive:
@@ -78,7 +84,7 @@ dataset is isotropic or anisotropic.
 After download, you should put the downloaded folder `helmholtz` under
 `data/dataset` folder.
 
-### Generate the dataset by yourself
+### Generate the dataset by yourself (This is outdated)
 
 ```{shell}
 . script/make_dataset.sh
@@ -102,7 +108,7 @@ defined in `script/make_dataset.sh` to generate datasets of different sizes.
 The number of samples in the dataset can be changed by modifying the variable
 `n_sample` in `script/build_helmholtz_dataset`.
 
-## 🚀 Train the model
+## 🚀 Train the model (This is outdated)
 
 A training notebook is provided: `script/train_warpmesh.ipynb`. Further training
 details can be found in the notebook.
@@ -110,7 +116,7 @@ details can be found in the notebook.
 Here is also a link to pre-trained models:
 [link](https://drive.google.com/drive/folders/1P_JMpU1qmLdmbGTz8fL5VO-lEBoP3_2n?usp=sharing)
 
-## 📊 Evaluate the model
+## 📊 Evaluate the model (This is outdated)
 
 There are a set of visualisation script under `script/` folder. The script can
 be used to evaluate the model performance.
@@ -167,6 +173,6 @@ find ./ -type d -name "plot" -exec rm -rf {} +
 tensorboard --logdir=path/to/your/logs
 ```
 
-## 🖖🏼 At last ...
+<!-- ## 🖖🏼 At last ...
 
-Live long and prosper!  
+Live long and prosper!   -->
