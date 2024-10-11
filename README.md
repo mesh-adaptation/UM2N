@@ -34,8 +34,12 @@ and [Movement](https://github.com/mesh-adaptation/movement) under the `install`
 folder, as well as the `WarpMesh` package. Note that the pytorch installed is a cpu version.
 
 - GPU (cuda) support
-For gpu support, please execute the: `install_gpu.sh {CUDA_VERSION}`.
-E.g. `install_gpu.sh 118` for a CUDA version 11.8.
+
+For gpu support, please execute the:
+``` shell
+ ./install_gpu.sh {CUDA_VERSION}
+ # e.g. `install_gpu.sh 118` for a CUDA version 11.8.
+ ```
 
 
 ### Step-by-step approach
