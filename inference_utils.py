@@ -151,6 +151,7 @@ def find_bd(mesh, function_space, use_4_edge=False, poly_mesh=False):
 
 #     return data
 
+
 class InputPack:
     def __init__(
         self,
@@ -176,7 +177,7 @@ class InputPack:
             .float()
             .to(device)
         )
-        
+
         self.edge_index = torch.tensor(edge_index).to(torch.int64).to(device)
         self.bd_mask = torch.tensor(bd_mask).reshape(-1, 1).to(device)
         self.node_num = torch.tensor(self.coord.shape[0]).to(device)
