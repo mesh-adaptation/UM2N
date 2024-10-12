@@ -107,6 +107,50 @@ def find_bd(mesh, function_space, use_4_edge=False, poly_mesh=False):
     return bd_mask, left_bd, right_bd, down_bd, up_bd
 
 
+# def normalise(data):
+#     """
+#     Normalizes the mesh and convolution features of a given MeshData object.
+
+#     Args:
+#         data (MeshData): The MeshData object containing features to normalize.
+
+#     Returns:
+#         MeshData: The MeshData object with normalized features.
+#     """
+#     # normalise mesh feature (only last dims, first 2 dim is coordinate)
+#     # Compute minimum and maximum values along the second axis
+#     mesh_val_feat = data.mesh_feat[:, 2:]  # value feature (no coord)
+
+#     min_val = torch.min(mesh_val_feat, dim=0).values
+#     max_val = torch.max(mesh_val_feat, dim=0).values
+#     max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
+#     data.mesh_feat[:, 2:] = data.mesh_feat[:, 2:] / max_abs_val
+
+#     # normalise conv feature
+#     # that is, uh and hessian norm
+#     conv_feat_shape = data.conv_feat.shape
+#     conv_feat = data.conv_feat
+#     conv_feat = conv_feat.reshape(conv_feat_shape[0], -1)
+#     min_val = torch.min(conv_feat, dim=1).values
+#     max_val = torch.max(conv_feat, dim=1).values
+#     max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
+#     max_abs_val = max_abs_val.reshape(-1, 1)
+#     conv_feat[:, :] = conv_feat[:, :] / max_abs_val[:, :]
+#     data.conv_feat = conv_feat.reshape(conv_feat_shape)
+
+#     # normalise conv_fix feature
+#     conv_feat_fix_shape = data.conv_feat_fix.shape
+#     conv_feat_fix = data.conv_feat_fix
+#     conv_feat_fix = conv_feat_fix.reshape(conv_feat_fix_shape[0], -1)
+#     min_val = torch.min(conv_feat_fix, dim=1).values
+#     max_val = torch.max(conv_feat_fix, dim=1).values
+#     max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
+#     max_abs_val = max_abs_val.reshape(-1, 1)
+#     conv_feat_fix[:, :] = conv_feat_fix[:, :] / max_abs_val[:, :]
+#     data.conv_feat_fix = conv_feat_fix.reshape(conv_feat_fix_shape)
+
+#     return data
+
 class InputPack:
     def __init__(
         self,
@@ -120,11 +164,19 @@ class InputPack:
     ) -> None:
         self.coord = torch.tensor(coord).float().to(device)
         self.conv_feat = torch.tensor(conv_feat).float().to(device)
+
+        # Normalise monitor
+        min_val = torch.min(monitor_val, dim=0).values
+        max_val = torch.max(monitor_val, dim=0).values
+        max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
+        monitor_val = monitor_val / max_abs_val
+
         self.mesh_feat = (
             torch.concat([torch.tensor(coord), torch.tensor(monitor_val)], dim=1)
             .float()
             .to(device)
         )
+        
         self.edge_index = torch.tensor(edge_index).to(torch.int64).to(device)
         self.bd_mask = torch.tensor(bd_mask).reshape(-1, 1).to(device)
         self.node_num = torch.tensor(self.coord.shape[0]).to(device)

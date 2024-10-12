@@ -35,14 +35,14 @@ class NetGATDeform(torch.nn.Module):
         out_coord_2, out_feature_2 = self.gat_2(
             out_coord_1, together_2, edge_idx, bd_mask, poly_mesh
         )
-        # 下面是第三层gat的准备层了啊。。
+        # The third layer of GAT
         together_3 = torch.cat(
             [out_coord_2, out_coord_1, coords_tensor, out_feature_2], dim=1
         )
         out_coord_3, out_feature_3 = self.gat_3(
             out_coord_2, together_3, edge_idx, bd_mask, poly_mesh
         )
-        # 下面是第四层gat的准备层了啊。。
+        # The fourth layer of GAT
         together_4 = torch.cat(
             [out_coord_3, out_coord_2, out_coord_1, coords_tensor, out_feature_3], dim=1
         )
