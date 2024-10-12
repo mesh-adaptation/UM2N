@@ -12,8 +12,9 @@ print("Setting up solver.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 def dump_gpu_usage_to_file(filename):
-    with open(filename, 'w') as file:
+    with open(filename, "w") as file:
         if torch.cuda.is_available():
             # Number of GPUs available
             num_gpus = torch.cuda.device_count()
@@ -21,12 +22,21 @@ def dump_gpu_usage_to_file(filename):
 
             for i in range(num_gpus):
                 file.write(f"GPU {i}: {torch.cuda.get_device_name(i)}\n")
-                file.write(f"  Memory Allocated: {torch.cuda.memory_allocated(i) / (1024 ** 2):.2f} MB\n")
-                file.write(f"  Memory Cached: {torch.cuda.memory_reserved(i) / (1024 ** 2):.2f} MB\n")
-                file.write(f"  Memory Free: {(torch.cuda.get_device_properties(i).total_memory - torch.cuda.memory_allocated(i)) / (1024 ** 2):.2f} MB\n")
+                file.write(
+                    f"  Memory Allocated: {torch.cuda.memory_allocated(i) / (1024 ** 2):.2f} MB\n"
+                )
+                file.write(
+                    f"  Memory Cached: {torch.cuda.memory_reserved(i) / (1024 ** 2):.2f} MB\n"
+                )
+                file.write(
+                    f"  Memory Free: {(torch.cuda.get_device_properties(i).total_memory - torch.cuda.memory_allocated(i)) / (1024 ** 2):.2f} MB\n"
+                )
                 file.write("\n")
         else:
-            file.write("CUDA is not available. Please check your PyTorch installation.\n")
+            file.write(
+                "CUDA is not available. Please check your PyTorch installation.\n"
+            )
+
 
 print("!!!!!device!!!!!! ", device)
 #################### Load trained model ####################
@@ -70,34 +80,38 @@ all_infer_time = []
 num_run = 20
 with torch.no_grad():
     for _ in range(num_run):
-        start_time = time.perf_counter()        
+        start_time = time.perf_counter()
         adapted_coord = model(sample)
         end_time = time.perf_counter()
-        curr_infer_time = (end_time - start_time)*1e3
+        curr_infer_time = (end_time - start_time) * 1e3
         all_infer_time.append(curr_infer_time)
         total_infer_time += curr_infer_time
-averaged_time = total_infer_time/num_run
-print(f"Total model inference time: {total_infer_time} ms, averaged time: {averaged_time}")
+averaged_time = total_infer_time / num_run
+print(
+    f"Total model inference time: {total_infer_time} ms, averaged time: {averaged_time}"
+)
 
 # Check result
 reference_adapted_mesh = plot_data_dict_model["mesh_model"]
 adapted_coord_np = adapted_coord.cpu().detach().numpy()
-assert np.allclose(adapted_coord_np, reference_adapted_mesh, rtol=1e-05, atol=1e-08), "Model output mesh is not consistent to the reference"
+assert np.allclose(
+    adapted_coord_np, reference_adapted_mesh, rtol=1e-05, atol=1e-08
+), "Model output mesh is not consistent to the reference"
 print("Output is consistent to the reference.")
 
 output_file = f"{demo_output_path}/test_ring_demo_perf_out.txt"
 print(all_infer_time)
 with open(output_file, "w") as f:
-    f.write(', '.join([str(v) for v in all_infer_time]))
-    f.write('\n')
-    f.write('average time: ' + str(averaged_time) + '\n')
-    f.write('total time: ' + str(total_infer_time) + '\n')
-    f.write('num of vertices: ' + str(adapted_coord_np.shape) + '\n')
-    f.write('num of elements: ' + str(sample.face.shape) + '\n')
+    f.write(", ".join([str(v) for v in all_infer_time]))
+    f.write("\n")
+    f.write("average time: " + str(averaged_time) + "\n")
+    f.write("total time: " + str(total_infer_time) + "\n")
+    f.write("num of vertices: " + str(adapted_coord_np.shape) + "\n")
+    f.write("num of elements: " + str(sample.face.shape) + "\n")
 print(f"write results to {output_file}.")
 
 # Specify the output file name
-output_file_gpu_info = f'{demo_output_path}/gpu_usage.txt'
+output_file_gpu_info = f"{demo_output_path}/gpu_usage.txt"
 dump_gpu_usage_to_file(output_file_gpu_info)
 print(f"GPU usage information has been written to {output_file_gpu_info}.")
 
@@ -105,9 +119,7 @@ rows = 3
 cols = 2
 cmap = "seismic"
 
-fig, ax = plt.subplots(
-    rows, cols, figsize=(cols * 10, rows * 10), layout="compressed"
-)
+fig, ax = plt.subplots(rows, cols, figsize=(cols * 10, rows * 10), layout="compressed")
 
 ## Firedrake visualization part
 import firedrake as fd
@@ -134,9 +146,7 @@ cols = 4
 cmap = "seismic"
 FONT_SIZE = 24
 
-fig, ax = plt.subplots(
-    rows, cols, figsize=(cols * 10, rows * 10), layout="compressed"
-)
+fig, ax = plt.subplots(rows, cols, figsize=(cols * 10, rows * 10), layout="compressed")
 
 fd.triplot(mesh_og, axes=ax[0])
 ax[0].set_title("Original Mesh", fontsize=FONT_SIZE)
