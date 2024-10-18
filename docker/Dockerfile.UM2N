@@ -7,7 +7,7 @@ FROM firedrakeproject/firedrake:2024-10
 WORKDIR /home/firedrake
 
 # Set environment variables
-USER firedrake
+USER root
 
 # copy project
 COPY . ./UM2N
@@ -27,7 +27,6 @@ RUN source ./firedrake/bin/activate &&\
 
 # install dependencies - UM2N
 RUN source ./firedrake/bin/activate &&\
-    pip install -e ./UM2N
+    pip install ./UM2N
 
-# Set default command
-CMD ["python3"]
+ENTRYPOINT ["/bin/bash", "-c", "source /home/firedrake/firedrake/bin/activate && exec /bin/bash"]
