@@ -10,7 +10,7 @@ import firedrake as fd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import warpmesh as wm
+import UM2N
 
 
 def arg_parse():
@@ -300,7 +300,7 @@ def sample_from_loop(
 ):
     global i
     print("before processing")
-    mesh_processor = wm.MeshProcessor(
+    mesh_processor = UM2N.MeshProcessor(
         original_mesh=mesh_og,
         optimal_mesh=mesh_new,
         function_space=function_space,
@@ -402,7 +402,7 @@ if __name__ == "__main__":
             mesh_new = None
             mesh_fine = None
             if mesh_type != 0:
-                unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(
+                unstructure_square_mesh_gen = UM2N.UnstructuredSquareMesh(
                     scale=scale_x, mesh_type=mesh_type
                 )  # noqa
                 mesh = unstructure_square_mesh_gen.get_mesh(
@@ -418,7 +418,7 @@ if __name__ == "__main__":
                 mesh_fine = fd.UnitSquareMesh(100, 100)
             # Generate Random solution field
             gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
-            solver = wm.BurgersSolver(
+            solver = UM2N.BurgersSolver(
                 mesh, mesh_fine, mesh_new, gauss_list=gaussian_list, nu=nu, idx=idx
             )
             solver.solve_problem(sample_from_loop)

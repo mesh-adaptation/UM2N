@@ -4,7 +4,7 @@
 import firedrake as fd
 import matplotlib.pyplot as plt  # noqa
 
-import warpmesh as wm
+import UM2N
 
 __all__ = ["compare_error"]
 
@@ -66,13 +66,13 @@ def compare_error(
     # construct the helmholtz equation
     eq = None
     if problem_type == "helmholtz":
-        eq = wm.HelmholtzEqGenerator(
+        eq = UM2N.HelmholtzEqGenerator(
             params={
                 "u_exact_func": u_exact,
             }
         )
     elif problem_type == "poisson":
-        eq = wm.PoissonEqGenerator(
+        eq = UM2N.PoissonEqGenerator(
             params={
                 "u_exact_func": u_exact,
             }
@@ -80,7 +80,7 @@ def compare_error(
 
     # solution on og mesh
     og_res = eq.discretise(mesh)
-    og_solver = wm.EquationSolver(
+    og_solver = UM2N.EquationSolver(
         params={
             "function_space": og_res["function_space"],
             "LHS": og_res["LHS"],
@@ -93,7 +93,7 @@ def compare_error(
     # solution on MA mesh
     mesh_MA.coordinates.dat.data[:] = data_in.y.detach().cpu().numpy()
     ma_res = eq.discretise(mesh_MA)
-    ma_solver = wm.EquationSolver(
+    ma_solver = UM2N.EquationSolver(
         params={
             "function_space": ma_res["function_space"],
             "LHS": ma_res["LHS"],
@@ -107,7 +107,7 @@ def compare_error(
     uh_model = None
     if num_tangle == 0:
         model_res = eq.discretise(mesh_model)
-        model_solver = wm.EquationSolver(
+        model_solver = UM2N.EquationSolver(
             params={
                 "function_space": model_res["function_space"],
                 "LHS": model_res["LHS"],
@@ -125,7 +125,7 @@ def compare_error(
     res_high_res = eq.discretise(high_res_mesh)
     uh_exact = fd.interpolate(res_high_res["u_exact"], high_res_function_space)
 
-    fig, plot_data_dict = wm.plot_compare(
+    fig, plot_data_dict = UM2N.plot_compare(
         mesh_fine,
         mesh,
         mesh_MA,

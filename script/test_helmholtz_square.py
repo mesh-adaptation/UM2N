@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import wandb
 
-import warpmesh as wm
+import UM2N
 
 entity = "w-chunyang"
 project_name = "warpmesh"
@@ -208,7 +208,7 @@ if __name__ == "__main__":
             print("Generating Sample: " + str(i))
             mesh = fd.RectangleMesh(num_grid_x, num_grid_y, scale_x, scale_y)
             # Generate Random solution field
-            rand_u_generator = wm.RandSourceGenerator(
+            rand_u_generator = UM2N.RandSourceGenerator(
                 use_iso=use_iso,
                 dist_params={
                     "max_dist": max_dist,
@@ -225,12 +225,12 @@ if __name__ == "__main__":
                     "c_max": c_max,
                 },
             )
-            helmholtz_eq = wm.RandHelmholtzEqGenerator(rand_u_generator)
+            helmholtz_eq = UM2N.RandHelmholtzEqGenerator(rand_u_generator)
             res = helmholtz_eq.discretise(mesh)  # discretise the equation
             dist_params = rand_u_generator.get_dist_params()
             print("dist_params", dist_params)
             # Solve the equation
-            solver = wm.EquationSolver(
+            solver = UM2N.EquationSolver(
                 params={
                     "function_space": res["function_space"],
                     "LHS": res["LHS"],
@@ -240,7 +240,7 @@ if __name__ == "__main__":
             )
             uh = solver.solve_eq()
             # Generate Mesh
-            hessian = wm.MeshGenerator(
+            hessian = UM2N.MeshGenerator(
                 params={
                     "num_grid_x": num_grid_x,
                     "num_grid_y": num_grid_y,
@@ -249,7 +249,7 @@ if __name__ == "__main__":
                 }
             ).get_hessian(mesh)
 
-            hessian_norm = wm.MeshGenerator(
+            hessian_norm = UM2N.MeshGenerator(
                 params={
                     "num_grid_x": num_grid_x,
                     "num_grid_y": num_grid_y,
@@ -263,7 +263,7 @@ if __name__ == "__main__":
             func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
             grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
 
-            mesh_gen = wm.MeshGenerator(
+            mesh_gen = UM2N.MeshGenerator(
                 params={
                     "num_grid_x": num_grid_x,
                     "num_grid_y": num_grid_y,
@@ -295,7 +295,7 @@ if __name__ == "__main__":
 
             # solve the equation on the new mesh
             new_res = helmholtz_eq.discretise(new_mesh)
-            new_solver = wm.EquationSolver(
+            new_solver = UM2N.EquationSolver(
                 params={
                     "function_space": new_res["function_space"],
                     "LHS": new_res["LHS"],
@@ -306,7 +306,7 @@ if __name__ == "__main__":
             uh_new = new_solver.solve_eq()
 
             # process the data for training
-            mesh_processor = wm.MeshProcessor(
+            mesh_processor = UM2N.MeshProcessor(
                 original_mesh=mesh,
                 optimal_mesh=new_mesh,
                 function_space=new_res["function_space"],
@@ -388,9 +388,9 @@ if __name__ == "__main__":
             run = api.run(f"{entity}/{project_name}/{run_id}")
             config = SimpleNamespace(**run.config)
             dataset_path = problem_data_dir
-            dataset = wm.MeshDataset(
+            dataset = UM2N.MeshDataset(
                 dataset_path,
-                transform=wm.normalise if wm.normalise else None,
+                transform=UM2N.normalise if UM2N.normalise else None,
                 x_feature=config.x_feat,
                 mesh_feature=config.mesh_feat,
                 conv_feature=config.conv_feat,
@@ -404,7 +404,7 @@ if __name__ == "__main__":
                 add_nei=True,
             )
             print(dataset[i].dist_params)
-            compare_res = wm.compare_error(dataset[i], mesh, high_res_mesh, new_mesh, 0)
+            compare_res = UM2N.compare_error(dataset[i], mesh, high_res_mesh, new_mesh, 0)
 
             print("compare_res", compare_res)
 

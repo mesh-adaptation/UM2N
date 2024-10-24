@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt  # noqa
 import movement as mv
 import numpy as np  # noqa
 
-import warpmesh as wm  # noqa
-
 __all__ = ["BurgersSolver"]
 
 

@@ -8,7 +8,7 @@ import pickle
 import firedrake as fd  # noqa
 import torch
 import movement as mv  # noqa
-import warpmesh as wm  # noqa
+import UM2N
 import numpy as np
 import pandas as pd
 
@@ -20,7 +20,7 @@ import ufl
 import matplotlib.pyplot as plt  # noqa
 
 from tqdm import tqdm  # noqa
-from warpmesh.model.train_util import model_forward
+from UM2N.model.train_util import model_forward
 
 
 def get_log_og(log_path, idx):
@@ -826,7 +826,7 @@ class SwirlSolver:
             # self.u_prev_adapt.project(self.u_cur)
 
             # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
-            num_tangle = wm.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
+            num_tangle = UM2N.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
             if isinstance(num_tangle, torch.Tensor):
                 num_tangle = num_tangle.item()
             if num_tangle > 0:  # has tangled elems:
@@ -859,7 +859,7 @@ class SwirlSolver:
             self.mesh_new.coordinates.dat.data[:] = y
 
             if ((step + 1) % self.save_interval == 0) or (step == 0):
-                fig, plot_data_dict = wm.plot_compare(
+                fig, plot_data_dict = UM2N.plot_compare(
                     self.mesh_fine,
                     self.mesh,
                     self.mesh_new,
@@ -943,16 +943,16 @@ class SwirlSolver:
         self.make_plot_data_dir(plot_data_path)
 
     def make_log_dir(self, log_path):
-        wm.mkdir_if_not_exist(log_path)
+        UM2N.mkdir_if_not_exist(log_path)
 
     def make_plot_dir(self, plot_path):
-        wm.mkdir_if_not_exist(plot_path)
+        UM2N.mkdir_if_not_exist(plot_path)
 
     def make_plot_more_dir(self, plot_more_path):
-        wm.mkdir_if_not_exist(plot_more_path)
+        UM2N.mkdir_if_not_exist(plot_more_path)
 
     def make_plot_data_dir(self, plot_data_path):
-        wm.mkdir_if_not_exist(plot_data_path)
+        UM2N.mkdir_if_not_exist(plot_data_path)
 
 
 if __name__ == "__main__":

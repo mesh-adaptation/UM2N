@@ -9,8 +9,8 @@ import wandb
 from torch.utils.data import SequentialSampler
 from torch_geometric.data import DataLoader
 
-import warpmesh as wm
-from warpmesh.model.train_util import (
+import UM2N
+from UM2N.model.train_util import (
     generate_samples_structured_grid,
     model_forward,
 )
@@ -233,7 +233,7 @@ for model_name in models_to_compare:
 
     model = None
     if config.model_used == "MRTransformer":
-        model = wm.MRTransformer(
+        model = UM2N.MRTransformer(
             num_transformer_in=config.num_transformer_in,
             num_transformer_out=config.num_transformer_out,
             num_transformer_embed_dim=config.num_transformer_embed_dim,
@@ -252,9 +252,9 @@ for model_name in models_to_compare:
     else:
         config.mesh_feat.extend(["phi", "grad_phi", "jacobian"])
     print("mesh feat type ", config.mesh_feat)
-    test_set = wm.MeshDataset(
+    test_set = UM2N.MeshDataset(
         test_dir,
-        # transform=wm.normalise if wm.normalise else None,
+        # transform=UM2N.normalise if UM2N.normalise else None,
         transform=None,
         x_feature=config.x_feat,
         mesh_feature=config.mesh_feat,
@@ -291,7 +291,7 @@ for model_name in models_to_compare:
         target_file_name = model_file
     assert model_file is not None, "Model file not found either on wandb or local."
     print(target_file_name)
-    model = wm.load_model(model, model_file)
+    model = UM2N.load_model(model, model_file)
     print(model)
 
     loss_func = torch.nn.L1Loss()
@@ -500,7 +500,7 @@ for model_name in models_to_compare:
         target_mesh.append(sample.y.detach().cpu().numpy())
         target_face.append(sample.face.detach().cpu().numpy())
         target_hessian_norm.append(sample.mesh_feat[:, -1].detach().cpu().numpy())
-        # compare_fig = wm.plot_mesh_compare(
+        # compare_fig = UM2N.plot_mesh_compare(
         #     out.detach().cpu().numpy(), sample.y,
         #     sample.face
         # )
@@ -510,7 +510,7 @@ for model_name in models_to_compare:
             break
 
 
-# compare_fig = wm.plot_multiple_mesh_compare(out_mesh_collections, out_loss_collections, target_mesh, target_face)
+# compare_fig = UM2N.plot_multiple_mesh_compare(out_mesh_collections, out_loss_collections, target_mesh, target_face)
 # compare_fig.tight_layout()
 # compare_fig.subplots_adjust(top=0.95)
 # compare_fig.suptitle(f"{dataset_name}: Output Mesh Comparsion (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)
@@ -578,7 +578,7 @@ variables_collections = {
 num_variables = len(variables_collections.keys())
 
 font_size = 24
-mesh_gen = wm.UnstructuredSquareMesh()
+mesh_gen = UM2N.UnstructuredSquareMesh()
 
 if dataset_name == "helmholtz":
     model_mesh = mesh_gen.load_mesh(

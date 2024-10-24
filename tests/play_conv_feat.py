@@ -2,7 +2,7 @@ import os
 
 import firedrake as fd
 
-import warpmesh as wm
+import UM2N
 
 os.environ["OMP_NUM_THREADS"] = "1"
 
@@ -16,7 +16,7 @@ z_max = 1
 z_min = 0
 
 mesh = fd.RectangleMesh(num_grid_x, num_grid_y, scale_x, scale_y)
-helmholtz_eq = wm.RandomHelmholtzGenerator(
+helmholtz_eq = UM2N.RandomHelmholtzGenerator(
     dist_params={
         "max_dist": max_dist,
         "n_dist": n_dist,
@@ -31,7 +31,7 @@ helmholtz_eq = wm.RandomHelmholtzGenerator(
 
 res = helmholtz_eq.discretise(mesh)  # discretise the equation
 
-solver = wm.HelmholtzSolver(
+solver = UM2N.HelmholtzSolver(
     params={
         "function_space": res["function_space"],
         "LHS": res["LHS"],
@@ -40,7 +40,7 @@ solver = wm.HelmholtzSolver(
     }
 )
 uh = solver.solve_eq()
-hessian = wm.MeshGenerator(
+hessian = UM2N.MeshGenerator(
     params={
         "num_grid_x": num_grid_x,
         "num_grid_y": num_grid_y,
@@ -49,7 +49,7 @@ hessian = wm.MeshGenerator(
     }
 ).get_hessian(mesh)
 
-hessian_norm = wm.MeshGenerator(
+hessian_norm = UM2N.MeshGenerator(
     params={
         "num_grid_x": num_grid_x,
         "num_grid_y": num_grid_y,
@@ -62,7 +62,7 @@ hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
 grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
 
-mesh_gen = wm.MeshGenerator(
+mesh_gen = UM2N.MeshGenerator(
     params={
         "num_grid_x": num_grid_x,
         "num_grid_y": num_grid_y,
@@ -75,7 +75,7 @@ new_mesh = mesh_gen.move_mesh()
 
 # solve the equation on the new mesh
 new_res = helmholtz_eq.discretise(new_mesh)
-new_solver = wm.HelmholtzSolver(
+new_solver = UM2N.HelmholtzSolver(
     params={
         "function_space": new_res["function_space"],
         "LHS": new_res["LHS"],
@@ -86,7 +86,7 @@ new_solver = wm.HelmholtzSolver(
 uh_new = new_solver.solve_eq()
 
 # process the data for training
-mesh_processor = wm.MeshProcessor(
+mesh_processor = UM2N.MeshProcessor(
     original_mesh=mesh,
     optimal_mesh=new_mesh,
     function_space=new_res["function_space"],

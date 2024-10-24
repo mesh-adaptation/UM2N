@@ -58,5 +58,5 @@ green_log "Downloading Movement..."
 git clone https://github.com/mesh-adaptation/movement.git ${VIRTUAL_ENV}/src/movement
 pip install -e ${VIRTUAL_ENV}/src/movement
 
-# Install WarpMesh
+# Install UM2N
 pip install -e ${UM2N_ROOT}

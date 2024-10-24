@@ -4,13 +4,13 @@ import warnings
 import torch
 from torch_geometric.loader import DataLoader
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-model = wm.MRN(deform_in_c=3, num_loop=3)
+model = UM2N.MRN(deform_in_c=3, num_loop=3)
 
 x_feat = [
     "coord",
@@ -36,9 +36,9 @@ project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 data_set_path = os.path.join(project_dir, "data/")
 data_path = data_set_path
 
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     os.path.join(data_path, "test"),
-    transform=wm.normalise if is_normalise else None,
+    transform=UM2N.normalise if is_normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,

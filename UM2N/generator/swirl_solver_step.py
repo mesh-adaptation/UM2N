@@ -7,7 +7,6 @@ import time  # noqa
 import firedrake as fd  # noqa
 
 import movement as mv  # noqa
-import warpmesh as wm  # noqa
 import numpy as np
 
 import firedrake.function as ffunc

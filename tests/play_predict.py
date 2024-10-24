@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import movement as mv
 import torch
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -14,7 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 problem = "helmholtz"
 
-model = wm.MRN(gfe_in_c=2, lfe_in_c=4, num_loop=10)
+model = UM2N.MRN(gfe_in_c=2, lfe_in_c=4, num_loop=10)
 
 weight_path = "/Users/cw1722/Downloads/model_1099.pth"
 weight_decay = 5e-4
@@ -109,23 +109,23 @@ def plot_prediction(data_set, model, prediction_dir, mode):
 
 prediction_dir = "/Users/cw1722/Documents/irp/irp-cw1722/data/temp"
 
-train_set = wm.MeshDataset(
+train_set = UM2N.MeshDataset(
     os.path.join(data_path, "train"),
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
 )
-test_set = wm.MeshDataset(
+test_set = UM2N.MeshDataset(
     os.path.join(data_path, "test"),
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
 )
-val_set = wm.MeshDataset(
+val_set = UM2N.MeshDataset(
     os.path.join(data_path, "val"),
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,

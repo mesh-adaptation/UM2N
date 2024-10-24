@@ -21,7 +21,7 @@ import numpy as np  # noqa
 import torch
 from torch_geometric.data import DataLoader  # noqa
 
-import warpmesh as wm
+import UM2N
 
 torch.no_grad()
 warnings.filterwarnings("ignore")
@@ -51,10 +51,10 @@ conv_feat = [
 ]
 
 # %% load model
-model = wm.M2N_og(
+model = UM2N.M2N_og(
     deform_in_c=7,
     gfe_in_c=1,
     lfe_in_c=3,
 ).to(device)
-model = wm.load_model(model, model_weight_path)
+model = UM2N.load_model(model, model_weight_path)
 model.eval()

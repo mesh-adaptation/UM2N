@@ -9,7 +9,7 @@ import pandas as pd
 import torch
 from torch_geometric.data import DataLoader  # noqa
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -23,21 +23,21 @@ M2N_weight_path = "/Users/cw1722/Downloads/M2N__15,20__cmplx/weight/model_999.pt
 # MRN_path = "/Users/cw1722/Downloads/MRN_r=5_15,20__smpl/weight/model_999.pth"  # noqa
 MRN_path = "/Users/cw1722/Downloads/MRN_r=5__15,20__cmplx/weight/model_999.pth"  # noqa
 
-model_M2N = wm.M2N(
+model_M2N = UM2N.M2N(
     deform_in_c=7,
     gfe_in_c=2,
     lfe_in_c=4,
 ).to(device)
-model_M2N = wm.load_model(model_M2N, M2N_weight_path)
+model_M2N = UM2N.load_model(model_M2N, M2N_weight_path)
 
-model_MRN = wm.MRN(
+model_MRN = UM2N.MRN(
     deform_in_c=7,
     gfe_in_c=2,
     lfe_in_c=4,
     num_loop=5,
 ).to(device)
 model_M2N.eval()
-model_MRN = wm.load_model(model_MRN, MRN_path)
+model_MRN = UM2N.load_model(model_MRN, MRN_path)
 model_MRN.eval()
 
 # %% dataset load
@@ -62,9 +62,9 @@ conv_feat = [
 ]
 normalise = True
 loss_func = torch.nn.L1Loss()
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     data_dir,
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
@@ -84,7 +84,7 @@ def compare_on_dataset(model, dataset):
     acceleration = []
     for data_idx in range(len(dataset)):
         data = dataset[data_idx]
-        res = wm.compare_error(model, data, plot=True, n_elem=n_elem)
+        res = UM2N.compare_error(model, data, plot=True, n_elem=n_elem)
         tangle.append(res["tangle_num"])
         error_og.append(res["error_original_mesh"])
         error_ma.append(res["error_ma_mesh"])
@@ -180,7 +180,7 @@ print(f"acceration: {np.mean(np.array(acceleration))}")
 
 # %% plot sample from m2n
 data = data_set[2]
-wm.compare_error(model_MRN, data, plot=True, n_elem=n_elem)
+UM2N.compare_error(model_MRN, data, plot=True, n_elem=n_elem)
 
 # %% plot model training loss, test tangle
 loss_m2n_path = "/Users/cw1722/Downloads/M2N__15,20__cmplx/train_log/loss.csv"
@@ -348,9 +348,9 @@ dataset_list = [
 ]
 
 data_sets = [
-    wm.MeshDataset(
+    UM2N.MeshDataset(
         data_dir,
-        transform=wm.normalise if normalise else None,
+        transform=UM2N.normalise if normalise else None,
         x_feature=x_feat,
         mesh_feature=mesh_feat,
         conv_feature=conv_feat,

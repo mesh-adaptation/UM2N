@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from firedrake.cython.dmcommon import facet_closure_nodes
 
-import warpmesh as wm
+import UM2N
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -227,20 +227,20 @@ def load_model(run, config, epoch, experiment_dir):
     assert model_file is not None, "Model file not found"
     model = None
     if config.model_used == "M2N":
-        model = wm.M2N(
+        model = UM2N.M2N(
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
             deform_in_c=config.num_deform_in,
         )
     elif config.model_used == "MRN":
-        model = wm.MRN(
+        model = UM2N.MRN(
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
             deform_in_c=config.num_deform_in,
             num_loop=config.num_deformer_loop,
         )
     elif config.model_used == "MRT" or config.model_used == "MRTransformer":
-        model = wm.MRTransformer(
+        model = UM2N.MRTransformer(
             num_transformer_in=config.num_transformer_in,
             num_transformer_out=config.num_transformer_out,
             num_transformer_embed_dim=config.num_transformer_embed_dim,
@@ -255,7 +255,7 @@ def load_model(run, config, epoch, experiment_dir):
             device=device,
         )
     elif config.model_used == "M2T":
-        model = wm.M2T(
+        model = UM2N.M2T(
             num_transformer_in=config.num_transformer_in,
             num_transformer_out=config.num_transformer_out,
             num_transformer_embed_dim=config.num_transformer_embed_dim,
@@ -271,7 +271,7 @@ def load_model(run, config, epoch, experiment_dir):
             device=device,
         )
     elif config.model_used == "M2N_T":
-        model = wm.M2N_T(
+        model = UM2N.M2N_T(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
@@ -279,5 +279,5 @@ def load_model(run, config, epoch, experiment_dir):
     else:
         print("Model not found")
     model_file_path = os.path.join(experiment_dir, target_file_name)
-    model = wm.load_model(model, model_file_path)
+    model = UM2N.load_model(model, model_file_path)
     return model

@@ -4,7 +4,7 @@ import warnings
 import torch
 from torch_geometric.data import DataLoader
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -16,9 +16,9 @@ data_set_path = (
 )
 data_path = data_set_path
 
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     os.path.join(data_path, "train"),
-    transform=wm.normalise,
+    transform=UM2N.normalise,
 )
 
 loader = DataLoader(data_set, batch_size=10, shuffle=False)
