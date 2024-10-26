@@ -13,8 +13,8 @@ import pandas as pd  # noqa
 import torch  # noqa
 from torch_geometric.loader import DataLoader
 
-import warpmesh as wm  # noqa
-from warpmesh.model.train_util import generate_samples
+import UM2N
+from UM2N.model.train_util import generate_samples
 
 
 def get_log_og(log_path, idx):
@@ -302,7 +302,7 @@ class BurgersEvaluator:
                     dur_ms = (end - start) * 1000
 
                 # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
-                num_tangle = wm.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
+                num_tangle = UM2N.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
                 if isinstance(num_tangle, torch.Tensor):
                     num_tangle = num_tangle.item()
                 if num_tangle > 0:  # has tangled elems:
@@ -368,7 +368,7 @@ class BurgersEvaluator:
                 df.to_csv(os.path.join(self.log_path, f"log{self.idx}_{cur_step}.csv"))  # noqa
 
                 # plot compare mesh
-                compare_plot = wm.plot_mesh_compare_benchmark(
+                compare_plot = UM2N.plot_mesh_compare_benchmark(
                     out.detach().cpu().numpy(),
                     sample.y.detach().cpu().numpy(),
                     sample.face.detach().cpu().numpy(),
@@ -485,13 +485,13 @@ class BurgersEvaluator:
         return error_og, error_adapt
 
     def make_log_dir(self):
-        wm.mkdir_if_not_exist(self.log_path)
+        UM2N.mkdir_if_not_exist(self.log_path)
 
     def make_plot_dir(self):
-        wm.mkdir_if_not_exist(self.plot_path)
+        UM2N.mkdir_if_not_exist(self.plot_path)
 
     def make_plot_more_dir(self):
-        wm.mkdir_if_not_exist(self.plot_more_path)
+        UM2N.mkdir_if_not_exist(self.plot_more_path)
 
     def make_plot_data_dir(self):
-        wm.mkdir_if_not_exist(self.plot_data_path)
+        UM2N.mkdir_if_not_exist(self.plot_data_path)

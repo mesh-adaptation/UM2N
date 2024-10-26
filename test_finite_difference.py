@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch_geometric.data import DataLoader
 
-from warpmesh.loader import AggreateDataset, MeshDataset, normalise
+from UM2N.loader import AggreateDataset, MeshDataset, normalise
 
 
 def interpolate(u, ori_mesh_x, ori_mesh_y, moved_x, moved_y):

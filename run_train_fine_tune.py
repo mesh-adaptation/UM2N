@@ -15,10 +15,10 @@ import torch
 import wandb
 from torch_geometric.data import DataLoader
 
-import warpmesh as wm
-from warpmesh.helper import load_yaml_to_namespace, save_namespace_to_yaml
-from warpmesh.loader import AggreateDataset, MeshDataset, normalise
-from warpmesh.model import (
+import UM2N
+from UM2N.helper import load_yaml_to_namespace, save_namespace_to_yaml
+from UM2N.loader import AggreateDataset, MeshDataset, normalise
+from UM2N.model import (
     MRTransformer,
     evaluate_unsupervised,
     train_unsupervised,
@@ -31,7 +31,7 @@ np.random.seed(random_seed)
 
 
 parser = argparse.ArgumentParser(
-    prog="Warpmesh", description="warp the mesh", epilog="warp the mesh"
+    prog="UM2N", description="warp the mesh", epilog="warp the mesh"
 )
 parser.add_argument("-config", default="", type=str, required=True)
 args = parser.parse_args()
@@ -91,7 +91,7 @@ for file in run_loaded.files():
         target_file_name = file.name
 assert model_file is not None, "Model file not found"
 model_file_path = os.path.join(model_store_path, target_file_name)
-model = wm.load_model(model, model_file_path, strict=False)
+model = UM2N.load_model(model, model_file_path, strict=False)
 print("Model checkpoint loaded.")
 # ===================================================================
 

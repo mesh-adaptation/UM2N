@@ -10,7 +10,7 @@ import pandas as pd  # noqa
 import torch
 from torch_geometric.data import DataLoader  # noqa
 
-import warpmesh as wm
+import UM2N
 
 torch.no_grad()
 warnings.filterwarnings("ignore")  # noqa
@@ -24,20 +24,20 @@ M2N_weight_path = "/Users/cw1722/Downloads/M2N__15,20__cmplx/weight/model_999.pt
 # MRN_path = "/Users/cw1722/Downloads/MRN_r=5_15,20__smpl/weight/model_999.pth"  # noqa
 MRN_path = "/Users/cw1722/Downloads/MRN_r=5__15,20__cmplx/weight/model_999.pth"  # noqa
 
-model_M2N = wm.M2N(
+model_M2N = UM2N.M2N(
     deform_in_c=7,
     gfe_in_c=2,
     lfe_in_c=4,
 ).to(device)
-model_M2N = wm.load_model(model_M2N, M2N_weight_path)
+model_M2N = UM2N.load_model(model_M2N, M2N_weight_path)
 
-model_MRN = wm.MRN(
+model_MRN = UM2N.MRN(
     deform_in_c=7,
     gfe_in_c=2,
     lfe_in_c=4,
     num_loop=5,
 ).to(device)
-model_MRN = wm.load_model(model_MRN, MRN_path)
+model_MRN = UM2N.load_model(model_MRN, MRN_path)
 
 # %% dataset load
 x_feat = [
@@ -61,9 +61,9 @@ conv_feat = [
 ]
 normalise = True
 loss_func = torch.nn.L1Loss()
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     data_dir,
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
@@ -112,9 +112,9 @@ dataset_list = [
 ]
 
 data_sets = [
-    wm.MeshDataset(
+    UM2N.MeshDataset(
         data_dir,
-        transform=wm.normalise if normalise else None,
+        transform=UM2N.normalise if normalise else None,
         x_feature=x_feat,
         mesh_feature=mesh_feat,
         conv_feature=conv_feat,

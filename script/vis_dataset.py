@@ -6,7 +6,7 @@ import firedrake as fd
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 
-import warpmesh as wm
+import UM2N
 
 x_feat = [
     "coord",
@@ -46,9 +46,9 @@ data_dir = (
 )
 print(data_dir)
 
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     data_dir,
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
@@ -110,9 +110,9 @@ data_dir = (
 )
 print(data_dir)
 
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     data_dir,
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,

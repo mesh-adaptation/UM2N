@@ -7,9 +7,9 @@ import numpy as np
 import torch
 from torch_geometric.data import DataLoader
 
-import warpmesh as wm
-from warpmesh.helper import load_yaml_to_namespace
-from warpmesh.loader import AggreateDataset, MeshDataset, normalise
+import UM2N
+from UM2N.helper import load_yaml_to_namespace
+from UM2N.loader import AggreateDataset, MeshDataset, normalise
 
 # parser = argparse.ArgumentParser(
 #     prog="Warpmesh", description="warp the mesh", epilog="warp the mesh"
@@ -130,7 +130,7 @@ for i in range(6):
     )
 
 
-mesh_gen = wm.UnstructuredSquareMesh()
+mesh_gen = UM2N.UnstructuredSquareMesh()
 
 mesh_old = mesh_gen.load_mesh(
     file_path=os.path.join(f"{data_root_old}/mesh", f"mesh{num_selected}.msh")

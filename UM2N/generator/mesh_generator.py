@@ -3,7 +3,7 @@ import os
 import firedrake as fd
 import movement as mv
 
-from warpmesh.generator.equation_solver import EquationSolver
+from UM2N.generator.equation_solver import EquationSolver
 
 os.environ["OMP_NUM_THREADS"] = "1"
 __all__ = ["MeshGenerator"]

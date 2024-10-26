@@ -5,7 +5,7 @@ import torch
 import wandb
 from torch_geometric.data import DataLoader
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -167,59 +167,59 @@ for model_name in models_to_compare:
 
     model = None
     if config.model_used == "M2N":
-        model = wm.M2N(
+        model = UM2N.M2N(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
         )
     elif config.model_used == "M2NAtten":
-        model = wm.M2NAtten(
+        model = UM2N.M2NAtten(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
         )
     elif config.model_used == "MRN":
-        model = wm.MRN(
+        model = UM2N.MRN(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
             num_loop=config.num_deformer_loop,
         )
     elif config.model_used == "M2N_dynamic_drop":
-        model = wm.M2N_dynamic_drop(
+        model = UM2N.M2N_dynamic_drop(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
         )
     elif config.model_used == "M2N_dynamic_no_drop":
-        model = wm.M2N_dynamic_no_drop(
+        model = UM2N.M2N_dynamic_no_drop(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
         )
     elif config.model_used == "MRNAtten":
-        model = wm.MRNAtten(
+        model = UM2N.MRNAtten(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
             num_loop=config.num_deformer_loop,
         )
     elif config.model_used == "MRNGlobalTransformerEncoder":
-        model = wm.MRNGlobalTransformerEncoder(
+        model = UM2N.MRNGlobalTransformerEncoder(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
             num_loop=config.num_deformer_loop,
         )
     elif config.model_used == "MRNLocalTransformerEncoder":
-        model = wm.MRNLocalTransformerEncoder(
+        model = UM2N.MRNLocalTransformerEncoder(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
             num_loop=config.num_deformer_loop,
         )
     elif config.model_used == "MRTransformer":
-        model = wm.MRTransformer(
+        model = UM2N.MRTransformer(
             num_transformer_in=config.num_transformer_in,
             num_transformer_out=config.num_transformer_out,
             num_transformer_embed_dim=config.num_transformer_embed_dim,
@@ -231,7 +231,7 @@ for model_name in models_to_compare:
             device=device,
         )
     elif config.model_used == "M2Transformer":
-        model = wm.M2Transformer(
+        model = UM2N.M2Transformer(
             deform_in_c=config.num_deform_in,
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
@@ -239,9 +239,9 @@ for model_name in models_to_compare:
     else:
         raise Exception(f"Model {config.model_used} not implemented.")
 
-    test_set = wm.MeshDataset(
+    test_set = UM2N.MeshDataset(
         test_dir,
-        transform=wm.normalise if wm.normalise else None,
+        transform=UM2N.normalise if UM2N.normalise else None,
         x_feature=config.x_feat,
         mesh_feature=config.mesh_feat,
         conv_feature=config.conv_feat,
@@ -274,7 +274,7 @@ for model_name in models_to_compare:
         target_file_name = model_file
     assert model_file is not None, "Model file not found either on wandb or local."
     print(target_file_name)
-    model = wm.load_model(model, model_file)
+    model = UM2N.load_model(model, model_file)
     print(model)
 
     loss_func = torch.nn.L1Loss()
@@ -288,7 +288,7 @@ for model_name in models_to_compare:
     #       out = model(sample)
     #       print(f"{i} loss: {loss_func(out, sample.y)*1000}")
 
-    #       compare_fig = wm.plot_mesh_compare(
+    #       compare_fig = UM2N.plot_mesh_compare(
     #           out.detach().cpu().numpy(), sample.y,
     #           sample.face
     #       )
@@ -350,7 +350,7 @@ for model_name in models_to_compare:
         target_mesh.append(sample.y.detach().cpu().numpy())
         target_face.append(sample.face.detach().cpu().numpy())
         target_hessian_norm.append(sample.mesh_feat[:, -1].detach().cpu().numpy())
-        # compare_fig = wm.plot_mesh_compare(
+        # compare_fig = UM2N.plot_mesh_compare(
         #     out.detach().cpu().numpy(), sample.y,
         #     sample.face
         # )
@@ -360,7 +360,7 @@ for model_name in models_to_compare:
             break
 
 
-compare_fig = wm.plot_multiple_mesh_compare(
+compare_fig = UM2N.plot_multiple_mesh_compare(
     out_mesh_collections, out_loss_collections, target_mesh, target_face
 )
 compare_fig.tight_layout()
@@ -377,13 +377,13 @@ compare_fig.savefig(
 # selected_node = torch.randint(low=0, high=test_ms*test_ms-1, size=(1,))
 # selected_node = 888
 # print(f"attention map selected node: {selected_node}")
-# atten_fig = wm.plot_attentions_map_compare(out_mesh_collections, out_loss_collections, out_atten_collections, target_hessian_norm, target_mesh, target_face, selected_node=selected_node)
+# atten_fig = UM2N.plot_attentions_map_compare(out_mesh_collections, out_loss_collections, out_atten_collections, target_hessian_norm, target_mesh, target_face, selected_node=selected_node)
 # atten_fig.tight_layout()
 # atten_fig.subplots_adjust(top=0.95)
 # atten_fig.suptitle(f"Ouput Attention (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)
 # atten_fig.savefig(f"./out_images/attention_reso_{test_ms}_seed_{random_seed}_selected_node_{selected_node}.png")
 
-# atten_fig = wm.plot_attentions_map(out_atten_collections, out_loss_collections)
+# atten_fig = UM2N.plot_attentions_map(out_atten_collections, out_loss_collections)
 # atten_fig.tight_layout()
 # atten_fig.subplots_adjust(top=0.95)
 # atten_fig.suptitle(f"Ouput Attention (mesh resolution {test_ms}, dataloder seed: {random_seed})", fontsize=24)

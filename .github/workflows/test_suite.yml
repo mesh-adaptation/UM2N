@@ -1,4 +1,4 @@
-name: Install and Test WarpMesh
+name: Install and test UM2N
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   test-warpmesh:
-    name: Test WarpMesh
+    name: Test UM2N
     runs-on: ubuntu-latest
     container:
       image: firedrakeproject/firedrake:latest
@@ -52,12 +52,12 @@ jobs:
           . /home/firedrake/firedrake/bin/activate
           python3 -m pip install 'git+https://github.com/facebookresearch/pytorch3d.git'
 
-      - name: Install WarpMesh
+      - name: Install UM2N
         run: |
           . /home/firedrake/firedrake/bin/activate
           python3 -m pip install -e .
 
-      - name: Run WarpMesh test suite
+      - name: Run UM2N test suite
         run: |
           . /home/firedrake/firedrake/bin/activate
           python3 -m pytest tests/test* -v

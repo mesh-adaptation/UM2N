@@ -13,8 +13,8 @@ import pandas as pd
 import torch
 from torch_geometric.loader import DataLoader
 
-import warpmesh as wm
-from warpmesh.model.train_util import model_forward
+import UM2N
+from UM2N.model.train_util import model_forward
 
 
 def get_log_og(log_path, idx):
@@ -126,10 +126,10 @@ class SwirlEvaluator:
         self.y_0 = kwargs.pop("y_0", 0.25)
 
         # initital condition of u on coarse / fine mesh
-        u_init_exp = wm.get_u_0(
+        u_init_exp = UM2N.get_u_0(
             self.x, self.y, self.r_0, self.x_0, self.y_0, self.sigma
         )  # noqa
-        u_init_exp_fine = wm.get_u_0(
+        u_init_exp_fine = UM2N.get_u_0(
             self.x_fine, self.y_fine, self.r_0, self.x_0, self.y_0, self.sigma
         )  # noqa
         self.u_init = fd.Function(self.scalar_space).interpolate(u_init_exp)
@@ -265,7 +265,7 @@ class SwirlEvaluator:
         Solve the PDE problem using RK (SSPRK) scheme on the coarse mesh
         store the solution field to a varaible: self.u_cur
         """
-        c_exp = wm.get_c(self.x, self.y, t, alpha=self.alpha)
+        c_exp = UM2N.get_c(self.x, self.y, t, alpha=self.alpha)
         c_temp = fd.Function(self.vector_space).interpolate(c_exp)
         self.c.project(c_temp)
 
@@ -283,7 +283,7 @@ class SwirlEvaluator:
         Solve the PDE problem using RK (SSPRK) scheme on the fine mesh
         store the solution field to a varaible: self.u_cur_fine
         """
-        c_exp = wm.get_c(self.x_fine, self.y_fine, t, alpha=self.alpha)
+        c_exp = UM2N.get_c(self.x_fine, self.y_fine, t, alpha=self.alpha)
         c_temp = fd.Function(self.vector_space_fine).interpolate(c_exp)
         self.c_fine.project(c_temp)
 
@@ -303,16 +303,16 @@ class SwirlEvaluator:
         return
 
     def make_log_dir(self):
-        wm.mkdir_if_not_exist(self.log_path)
+        UM2N.mkdir_if_not_exist(self.log_path)
 
     def make_plot_dir(self):
-        wm.mkdir_if_not_exist(self.plot_path)
+        UM2N.mkdir_if_not_exist(self.plot_path)
 
     def make_plot_more_dir(self):
-        wm.mkdir_if_not_exist(self.plot_more_path)
+        UM2N.mkdir_if_not_exist(self.plot_more_path)
 
     def make_plot_data_dir(self):
-        wm.mkdir_if_not_exist(self.plot_data_path)
+        UM2N.mkdir_if_not_exist(self.plot_data_path)
 
     def eval_problem(self, model_name="model"):
         print("In eval problem")
@@ -484,7 +484,7 @@ class SwirlEvaluator:
                 self.uh_model = fd.Function(function_space_model).project(self.u_cur)  # noqa
 
                 # check mesh integrity - Only perform evaluation on non-tangling mesh  # noqa
-                num_tangle = wm.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
+                num_tangle = UM2N.get_sample_tangle(out, sample.x[:, :2], sample.face)  # noqa
                 if isinstance(num_tangle, torch.Tensor):
                     num_tangle = num_tangle.item()
                 if num_tangle > 0:  # has tangled elems:
@@ -500,7 +500,7 @@ class SwirlEvaluator:
                 # self.solve_u_fine(self.t)
                 u_fine = fd.Function(function_space_fine).project(self.u_cur_fine)  # noqa
 
-                fig, plot_data_dict = wm.plot_compare(
+                fig, plot_data_dict = UM2N.plot_compare(
                     self.mesh_fine,
                     self.mesh_coarse,
                     self.mesh_new,
@@ -574,7 +574,7 @@ class SwirlEvaluator:
                 df = pd.DataFrame(res, index=[0])
                 df.to_csv(os.path.join(self.log_path, f"log_{idx:04d}.csv"))
                 # plot compare mesh
-                plot_fig = wm.plot_mesh_compare_benchmark(
+                plot_fig = UM2N.plot_mesh_compare_benchmark(
                     out.detach().cpu().numpy(),
                     sample.y.detach().cpu().numpy(),
                     sample.face.detach().cpu().numpy(),

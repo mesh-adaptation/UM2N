@@ -16,9 +16,9 @@ import torch
 import wandb
 from torch_geometric.data import DataLoader
 
-from warpmesh.helper import load_yaml_to_namespace, save_namespace_to_yaml
-from warpmesh.loader import AggreateDataset, MeshDataset, normalise
-from warpmesh.model import (
+from UM2N.helper import load_yaml_to_namespace, save_namespace_to_yaml
+from UM2N.loader import AggreateDataset, MeshDataset, normalise
+from UM2N.model import (
     M2N,
     MRN,
     M2N_dynamic_drop,
@@ -41,7 +41,7 @@ np.random.seed(random_seed)
 
 
 parser = argparse.ArgumentParser(
-    prog="Warpmesh", description="warp the mesh", epilog="warp the mesh"
+    prog="UM2N", description="warp the mesh", epilog="warp the mesh"
 )
 parser.add_argument("-config", default="", type=str, required=True)
 args = parser.parse_args()

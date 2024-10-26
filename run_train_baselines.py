@@ -15,9 +15,9 @@ import torch
 import wandb
 from torch_geometric.data import DataLoader
 
-from warpmesh.helper import load_yaml_to_namespace, save_namespace_to_yaml
-from warpmesh.loader import AggreateDataset, MeshDataset, normalise
-from warpmesh.model import (
+from UM2N.helper import load_yaml_to_namespace, save_namespace_to_yaml
+from UM2N.loader import AggreateDataset, MeshDataset, normalise
+from UM2N.model import (
     M2N,
     M2N_T,
     M2T,
@@ -36,7 +36,7 @@ np.random.seed(random_seed)
 
 
 parser = argparse.ArgumentParser(
-    prog="Warpmesh", description="warp the mesh", epilog="warp the mesh"
+    prog="UM2N", description="warp the mesh", epilog="warp the mesh"
 )
 parser.add_argument("-config", default="", type=str, required=True)
 args = parser.parse_args()
@@ -117,7 +117,7 @@ else:
 # =================== load from checkpoint ==========================
 
 if hasattr(config, "use_pre_train") and config.use_pre_train:
-    import warpmesh as wm
+    import UM2N
 
     # Load from checkpoint
     entity = "mz-team"
@@ -153,7 +153,7 @@ if hasattr(config, "use_pre_train") and config.use_pre_train:
     # model_dict.update(pretrained_dict)
     # model.load_state_dict(model_dict)
 
-    model = wm.load_model(model, model_file_path, strict=False)
+    model = UM2N.load_model(model, model_file_path, strict=False)
     print(f"Model {run_id} checkpoint loaded.")
 else:
     print("No pre-train. Train from scratch.")

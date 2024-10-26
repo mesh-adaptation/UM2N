@@ -13,7 +13,7 @@ from rich.live import Live
 from rich.progress import Progress
 from torch_geometric.data import DataLoader
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,8 +31,8 @@ problem = "helmholtz"
 
 use_jacob = True
 
-# model = wm.M2N(gfe_in_c=2, lfe_in_c=4)
-model = wm.MRN(gfe_in_c=2, lfe_in_c=4)
+# model = UM2N.M2N(gfe_in_c=2, lfe_in_c=4)
+model = UM2N.MRN(gfe_in_c=2, lfe_in_c=4)
 
 weight_decay = 5e-4
 train_batch_size = 20
@@ -99,9 +99,9 @@ prediction_dir = os.path.join(output_dir, "prediction")
 trainlog_dir = os.path.join(output_dir, "train_log")
 weight_dir = os.path.join(output_dir, "weight")
 
-wm.mkdir_if_not_exist(prediction_dir)
-wm.mkdir_if_not_exist(trainlog_dir)
-wm.mkdir_if_not_exist(weight_dir)
+UM2N.mkdir_if_not_exist(prediction_dir)
+UM2N.mkdir_if_not_exist(trainlog_dir)
+UM2N.mkdir_if_not_exist(weight_dir)
 
 df = pd.DataFrame(
     {
@@ -135,23 +135,23 @@ df.to_csv(os.path.join(output_dir, "info.csv"), index=False)
 
 
 #  ================LOAD DATA====================================
-train_set = wm.MeshDataset(
+train_set = UM2N.MeshDataset(
     os.path.join(data_path, "train"),
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
 )
-test_set = wm.MeshDataset(
+test_set = UM2N.MeshDataset(
     os.path.join(data_path, "test"),
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
 )
-val_set = wm.MeshDataset(
+val_set = UM2N.MeshDataset(
     os.path.join(data_path, "val"),
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         for epoch in range(num_epochs):
             progress.update(task, advance=1)
 
-            train_loss = wm.train(
+            train_loss = UM2N.train(
                 train_loader,
                 model,
                 optimizer,
@@ -208,12 +208,12 @@ if __name__ == "__main__":
                 loss_func=loss_func,
                 use_jacob=use_jacob,
             )
-            test_loss = wm.evaluate(
+            test_loss = UM2N.evaluate(
                 test_loader, model, device, loss_func=loss_func, use_jacob=use_jacob
             )
 
-            train_tangle = wm.check_dataset_tangle(train_set, model, n_elem_x, n_elem_y)
-            test_tangle = wm.check_dataset_tangle(test_set, model, n_elem_x, n_elem_y)
+            train_tangle = UM2N.check_dataset_tangle(train_set, model, n_elem_x, n_elem_y)
+            test_tangle = UM2N.check_dataset_tangle(test_set, model, n_elem_x, n_elem_y)
 
             train_loss_arr.append(train_loss)
             test_loss_arr.append(test_loss)
@@ -240,7 +240,7 @@ if __name__ == "__main__":
                 )
 
     # plot prediction
-    wm.plot_prediction(
+    UM2N.plot_prediction(
         val_set,
         model,
         prediction_dir,
@@ -249,7 +249,7 @@ if __name__ == "__main__":
         n_elem_x=n_elem_x,
         n_elem_y=n_elem_y,
     )
-    wm.plot_prediction(
+    UM2N.plot_prediction(
         test_set,
         model,
         prediction_dir,
@@ -260,11 +260,11 @@ if __name__ == "__main__":
     )
 
     # plot traing curve
-    fig = wm.plot_loss(train_loss_arr, test_loss_arr, epoch_arr)
+    fig = UM2N.plot_loss(train_loss_arr, test_loss_arr, epoch_arr)
     fig.savefig(os.path.join(trainlog_dir, "loss.png"))
 
     # plot avg tangle curve
-    fig = wm.plot_tangle(train_tangle_arr, test_tangle_arr, epoch_arr)
+    fig = UM2N.plot_tangle(train_tangle_arr, test_tangle_arr, epoch_arr)
     fig.savefig(os.path.join(trainlog_dir, "tangle.png"))
 
     # write final loss

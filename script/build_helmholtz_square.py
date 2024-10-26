@@ -11,7 +11,7 @@ import firedrake as fd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import warpmesh as wm
+import UM2N
 
 
 def arg_parse():
@@ -234,7 +234,7 @@ if __name__ == "__main__":
         try:
             print("Generating Sample: " + str(i))
             if mesh_type != 0:
-                unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(
+                unstructure_square_mesh_gen = UM2N.UnstructuredSquareMesh(
                     scale=scale_x, mesh_type=mesh_type
                 )  # noqa
                 mesh = unstructure_square_mesh_gen.get_mesh(
@@ -246,7 +246,7 @@ if __name__ == "__main__":
                 mesh = fd.UnitSquareMesh(n_grid, n_grid)
 
             # Generate Random solution field
-            rand_u_generator = wm.RandSourceGenerator(
+            rand_u_generator = UM2N.RandSourceGenerator(
                 use_iso=use_iso,
                 dist_params={
                     "max_dist": max_dist,
@@ -266,11 +266,11 @@ if __name__ == "__main__":
                     "sigma_eps": sigma_eps,
                 },
             )
-            helmholtz_eq = wm.RandHelmholtzEqGenerator(rand_u_generator)
+            helmholtz_eq = UM2N.RandHelmholtzEqGenerator(rand_u_generator)
             res = helmholtz_eq.discretise(mesh)  # discretise the equation
             dist_params = rand_u_generator.get_dist_params()
             # Solve the equation
-            solver = wm.EquationSolver(
+            solver = UM2N.EquationSolver(
                 params={
                     "function_space": res["function_space"],
                     "LHS": res["LHS"],
@@ -284,21 +284,21 @@ if __name__ == "__main__":
             # plt.show()
             uh = solver.solve_eq()
             # Generate Mesh
-            hessian = wm.MeshGenerator(
+            hessian = UM2N.MeshGenerator(
                 params={"eq": helmholtz_eq, "mesh": mesh}
             ).get_hessian(mesh)
 
-            hessian_norm = wm.MeshGenerator(
+            hessian_norm = UM2N.MeshGenerator(
                 params={"eq": helmholtz_eq, "mesh": mesh}
             ).get_hessian_norm(mesh)
             hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 
             # Get monitor val
-            monitor_val = wm.MeshGenerator(
+            monitor_val = UM2N.MeshGenerator(
                 params={"eq": helmholtz_eq, "mesh": mesh}
             ).monitor_func(mesh)
 
-            # grad_uh_norm = wm.MeshGenerator(
+            # grad_uh_norm = UM2N.MeshGenerator(
             #     params={
             #         "eq": helmholtz_eq,
             #         "mesh": fd.Mesh(
@@ -315,7 +315,7 @@ if __name__ == "__main__":
             grad_norm /= grad_norm.vector().max()
             grad_uh_norm = grad_norm
 
-            mesh_gen = wm.MeshGenerator(params={"eq": helmholtz_eq, "mesh": mesh})
+            mesh_gen = UM2N.MeshGenerator(params={"eq": helmholtz_eq, "mesh": mesh})
 
             start = time.perf_counter()
             new_mesh = mesh_gen.move_mesh()  # noqa
@@ -343,7 +343,7 @@ if __name__ == "__main__":
 
             # solve the equation on the new mesh
             new_res = helmholtz_eq.discretise(new_mesh)
-            new_solver = wm.EquationSolver(
+            new_solver = UM2N.EquationSolver(
                 params={
                     "function_space": new_res["function_space"],
                     "LHS": new_res["LHS"],
@@ -354,7 +354,7 @@ if __name__ == "__main__":
             uh_new = new_solver.solve_eq()
 
             # process the data for training
-            mesh_processor = wm.MeshProcessor(
+            mesh_processor = UM2N.MeshProcessor(
                 original_mesh=mesh,
                 optimal_mesh=new_mesh,
                 function_space=new_res["function_space"],

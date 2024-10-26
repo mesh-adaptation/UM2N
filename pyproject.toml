@@ -2,7 +2,7 @@
 requires = ["setuptools"]
 
 [project]
-name = "warpmesh"
+name = "UM2N"
 version = "1.0"
 dependencies = [
   "einops",
@@ -43,7 +43,7 @@ Homepage = "https://erizmr.github.io/UM2N"
 Repository = "https://github.com/erizmr/UM2N"
 
 [tool.setuptools]
-packages = ["warpmesh"]
+packages = ["UM2N"]
 
 [tool.ruff]
 line-length = 88

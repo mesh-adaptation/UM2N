@@ -3,7 +3,7 @@ import warnings
 
 import torch
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -12,9 +12,9 @@ project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 data_set_path = os.path.join(project_dir, "data/")
 data_path = data_set_path
 
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     os.path.join(data_path, "test"),
-    transform=wm.normalise,
+    transform=UM2N.normalise,
 )
 
 

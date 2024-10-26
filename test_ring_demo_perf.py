@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import yaml
 import pickle
-import warpmesh as wm
+import UM2N
 
 print("Setting up solver.")
 
@@ -49,13 +49,13 @@ config.mesh_feat = ["coord", "monitor_val"]
 
 print(config)
 
-model = wm.M2N_T(
+model = UM2N.M2N_T(
     deform_in_c=config.num_deform_in,
     gfe_in_c=config.num_gfe_in,
     lfe_in_c=config.num_lfe_in,
 )
 model_file_path = "./pretrain_model/model_999.pth"
-model = wm.load_model(model, model_file_path)
+model = UM2N.load_model(model, model_file_path)
 model.eval()
 model = model.to(device)
 ###########################################################

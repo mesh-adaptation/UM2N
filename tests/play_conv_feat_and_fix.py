@@ -9,7 +9,7 @@ import warnings
 import matplotlib.pyplot as plt
 import torch
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,11 +31,11 @@ conv_feat = [
     "conv_hessian_norm",
 ]
 
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     test_data_dir,
     conv_feature_fix=conv_feat_fix,
     conv_feature=conv_feat,
-    transform=wm.normalise,
+    transform=UM2N.normalise,
 )
 
 sample = data_set[idx]

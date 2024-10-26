@@ -3,7 +3,7 @@ import warnings
 import torch
 from torch_geometric.data import DataLoader
 
-import warpmesh as wm
+import UM2N
 
 warnings.filterwarnings("ignore")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # noqa
@@ -21,9 +21,9 @@ weight_path = "/Users/cw1722/Downloads/model_1499 (7).pth"
 prediction_dir = "/Users/cw1722/Documents/irp/irp-cw1722/data/temp"
 
 
-model = wm.MRN(deform_in_c=7, gfe_in_c=2, lfe_in_c=4, num_loop=3).to(device)
+model = UM2N.MRN(deform_in_c=7, gfe_in_c=2, lfe_in_c=4, num_loop=3).to(device)
 
-model = wm.load_model(model, weight_path)
+model = UM2N.load_model(model, weight_path)
 
 n_elem_x = n_elem_y = 20
 
@@ -50,9 +50,9 @@ conv_feat = [
     "conv_hessian_norm",
 ]
 
-data_set = wm.MeshDataset(
+data_set = UM2N.MeshDataset(
     data_dir,
-    transform=wm.normalise if normalise else None,
+    transform=UM2N.normalise if normalise else None,
     x_feature=x_feat,
     mesh_feature=mesh_feat,
     conv_feature=conv_feat,
@@ -60,5 +60,5 @@ data_set = wm.MeshDataset(
 
 loader = DataLoader(data_set, batch_size=batch_size)
 
-loss = wm.evaluate(loader, model, device, loss_func)
+loss = UM2N.evaluate(loader, model, device, loss_func)
 print(loss)

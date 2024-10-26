@@ -11,7 +11,7 @@ import firedrake as fd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import warpmesh as wm
+import UM2N
 
 
 def arg_parse():
@@ -214,14 +214,14 @@ if __name__ == "__main__":
     while i < n_samples:
         try:
             print("Generating Sample: " + str(i))
-            unstructure_square_mesh_gen = wm.UnstructuredSquareMesh(
+            unstructure_square_mesh_gen = UM2N.UnstructuredSquareMesh(
                 scale=scale_x, mesh_type=mesh_type
             )  # noqa
             mesh = unstructure_square_mesh_gen.get_mesh(
                 res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
             )
             # Generate Random solution field
-            rand_u_generator = wm.RandSourceGenerator(
+            rand_u_generator = UM2N.RandSourceGenerator(
                 use_iso=use_iso,
                 dist_params={
                     "max_dist": max_dist,
@@ -238,11 +238,11 @@ if __name__ == "__main__":
                     "c_max": c_max,
                 },
             )
-            poisson_eq = wm.RandPoissonEqGenerator(rand_u_generator)
+            poisson_eq = UM2N.RandPoissonEqGenerator(rand_u_generator)
             res = poisson_eq.discretise(mesh)  # discretise the equation
             dist_params = rand_u_generator.get_dist_params()
             # Solve the equation
-            solver = wm.EquationSolver(
+            solver = UM2N.EquationSolver(
                 params={
                     "function_space": res["function_space"],
                     "LHS": res["LHS"],
@@ -252,14 +252,14 @@ if __name__ == "__main__":
             )
             uh = solver.solve_eq()
             # Generate Mesh
-            hessian = wm.MeshGenerator(
+            hessian = UM2N.MeshGenerator(
                 params={
                     "eq": poisson_eq,
                     "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh")),  # noqa
                 }
             ).get_hessian(mesh)
 
-            hessian_norm = wm.MeshGenerator(
+            hessian_norm = UM2N.MeshGenerator(
                 params={
                     "eq": poisson_eq,
                     "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh")),  # noqa
@@ -271,7 +271,7 @@ if __name__ == "__main__":
             func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
             grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
 
-            mesh_gen = wm.MeshGenerator(
+            mesh_gen = UM2N.MeshGenerator(
                 params={
                     "eq": poisson_eq,
                     "mesh": fd.Mesh(os.path.join(problem_mesh_dir, f"mesh{i}.msh")),  # noqa
@@ -301,7 +301,7 @@ if __name__ == "__main__":
 
             # solve the equation on the new mesh
             new_res = poisson_eq.discretise(new_mesh)
-            new_solver = wm.EquationSolver(
+            new_solver = UM2N.EquationSolver(
                 params={
                     "function_space": new_res["function_space"],
                     "LHS": new_res["LHS"],
@@ -312,7 +312,7 @@ if __name__ == "__main__":
             uh_new = new_solver.solve_eq()
 
             # process the data for training
-            mesh_processor = wm.MeshProcessor(
+            mesh_processor = UM2N.MeshProcessor(
                 original_mesh=mesh,
                 optimal_mesh=new_mesh,
                 function_space=new_res["function_space"],

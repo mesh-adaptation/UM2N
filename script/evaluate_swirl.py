@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 import wandb
 
-import warpmesh as wm
+import UM2N
 
 os.environ["OMP_NUM_THREADS"] = "1"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -44,7 +44,7 @@ def init_dir(config):
         eval_dir,
         "swirl" + "_" + now + "_" + config.model_used + "_" + str(epoch) + "_" + run_id,
     )
-    wm.mkdir_if_not_exist(experiment_dir)
+    UM2N.mkdir_if_not_exist(experiment_dir)
     print("\t## Make eval dir done\n")
     return experiment_dir
 
@@ -63,9 +63,9 @@ def load_dataset(
         use_cluster: flag controling whether to use cluset in training.
     """
     dataset_path = os.path.join(ds_root, tar_folder)
-    dataset = wm.MeshDataset(
+    dataset = UM2N.MeshDataset(
         dataset_path,
-        transform=wm.normalise if wm.normalise else None,
+        transform=UM2N.normalise if UM2N.normalise else None,
         x_feature=config.x_feat,
         mesh_feature=config.mesh_feat,
         conv_feature=config.conv_feat,
@@ -106,20 +106,20 @@ def load_model(config, epoch, experiment_dir):
     assert model_file is not None, "Model file not found"
     model = None
     if config.model_used == "M2N":
-        model = wm.M2N(
+        model = UM2N.M2N(
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
             deform_in_c=config.num_deform_in,
         )
     elif config.model_used == "MRN":
-        model = wm.MRN(
+        model = UM2N.MRN(
             gfe_in_c=config.num_gfe_in,
             lfe_in_c=config.num_lfe_in,
             deform_in_c=config.num_deform_in,
             num_loop=config.num_deformer_loop,
         )
     elif config.model_used == "MRT":
-        model = wm.MRTransformer(
+        model = UM2N.MRTransformer(
             num_transformer_in=config.num_transformer_in,
             num_transformer_out=config.num_transformer_out,
             num_transformer_embed_dim=config.num_transformer_embed_dim,
@@ -136,7 +136,7 @@ def load_model(config, epoch, experiment_dir):
     else:
         print("Model not found")
     model_file_path = os.path.join(experiment_dir, target_file_name)
-    model = wm.load_model(model, model_file_path)
+    model = UM2N.load_model(model, model_file_path)
     return model
 
 
@@ -156,7 +156,7 @@ def benchmark_model(model, dataset, eval_dir, ds_root):
     # fd.triplot(mesh)
     # fd.triplot(mesh_fine)
 
-    evaluator = wm.SwirlEvaluator(
+    evaluator = UM2N.SwirlEvaluator(
         mesh,
         mesh_fine,
         mesh_new,

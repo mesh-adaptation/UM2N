@@ -5,10 +5,10 @@ from pytest import fixture
 
 
 @fixture(scope="module")
-def warpmesh():
-    import warpmesh
+def UM2N():
+    import UM2N
 
-    return warpmesh
+    return UM2N
 
 
 @fixture(scope="module")
@@ -25,7 +25,7 @@ def movement():
     return movement
 
 
-def test_import(warpmesh, firedrake, movement):
-    assert warpmesh
+def test_import(UM2N, firedrake, movement):
+    assert UM2N
     assert firedrake
     assert movement

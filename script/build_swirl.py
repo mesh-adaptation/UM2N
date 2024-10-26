@@ -9,7 +9,7 @@ import firedrake as fd
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import warpmesh as wm
+import UM2N
 
 
 def arg_parse():
@@ -230,7 +230,7 @@ def sample_from_loop(
     """
     global i
     print("before processing")
-    mesh_processor = wm.MeshProcessor(
+    mesh_processor = UM2N.MeshProcessor(
         original_mesh=mesh_og,
         optimal_mesh=mesh_new,
         function_space=function_space,
@@ -418,7 +418,7 @@ if __name__ == "__main__":
     mesh_fine = None
     mesh_new = None
     if mesh_type != 0:
-        mesh_gen = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
+        mesh_gen = UM2N.UnstructuredSquareMesh(mesh_type=mesh_type)
         mesh = mesh_gen.get_mesh(
             res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
         )
@@ -428,7 +428,7 @@ if __name__ == "__main__":
         mesh_model = mesh_gen.get_mesh(
             res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
         )
-        mesh_gen_fine = wm.UnstructuredSquareMesh(mesh_type=mesh_type)
+        mesh_gen_fine = UM2N.UnstructuredSquareMesh(mesh_type=mesh_type)
         mesh_fine = mesh_gen_fine.get_mesh(
             res=1e-2, file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh")
         )
@@ -459,7 +459,7 @@ if __name__ == "__main__":
     df.to_csv(os.path.join(problem_specific_dir, "info.csv"))
 
     # solver defination
-    swril_solver = wm.SwirlSolver(
+    swirl_solver = UM2N.SwirlSolver(
         mesh,
         mesh_fine,
         mesh_new,
@@ -476,7 +476,7 @@ if __name__ == "__main__":
         n_monitor_smooth=n_monitor_smooth,
     )
 
-    swril_solver.solve_problem(callback=sample_from_loop, fail_callback=fail_callback)
+    swirl_solver.solve_problem(callback=sample_from_loop, fail_callback=fail_callback)
 
     print("Done!")
 # ====  Data Generation Scripts ======================
