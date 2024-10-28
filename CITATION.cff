@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: If you use this software in a publication, please cite it using these metadata.
+title: UM2N
+abstract: Towards Universal Mesh Movement Networks
+authors:
+  - family-names: Zhang
+    given-names: Mingrui
+  - family-names: Wang
+    given-names: Chunyang
+  - family-names: Kramer
+    given-names: Stephan C.
+    orcid: "https://orcid.org/0000-0002-9193-5092"
+  - family-names: Wallwork
+    given-names: Joseph G.
+    orcid: "https://orcid.org/0000-0002-3646-091X"
+version: 0.2
+date-released: "2024-10-26"
+license: MIT
+repository-code: "https://github.com/mesh-adaptation/UM2N"
