@@ -1,4 +1,8 @@
-from UM2N.generator.squaremesh import UnstructuredUnitSquareMesh
+"""
+Unit tests for the meshgen mesh generator module.
+"""
+
+from UM2N.generator.meshgen import UnstructuredUnitSquareMeshGenerator
 from firedrake.bcs import DirichletBC
 import os
 import pytest
@@ -16,7 +20,7 @@ def mesh_algorithm(request):
 
 def test_boundary(num_elem_bnd, mesh_algorithm):
     file_path = "./tmp.msh"
-    mesh_gen = UnstructuredUnitSquareMesh(mesh_type=mesh_algorithm)
+    mesh_gen = UnstructuredUnitSquareMeshGenerator(mesh_type=mesh_algorithm)
     mesh = mesh_gen.generate_mesh(
         res=1 / num_elem_bnd, file_path=file_path, remove_file=True
     )
