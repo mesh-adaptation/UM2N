@@ -32,7 +32,7 @@ class RandPolyMesh:
         self.get_rand_points()
         return
 
-    def get_mesh(self, res=1e-1, file_path="./temp.msh"):
+    def generate_mesh(self, res=1e-1, file_path="./temp.msh"):
         gmsh.initialize()
         gmsh.model.add("t1")
         # params setup
@@ -147,8 +147,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     mesh_gen = RandPolyMesh(mesh_type=2)
-    mesh_coarse = mesh_gen.get_mesh(res=5e-2, file_path="./temp1.msh")
-    mesh_fine = mesh_gen.get_mesh(res=4e-2, file_path="./temp2.msh")
+    mesh_coarse = mesh_gen.generate_mesh(res=5e-2, file_path="./temp1.msh")
+    mesh_fine = mesh_gen.generate_mesh(res=4e-2, file_path="./temp2.msh")
     mesh_gen.show("./temp1.msh")
     mesh_gen.show("./temp2.msh")
     plt.show()
