@@ -25,22 +25,33 @@ class UnstructuredMeshGenerator(abc.ABC):
         """
         # TODO: More detail on Gmsh algorithm number
         self.mesh_type = mesh_type
-
-        self.points = []
-        self.lines = []
         self._mesh = None
 
     @abc.abstractmethod
     def get_points(self):
         pass
 
-    def get_line(self):
-        self.lines = []
-        for point, point_next in zip(self.points, self.points[1:] + [self.points[0]]):
-            self.lines.append(gmsh.model.geo.addLine(point, point_next))
+    @property
+    def points(self):
+        if not hasattr(self, "_points"):
+            self.get_points()
+        return self._points
+
+    def get_lines(self):
+        self._lines = [
+            gmsh.model.geo.addLine(point, point_next)
+            for point, point_next in zip(
+                self.points, self.points[1:] + [self.points[0]]
+            )
+        ]
+
+    @property
+    def lines(self):
+        if not hasattr(self, "_lines"):
+            self.get_lines()
+        return self._lines
 
     def get_boundaries(self):
-        print("in get_boundaries lines:", self.lines)
         for i, line_tag in enumerate(self.lines):
             gmsh.model.addPhysicalGroup(1, [line_tag], i + 1)
             gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
@@ -69,7 +80,7 @@ class UnstructuredMeshGenerator(abc.ABC):
         self.lc = res
         # generate mesh
         self.get_points()
-        self.get_line()
+        self.get_lines()
         self.get_curve()
         self.get_plane()
         gmsh.model.geo.synchronize()
@@ -96,10 +107,10 @@ class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
     """
 
     def get_points(self):
-        self.points = []
-        self.corners = ((0, 0), (1, 0), (1, 1), (0, 1))
-        self.points = [
-            gmsh.model.geo.addPoint(*corner, 0, self.lc) for corner in self.corners
+        self._points = []
+        corners = ((0, 0), (1, 0), (1, 1), (0, 1))
+        self._points = [
+            gmsh.model.geo.addPoint(*corner, 0, self.lc) for corner in corners
         ]
 
 
@@ -174,7 +185,6 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
         self.three_quater = (self.mid + self.end) / 2
         self.mid_interval = (self.end - self.start) / 3
         self.quater_interval = (self.mid - self.start) / 4
-        self.points = []
         temp = []
         for i in range(len(self.raw_points)):
             temp.append(
@@ -182,7 +192,7 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
                     self.raw_points[i][0], self.raw_points[i][1], 0, self.lc
                 )
             )
-        self.points = temp
+        self._points = temp
 
 
 # TODO: Turn into unit test
