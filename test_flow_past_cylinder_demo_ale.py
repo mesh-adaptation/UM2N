@@ -24,6 +24,10 @@ with open("./pretrain_model/config.yaml", "r") as file:
 
 config = SimpleNamespace(**config_data)
 
+# Parameter to toggle use of ALE
+# TODO: Put it in the namespace
+use_ale = False
+
 # Append the monitor val at the end
 # config.mesh_feat.append("monitor_val")
 # config.mesh_feat = ["coord", "u", "monitor_val"]
@@ -81,7 +85,8 @@ for mesh_name in all_mesh_names:
     mesh = fd.Mesh(mesh_path)
     adapted_mesh = fd.Mesh(mesh.coordinates.copy(deepcopy=True))
     init_coord = mesh.coordinates.copy(deepcopy=True).dat.data[:]
-    u_grid = fd.Function(mesh.coordinates.function_space(), name="gridvelocity")
+    if use_ale:
+        u_grid = fd.Function(mesh.coordinates.function_space(), name="gridvelocity")
 
     V = fd.VectorFunctionSpace(mesh, "CG", 2)
     V_adapted = fd.VectorFunctionSpace(adapted_mesh, "CG", 2)
@@ -110,7 +115,10 @@ for mesh_name in all_mesh_names:
     n = fd.FacetNormal(mesh)
     f = fd.Constant((0.0, 0.0))
     u_mid = 0.5 * (u_now + u)
-    u_adv = u_now - u_grid
+    if use_ale:
+        u_adv = u_now - u_grid
+    else:
+        u_adv = u_now
 
     def sigma(u, p):
         return 2 * nu * fd.sym(fd.nabla_grad(u)) - p * fd.Identity(len(u))
@@ -181,9 +189,10 @@ for mesh_name in all_mesh_names:
     u_save = fd.Function(V).assign(u_now)
     p_save = fd.Function(Q).assign(p_now)
     exp_name = mesh_name.split(".msh")[0]
-    outfile_u = fd.File(f"outputs_sim_ale/{exp_name}/u.pvd")
-    outfile_u_grid = fd.File(f"outputs_sim_ale/{exp_name}/u_grid.pvd")
-    outfile_p = fd.File(f"outputs_sim_ale/{exp_name}/p.pvd")
+    pvd_output_dir = f"outputs_sim{'_ale' if use_ale else ''}"
+    outfile_u = fd.File(os.path.join(pvd_output_dir, exp_name, "u.pvd"))
+    outfile_u_grid = fd.File(os.path.join(pvd_output_dir, exp_name, "u_grid.pvd"))
+    outfile_p = fd.File(os.path.join(pvd_output_dir, exp_name, "p.pvd"))
     outfile_u.write(u_save)
     outfile_u_grid.write(u_grid)
     outfile_p.write(p_save)
@@ -245,10 +254,11 @@ for mesh_name in all_mesh_names:
 
                 t += dt
 
-                u_save.assign(u_next)
-                p_save.assign(p_next)
-                outfile_u.write(u_save)
-                outfile_p.write(p_save)
+                if use_ale:
+                    u_save.assign(u_next)
+                    p_save.assign(p_next)
+                    outfile_u.write(u_save)
+                    outfile_p.write(p_save)
 
                 # u_list.append(fd.Function(u_next))
 
@@ -259,12 +269,12 @@ for mesh_name in all_mesh_names:
                 start_time = time.perf_counter()
                 # Store the solutions to adapted meshes
                 # so that we can safely modify mesh coordinates later
+                if not use_ale:
+                    # NOTE: interpolate may be faster than project
+                    u_adapted.project(u_next)
+                    p_adapted.project(p_next)
                 end_time = time.perf_counter()
                 print(f"Project before time: {(end_time - start_time)*1e3} ms")
-
-                # TODO: interpolate might be faster however requries to update firedrake version
-                # u_adapted.interpolate(u_next)
-                # p_adapted.interpolate(p_next)
 
                 if np.abs(t - np.round(t, decimals=0)) < 1.0e-8:
                     print("time = {0:.3f}".format(t))
@@ -296,7 +306,8 @@ for mesh_name in all_mesh_names:
                 start_time = time.perf_counter()
                 # Project u_adapted back to uniform mesh for computing monitors
                 u_proj_from_adapted = fd.Function(V)
-                u_adapted.dat.data[:] = u_next.dat.data[:]
+                if use_ale:
+                    u_adapted.dat.data[:] = u_next.dat.data[:]
                 u_proj_from_adapted.project(u_adapted)
                 end_time = time.perf_counter()
                 print(f"Project for monitor time: {(end_time - start_time)*1e3} ms")
@@ -323,29 +334,31 @@ for mesh_name in all_mesh_names:
                 print(f"Model inference time: {(end_time - start_time)*1e3} ms")
                 # Update the mesh to adpated mesh
                 mesh.coordinates.dat.data[:] = adapted_coord.cpu().detach().numpy()
-                u_grid.dat.data[:] = (
-                    mesh.coordinates.dat.data[:] - adapted_mesh.coordinates.dat.data[:]
-                ) / dt
-                outfile_u_grid.write(u_grid)
-                # Project the u_adapted and p_adapted to new adapted mesh for next timestep solving
-                start_time = time.perf_counter()
-                u_grid_max = np.abs(u_grid.dat.data).max()
-                print(f"{u_grid_max=}")
-                if u_grid_max < 5:
-                    u_now.assign(u_next)
-                    p_now.assign(p_next)
+                if use_ale:
+                    u_grid.dat.data[:] = (
+                        mesh.coordinates.dat.data[:]
+                        - adapted_mesh.coordinates.dat.data[:]
+                    ) / dt
+                    outfile_u_grid.write(u_grid)
+                    start_time = time.perf_counter()
+                    u_grid_max = np.abs(u_grid.dat.data).max()
+                    print(f"{u_grid_max=}")
+                    if u_grid_max < 5:
+                        u_now.assign(u_next)
+                        p_now.assign(p_next)
+                    else:
+                        u_adapted.dat.data[:] = u_next.dat.data[:]
+                        p_adapted.dat.data[:] = p_next.dat.data[:]
+                        u_now.project(u_adapted)
+                        p_now.project(p_adapted)
+                        u_grid.dat.data[:] = 0.0
+                    end_time = time.perf_counter()
+                    print(f"Project after time: {(end_time - start_time)*1e3} ms")
                 else:
-                    u_adapted.dat.data[:] = u_next.dat.data[:]
-                    p_adapted.dat.data[:] = p_next.dat.data[:]
+                    # Project u_adapted and p_adapted onto adapted mesh for next timestep
+                    # NOTE: interpolate may be faster than project
                     u_now.project(u_adapted)
                     p_now.project(p_adapted)
-                    u_grid.dat.data[:] = 0.0
-                end_time = time.perf_counter()
-                print(f"Project after time: {(end_time - start_time)*1e3} ms")
-
-                # TODO: interpolate might be faster however requries to update firedrake version
-                # u_now.interpolate(u_adapted)
-                # p_now.interpolate(p_adapted)
 
                 # The buffer for adapted mesh should also be updated
                 adapted_mesh.coordinates.dat.data[:] = (
@@ -409,7 +422,7 @@ for mesh_name in all_mesh_names:
                 ax[0].set_title("Original Mesh")
                 # Adapted mesh
                 fd.triplot(adapted_mesh, axes=ax[1])
-                ax[1].set_title("Adapated Mesh (UM2N)")
+                ax[1].set_title("Adapted Mesh (UM2N)")
 
                 cmap = "seismic"
 
