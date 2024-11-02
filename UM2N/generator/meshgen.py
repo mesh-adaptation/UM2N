@@ -51,17 +51,6 @@ class UnstructuredMeshGenerator(abc.ABC):
             self.get_lines()
         return self._lines
 
-    def get_boundaries(self):
-        for i, line_tag in enumerate(self.lines):
-            gmsh.model.addPhysicalGroup(1, [line_tag], i + 1)
-            gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
-
-    def get_curve(self):
-        gmsh.model.geo.addCurveLoop([i + 1 for i in range(len(self.points))], 1)
-
-    def get_plane(self):
-        gmsh.model.geo.addPlaneSurface([1], 1)
-
     def generate_mesh(self, res=1e-1, file_path="./temp.msh", remove_file=False):
         """
         Generate a mesh at a given resolution level.
@@ -81,11 +70,13 @@ class UnstructuredMeshGenerator(abc.ABC):
         # generate mesh
         self.get_points()
         self.get_lines()
-        self.get_curve()
-        self.get_plane()
+        gmsh.model.geo.addCurveLoop([i + 1 for i in range(len(self.points))], 1)
+        gmsh.model.geo.addPlaneSurface([1], 1)
         gmsh.model.geo.synchronize()
         gmsh.option.setNumber("Mesh.Algorithm", self.mesh_type)
-        self.get_boundaries()
+        for i, line_tag in enumerate(self.lines):
+            gmsh.model.addPhysicalGroup(1, [line_tag], i + 1)
+            gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
         gmsh.model.addPhysicalGroup(2, [1], name="My surface")
         gmsh.model.mesh.generate(2)
         gmsh.write(file_path)
@@ -124,67 +115,51 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
         super().__init__(mesh_type=mesh_type)
         # params setup
         self.scale = scale
-        self.start = 0
-        self.end = self.scale
-        self.split_threshold = 0.3
-        self.mid = (self.start + self.end) / 2
-        self.quater = (self.start + self.mid) / 2
-        self.three_quater = (self.mid + self.end) / 2
-        self.mid_interval = (self.end - self.start) / 3
-        self.quater_interval = (self.mid - self.start) / 4
-        # generate mesh
-        self.get_rand_points()
 
     def get_rand(self, mean, interval):
         return random.uniform(mean - interval, mean + interval)
 
     def get_rand_points(self):
+        start = 0
+        end = self.scale
+        split_threshold = 0.3
+        mid = (start + end) / 2
+        quarter = (start + mid) / 2
+        three_quarter = (mid + end) / 2
+        mid_interval = (end - start) / 3
+        quarter_interval = (mid - start) / 4
         points = []
         split_p = np.random.uniform(0, 1, 4)
         # edge 1
-        if split_p[0] < self.split_threshold:
-            points.append([self.get_rand(self.quater, self.quater_interval), 0])
-            points.append([self.get_rand(self.three_quater, self.quater_interval), 0])
+        if split_p[0] < split_threshold:
+            points.append([self.get_rand(quarter, quarter_interval), 0])
+            points.append([self.get_rand(three_quarter, quarter_interval), 0])
         else:
-            points.append([self.get_rand(self.mid, self.mid_interval), 0])
+            points.append([self.get_rand(mid, mid_interval), 0])
         # edge 2
-        if split_p[1] < self.split_threshold:
-            points.append(
-                [self.scale, self.get_rand(self.quater, self.quater_interval)]
-            )
-            points.append(
-                [self.scale, self.get_rand(self.three_quater, self.quater_interval)]
-            )
+        if split_p[1] < split_threshold:
+            points.append([self.scale, self.get_rand(quarter, quarter_interval)])
+            points.append([self.scale, self.get_rand(three_quarter, quarter_interval)])
         else:
-            points.append([self.scale, self.get_rand(self.mid, self.mid_interval)])
+            points.append([self.scale, self.get_rand(mid, mid_interval)])
         # edge 3
-        if split_p[2] < self.split_threshold:
-            points.append(
-                [self.get_rand(self.three_quater, self.quater_interval), self.scale]
-            )
-            points.append(
-                [self.get_rand(self.quater, self.quater_interval), self.scale]
-            )
+        if split_p[2] < split_threshold:
+            points.append([self.get_rand(three_quarter, quarter_interval), self.scale])
+            points.append([self.get_rand(quarter, quarter_interval), self.scale])
         else:
-            points.append([self.get_rand(self.mid, self.mid_interval), self.scale])
+            points.append([self.get_rand(mid, mid_interval), self.scale])
         # edge 4
-        if split_p[3] < self.split_threshold:
-            points.append([0, self.get_rand(self.three_quater, self.quater_interval)])
-            points.append([0, self.get_rand(self.quater, self.quater_interval)])
+        if split_p[3] < split_threshold:
+            points.append([0, self.get_rand(three_quarter, quarter_interval)])
+            points.append([0, self.get_rand(quarter, quarter_interval)])
         else:
-            points.append([0, self.get_rand(self.mid, self.mid_interval)])
+            points.append([0, self.get_rand(mid, mid_interval)])
             # points.append(p1)
         self.raw_points = points
         return
 
     def get_points(self):
-        self.start = 0
-        self.end = self.scale
-        self.mid = (self.start + self.end) / 2
-        self.quater = (self.start + self.mid) / 2
-        self.three_quater = (self.mid + self.end) / 2
-        self.mid_interval = (self.end - self.start) / 3
-        self.quater_interval = (self.mid - self.start) / 4
+        self.get_rand_points()
         temp = []
         for i in range(len(self.raw_points)):
             temp.append(
