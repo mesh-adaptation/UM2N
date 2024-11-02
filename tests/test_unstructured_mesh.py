@@ -6,10 +6,13 @@ from UM2N.generator.unstructured_mesh import (
     UnstructuredRandomPolygonalMeshGenerator,
     UnstructuredSquareMeshGenerator,
 )
+from firedrake.assemble import assemble
 from firedrake.bcs import DirichletBC
+from firedrake.constant import Constant
 import numpy as np
 import os
 import pytest
+import ufl
 
 
 @pytest.fixture(params=[1, 2, 3, 4])
@@ -37,11 +40,11 @@ def generator(request):
     return request.param
 
 
-def generate_mesh(generator, mesh_algorithm, **kwargs):
+def generate_mesh(generator, mesh_algorithm, scale=1.0, **kwargs):
     """
     Utility mesh generator function for testing purposes.
     """
-    mesh_gen = generator(mesh_type=mesh_algorithm)
+    mesh_gen = generator(mesh_type=mesh_algorithm, scale=scale)
     kwargs.setdefault("remove_file", True)
     mesh = mesh_gen.generate_mesh(**kwargs)
     mesh.init()
@@ -91,6 +94,11 @@ def test_num_points_boundaries_square(num_elem_bnd, mesh_algorithm):
         assert len(dbc.nodes) == num_elem_bnd + 1
 
 
-# def test_area_squaremesh(num_elem_bnd, mesh_algorithm, scale):
-#
-#     raise NotImplementedError  # TODO: Test area as expected with scaling
+def test_area_squaremesh(num_elem_bnd, mesh_algorithm, scale):
+    """
+    Check that the area of a square mesh is equal to the scale factor squared.
+    """
+    mesh = generate_mesh(
+        UnstructuredSquareMeshGenerator, 1, res=1.0 / num_elem_bnd, scale=scale
+    )
+    assert np.isclose(assemble(Constant(1.0, domain=mesh) * ufl.dx), scale**2)
