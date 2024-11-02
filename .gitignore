@@ -4,6 +4,8 @@ UM2N.egg-info/
 .eggs/
 data/
 results/
+.ipynb_checkpoints/
+.vscode/
 
 # Specific files
 .gitconfig
