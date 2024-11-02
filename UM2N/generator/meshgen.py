@@ -10,7 +10,10 @@ import numpy as np
 import os
 import random
 
-__all__ = ["UnstructuredUnitSquareMeshGenerator", "RandPolyMeshGenerator"]
+__all__ = [
+    "UnstructuredUnitSquareMeshGenerator",
+    "UnstructuredRandomPolygonalMeshGenerator",
+]
 
 
 class UnstructuredMeshGenerator(abc.ABC):
@@ -103,7 +106,7 @@ class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
         ]
 
 
-class RandPolyMeshGenerator(UnstructuredMeshGenerator):
+class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
     """
     Create a random polygonal mesh by spliting the edge of a
     square randomly.
@@ -122,12 +125,12 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
         if hasattr(self, "_corners"):
             return self._corners
         start = 0
-        end = self.scale
+        finish = self.scale
         split_threshold = 0.3
-        mid = (start + end) / 2
+        mid = (start + finish) / 2
         quarter = (start + mid) / 2
-        three_quarter = (mid + end) / 2
-        mid_interval = (end - start) / 3
+        three_quarter = (mid + finish) / 2
+        mid_interval = (finish - start) / 3
         quarter_interval = (mid - start) / 4
         points = []
         split_p = np.random.uniform(0, 1, 4)

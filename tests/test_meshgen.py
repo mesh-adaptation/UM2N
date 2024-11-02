@@ -3,7 +3,7 @@ Unit tests for the meshgen mesh generator module.
 """
 
 from UM2N.generator.meshgen import (
-    RandPolyMeshGenerator,
+    UnstructuredRandomPolygonalMeshGenerator,
     UnstructuredUnitSquareMeshGenerator,
 )
 from firedrake.bcs import DirichletBC
@@ -21,7 +21,12 @@ def mesh_algorithm(request):
     return request.param
 
 
-@pytest.fixture(params=[RandPolyMeshGenerator, UnstructuredUnitSquareMeshGenerator])
+@pytest.fixture(
+    params=[
+        UnstructuredRandomPolygonalMeshGenerator,
+        UnstructuredUnitSquareMeshGenerator,
+    ]
+)
 def generator(request):
     return request.param
 
@@ -31,8 +36,8 @@ def test_boundary_segments(generator):
     Check that the boundary segments are tagged with integers counting from 1.
     """
     file_path = "./tmp.msh"
-    mesh_gen = generator(mesh_algorithm)
-    mesh = mesh_gen.generate_mesh(res=1, file_path=file_path, remove_file=True)
+    mesh_gen = generator(mesh_type=1)
+    mesh = mesh_gen.generate_mesh(res=1.0, file_path=file_path, remove_file=True)
     mesh.init()
     boundary_ids = mesh.exterior_facets.unique_markers
     assert (

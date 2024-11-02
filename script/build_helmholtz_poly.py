@@ -216,7 +216,9 @@ if __name__ == "__main__":
     while i < n_samples:
         try:
             print("Generating Sample: " + str(i))
-            rand_poly_mesh_gen = UM2N.RandPolyMesh(scale=scale_x, mesh_type=mesh_type)  # noqa
+            rand_poly_mesh_gen = UM2N.UnstructuredRandomPolygonalMeshGenerator(
+                scale=scale_x, mesh_type=mesh_type
+            )  # noqa
             mesh = rand_poly_mesh_gen.generate_mesh(
                 res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
             )
