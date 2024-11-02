@@ -4,7 +4,7 @@ Unit tests for the meshgen mesh generator module.
 
 from UM2N.generator.meshgen import (
     UnstructuredRandomPolygonalMeshGenerator,
-    UnstructuredUnitSquareMeshGenerator,
+    UnstructuredSquareMeshGenerator,
 )
 from firedrake.bcs import DirichletBC
 import os
@@ -24,7 +24,7 @@ def mesh_algorithm(request):
 @pytest.fixture(
     params=[
         UnstructuredRandomPolygonalMeshGenerator,
-        UnstructuredUnitSquareMeshGenerator,
+        UnstructuredSquareMeshGenerator,
     ]
 )
 def generator(request):
@@ -52,7 +52,7 @@ def test_num_points_boundaries_unitsquare(num_elem_bnd, mesh_algorithm):
     as expected.
     """
     file_path = "./tmp.msh"
-    mesh_gen = UnstructuredUnitSquareMeshGenerator(mesh_type=mesh_algorithm)
+    mesh_gen = UnstructuredSquareMeshGenerator(mesh_type=mesh_algorithm)
     mesh = mesh_gen.generate_mesh(
         res=1 / num_elem_bnd, file_path=file_path, remove_file=True
     )
@@ -62,3 +62,7 @@ def test_num_points_boundaries_unitsquare(num_elem_bnd, mesh_algorithm):
         dbc = DirichletBC(mesh.coordinates.function_space(), 0, boundary_id)
         assert len(dbc.nodes) == num_elem_bnd + 1
     assert not os.path.exists(file_path)
+
+
+# TODO: Tests involving scale parameter
+# TODO: Tests involving area calculations

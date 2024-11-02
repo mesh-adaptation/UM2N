@@ -11,7 +11,7 @@ import os
 import random
 
 __all__ = [
-    "UnstructuredUnitSquareMeshGenerator",
+    "UnstructuredSquareMeshGenerator",
     "UnstructuredRandomPolygonalMeshGenerator",
 ]
 
@@ -21,14 +21,26 @@ class UnstructuredMeshGenerator(abc.ABC):
     Base class for mesh generators.
     """
 
-    def __init__(self, mesh_type=2):
+    def __init__(self, scale=1.0, mesh_type=2):
         """
+        :kwarg scale: overall scale factor
+        :type scale: float
         :kwarg mesh_type: Gmsh algorithm number
         :type mesh_type: int
         """
+        self.scale = scale
         # TODO: More detail on Gmsh algorithm number
         self.mesh_type = mesh_type
         self._mesh = None
+
+    @property
+    @abc.abstractmethod
+    def corners(self):
+        """
+        :returns: corner vertices of the domain
+        :rtype: tuple
+        """
+        pass
 
     def generate_mesh(self, res=1e-1, file_path="./temp.msh", remove_file=False):
         """
@@ -41,6 +53,8 @@ class UnstructuredMeshGenerator(abc.ABC):
         :kwarg remove_file: should the .msh file be removed after generation? (False by
             default)
         :type remove_file: bool
+        :returns: mesh generated
+        :rtype: :class:`firedrake.mesh.MeshGeometry`
         """
         gmsh.initialize()
         gmsh.model.add("t1")
@@ -72,18 +86,30 @@ class UnstructuredMeshGenerator(abc.ABC):
         return self._mesh
 
     def load_mesh(self, file_path):
+        """
+        Load a mesh from a file saved in .msh format.
+
+        :arg file_path: filename including the .msh extension
+        :type file_path: str
+        :returns: mesh loaded from file
+        :rtype: :class:`firedrake.mesh.MeshGeometry`
+        """
         self._mesh = Mesh(file_path)
         return self._mesh
 
 
-class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
+class UnstructuredSquareMeshGenerator(UnstructuredMeshGenerator):
     """
     Generate an unstructured mesh of a 2D square domain using Gmsh.
     """
 
     @property
     def corners(self):
-        return ((0, 0), (1, 0), (1, 1), (0, 1))
+        """
+        :returns: corner vertices of the square domain
+        :rtype: tuple
+        """
+        return ((0, 0), (self.scale, 0), (self.scale, self.scale), (0, self.scale))
 
 
 class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
@@ -93,15 +119,37 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
     """
 
     def __init__(self, scale=1.0, mesh_type=2):
+        """
+        :kwarg scale: overall scale factor
+        :type scale: float
+        :kwarg mesh_type: Gmsh algorithm number
+        :type mesh_type: int
+        """
         super().__init__(mesh_type=mesh_type)
         self.scale = scale
 
     @staticmethod
     def sample_uniform(mean, interval):
+        """
+        Sample a point from a uniform distribution with a given mean and interval.
+
+        Note that the interval is *either side* of the mean, not the overall interval.
+
+        :arg mean: the mean value of the uniform distribution
+        :type mean: float
+        :arg interval: the interval either side of the mean
+        :type interval: float
+        :returns: sampled point
+        :rtype: float
+        """
         return random.uniform(mean - interval, mean + interval)
 
     @property
     def corners(self):
+        """
+        :returns: corner vertices of a randomly generated polygonal domain
+        :rtype: tuple
+        """
         if hasattr(self, "_corners"):
             return self._corners
         start = 0
