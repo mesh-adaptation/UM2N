@@ -102,3 +102,15 @@ def test_area_squaremesh(num_elem_bnd, mesh_algorithm, scale):
         UnstructuredSquareMeshGenerator, 1, res=1.0 / num_elem_bnd, scale=scale
     )
     assert np.isclose(assemble(Constant(1.0, domain=mesh) * ufl.dx), scale**2)
+
+
+def test_num_cells_with_res_and_scale(generator, num_elem_bnd, mesh_algorithm):
+    """
+    Check that doubling or halving the overall resolution doesn't affect the number of
+    cells for the square mesh, so long as the resolution is changed accordingly.
+    """
+    generator = UnstructuredSquareMeshGenerator
+    mesh1 = generate_mesh(generator, mesh_algorithm, res=1.0 / num_elem_bnd)
+    mesh2 = generate_mesh(generator, mesh_algorithm, res=2.0 / num_elem_bnd, scale=2.0)
+    meshp5 = generate_mesh(generator, mesh_algorithm, res=0.5 / num_elem_bnd, scale=0.5)
+    assert np.allclose((mesh2.num_cells(), meshp5.num_cells()), mesh1.num_cells())

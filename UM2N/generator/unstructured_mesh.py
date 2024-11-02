@@ -23,7 +23,7 @@ class UnstructuredMeshGenerator(abc.ABC):
 
     def __init__(self, scale=1.0, mesh_type=2):
         """
-        :kwarg scale: overall scale factor
+        :kwarg scale: overall scale factor for the domain size
         :type scale: float
         :kwarg mesh_type: Gmsh algorithm number
         :type mesh_type: int
@@ -120,7 +120,7 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
 
     def __init__(self, scale=1.0, mesh_type=2):
         """
-        :kwarg scale: overall scale factor
+        :kwarg scale: overall scale factor for the domain size
         :type scale: float
         :kwarg mesh_type: Gmsh algorithm number
         :type mesh_type: int
