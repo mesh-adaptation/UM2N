@@ -171,16 +171,3 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
                 )
             )
         self._points = temp
-
-
-# TODO: Turn into unit test
-if __name__ == "__main__":
-    from firedrake.pyplot import triplot
-    import matplotlib.pyplot as plt
-
-    mesh_gen = RandPolyMeshGenerator(mesh_type=2)
-    mesh_coarse = mesh_gen.generate_mesh(res=5e-2, file_path="./temp1.msh")
-    mesh_fine = mesh_gen.generate_mesh(res=4e-2, file_path="./temp2.msh")
-    triplot(mesh_coarse)
-    triplot(mesh_fine)
-    plt.show()
