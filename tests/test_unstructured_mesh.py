@@ -1,5 +1,5 @@
 """
-Unit tests for the meshgen mesh generator module.
+Unit tests for the generate_mesh mesh generator module.
 """
 
 from UM2N.generator.unstructured_mesh import (
@@ -7,12 +7,18 @@ from UM2N.generator.unstructured_mesh import (
     UnstructuredSquareMeshGenerator,
 )
 from firedrake.bcs import DirichletBC
+import numpy as np
 import os
 import pytest
 
 
 @pytest.fixture(params=[1, 2, 3, 4])
 def num_elem_bnd(request):
+    return request.param
+
+
+@pytest.fixture(params=[1, 10, 0.2, np.pi])
+def scale(request):
     return request.param
 
 
@@ -31,38 +37,60 @@ def generator(request):
     return request.param
 
 
+def generate_mesh(generator, mesh_algorithm, **kwargs):
+    """
+    Utility mesh generator function for testing purposes.
+    """
+    mesh_gen = generator(mesh_type=mesh_algorithm)
+    kwargs.setdefault("remove_file", True)
+    mesh = mesh_gen.generate_mesh(**kwargs)
+    mesh.init()
+    return mesh
+
+
+def test_file_removal():
+    """
+    Test that the remove_file keyword argument works as expected.
+    """
+    file_path = "./tmp.msh"
+    assert not os.path.exists(file_path)
+    generate_mesh(
+        UnstructuredSquareMeshGenerator,
+        1,
+        res=1.0,
+        file_path=file_path,
+        remove_file=False,
+    )
+    assert os.path.exists(file_path)
+    os.remove(file_path)
+    assert not os.path.exists(file_path)
+    generate_mesh(UnstructuredSquareMeshGenerator, 1, res=1.0, file_path=file_path)
+    assert not os.path.exists(file_path)
+
+
 def test_boundary_segments(generator):
     """
     Check that the boundary segments are tagged with integers counting from 1.
     """
-    file_path = "./tmp.msh"
-    mesh_gen = generator(mesh_type=1)
-    mesh = mesh_gen.generate_mesh(res=1.0, file_path=file_path, remove_file=True)
-    mesh.init()
+    mesh = generate_mesh(generator, 1, res=1.0)
     boundary_ids = mesh.exterior_facets.unique_markers
     assert (
         set(boundary_ids).difference({i + 1 for i in range(len(boundary_ids))}) == set()
     )
-    assert not os.path.exists(file_path)
 
 
-def test_num_points_boundaries_unitsquare(num_elem_bnd, mesh_algorithm):
+def test_num_points_boundaries_square(num_elem_bnd, mesh_algorithm):
     """
     Check that the numbers of points on each boundary segment of a unit square mesh are
     as expected.
     """
-    file_path = "./tmp.msh"
-    mesh_gen = UnstructuredSquareMeshGenerator(mesh_type=mesh_algorithm)
-    mesh = mesh_gen.generate_mesh(
-        res=1 / num_elem_bnd, file_path=file_path, remove_file=True
-    )
-    mesh.init()
+    mesh = generate_mesh(UnstructuredSquareMeshGenerator, 1, res=1.0 / num_elem_bnd)
     boundary_ids = mesh.exterior_facets.unique_markers
     for boundary_id in boundary_ids:
         dbc = DirichletBC(mesh.coordinates.function_space(), 0, boundary_id)
         assert len(dbc.nodes) == num_elem_bnd + 1
-    assert not os.path.exists(file_path)
 
 
-# TODO: Tests involving scale parameter
-# TODO: Tests involving area calculations
+# def test_area_squaremesh(num_elem_bnd, mesh_algorithm, scale):
+#
+#     raise NotImplementedError  # TODO: Test area as expected with scaling
