@@ -2,7 +2,7 @@
 Unit tests for the meshgen mesh generator module.
 """
 
-from UM2N.generator.meshgen import (
+from UM2N.generator.unstructured_mesh import (
     UnstructuredRandomPolygonalMeshGenerator,
     UnstructuredSquareMeshGenerator,
 )
