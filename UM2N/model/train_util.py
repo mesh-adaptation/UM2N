@@ -5,11 +5,18 @@
 import numpy as np
 import torch
 import torch.nn as nn
+
 # FIXME: Hack to handle the case where pytorch3d cannot be installed
 try:
     from pytorch3d.loss import chamfer_distance
 except ImportError:
-    chamfer_distance = lambda *args: None
+
+    def chamfer_distance(*args):
+        raise ImportError(
+            "chamfer_distance depends on pytorch3d, which cannot be imported"
+        )
+
+
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing, knn_graph
 
