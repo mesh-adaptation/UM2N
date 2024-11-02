@@ -30,21 +30,11 @@ class UnstructuredMeshGenerator(abc.ABC):
         self.mesh_type = mesh_type
         self._mesh = None
 
-    @abc.abstractmethod
-    def get_points(self):
-        pass
-
-    @property
-    def points(self):
-        if not hasattr(self, "_points"):
-            self.get_points()
-        return self._points
-
     def get_lines(self):
         self._lines = [
             gmsh.model.geo.addLine(point, point_next)
             for point, point_next in zip(
-                self.points, self.points[1:] + [self.points[0]]
+                self._points, self._points[1:] + [self._points[0]]
             )
         ]
 
@@ -69,9 +59,11 @@ class UnstructuredMeshGenerator(abc.ABC):
         gmsh.initialize()
         gmsh.model.add("t1")
         self.lc = res
-        self.get_points()
+        self._points = [
+            gmsh.model.geo.addPoint(*corner, 0, self.lc) for corner in self.corners
+        ]
         self.get_lines()
-        gmsh.model.geo.addCurveLoop([i + 1 for i in range(len(self.points))], 1)
+        gmsh.model.geo.addCurveLoop([i + 1 for i in range(len(self._points))], 1)
         gmsh.model.geo.addPlaneSurface([1], 1)
         gmsh.model.geo.synchronize()
         gmsh.option.setNumber("Mesh.Algorithm", self.mesh_type)
@@ -98,12 +90,9 @@ class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
     Generate an unstructured mesh of a 2D square domain using Gmsh.
     """
 
-    def get_points(self):
-        self._points = []
-        corners = ((0, 0), (1, 0), (1, 1), (0, 1))
-        self._points = [
-            gmsh.model.geo.addPoint(*corner, 0, self.lc) for corner in corners
-        ]
+    @property
+    def corners(self):
+        return ((0, 0), (1, 0), (1, 1), (0, 1))
 
 
 class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
@@ -164,13 +153,3 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
             points.append([0, self.sample_uniform(mid, mid_interval)])
         self._corners = points
         return self._corners
-
-    def get_points(self):
-        temp = []
-        for i in range(len(self.corners)):
-            temp.append(
-                gmsh.model.geo.addPoint(
-                    self.corners[i][0], self.corners[i][1], 0, self.lc
-                )
-            )
-        self._points = temp
