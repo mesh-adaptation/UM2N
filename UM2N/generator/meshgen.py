@@ -3,6 +3,8 @@ Module for handling generating unstructured meshes.
 """
 
 from firedrake.mesh import Mesh
+
+import abc
 import gmsh
 import numpy as np
 import os
@@ -11,7 +13,7 @@ import random
 __all__ = ["UnstructuredUnitSquareMeshGenerator", "RandPolyMeshGenerator"]
 
 
-class UnstructuredMeshGenerator:
+class UnstructuredMeshGenerator(abc.ABC):
     """
     Base class for mesh generators.
     """
@@ -28,11 +30,44 @@ class UnstructuredMeshGenerator:
         self.lines = []
         self._mesh = None
 
+    @abc.abstractmethod
+    def get_points(self):
+        pass
+
+    def get_line(self):
+        for point, point_next in zip(self.points, self.points[1:] + [self.points[0]]):
+            self.lines.append(gmsh.model.geo.addLine(point, point_next))
+
+    def get_boundaries(self):
+        print("in get_boundaries lines:", self.lines)
+        for i, line_tag in enumerate(self.lines):
+            gmsh.model.addPhysicalGroup(1, [line_tag], i + 1)
+            gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
+
+    def get_curve(self):
+        gmsh.model.geo.addCurveLoop([i + 1 for i in range(len(self.points))], 1)
+
+    def get_plane(self):
+        gmsh.model.geo.addPlaneSurface([1], 1)
+
+    @abc.abstractmethod
+    def generate_mesh(self, res=1e-1, file_path="./temp.msh"):
+        pass
+
+    def load_mesh(self, file_path):
+        self._mesh = Mesh(file_path)
+        return self._mesh
+
 
 class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
     """
     Generate an unstructured mesh of a 2D square domain using Gmsh.
     """
+
+    def get_points(self):
+        self.points = [
+            gmsh.model.geo.addPoint(*corner, 0, self.lc) for corner in self.corners
+        ]
 
     def generate_mesh(self, res=1e-1, file_path="./temp.msh", remove_file=False):
         """
@@ -49,13 +84,12 @@ class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
         gmsh.initialize()
         gmsh.model.add("t1")
         # temp vars
+        self.lc = res
         self.points = []
         self.lines = []
         # generate mesh
         self.corners = ((0, 0), (1, 0), (1, 1), (0, 1))
-        self.points = [
-            gmsh.model.geo.addPoint(*corner, 0, res) for corner in self.corners
-        ]
+        self.get_points()
         self.get_line()
         self.get_curve()
         self.get_plane()
@@ -70,25 +104,6 @@ class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
         self._mesh = Mesh(file_path)
         if remove_file:
             os.remove(file_path)
-        return self._mesh
-
-    def get_line(self):
-        for point, point_next in zip(self.points, self.points[1:] + [self.points[0]]):
-            self.lines.append(gmsh.model.geo.addLine(point, point_next))
-
-    def get_boundaries(self):
-        for i, line_tag in enumerate(self.lines):
-            gmsh.model.addPhysicalGroup(1, [line_tag], i + 1)
-            gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
-
-    def get_curve(self):
-        gmsh.model.geo.addCurveLoop([i + 1 for i in range(len(self.points))], 1)
-
-    def get_plane(self):
-        gmsh.model.geo.addPlaneSurface([1], 1)
-
-    def load_mesh(self, file_path):
-        self._mesh = Mesh(file_path)
         return self._mesh
 
 
@@ -112,38 +127,6 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
         self.quater_interval = (self.mid - self.start) / 4
         # generate mesh
         self.get_rand_points()
-
-    def generate_mesh(self, res=1e-1, file_path="./temp.msh"):
-        gmsh.initialize()
-        gmsh.model.add("t1")
-        # params setup
-        self.lc = res
-        self.start = 0
-        self.end = self.scale
-        self.mid = (self.start + self.end) / 2
-        self.quater = (self.start + self.mid) / 2
-        self.three_quater = (self.mid + self.end) / 2
-        self.mid_interval = (self.end - self.start) / 3
-        self.quater_interval = (self.mid - self.start) / 4
-        self.file_path = file_path
-        # temp vars
-        self.points = []
-        self.lines = []
-        # generate mesh
-        self.get_points()
-        self.get_line()
-        self.get_curve()
-        self.get_plane()
-        gmsh.model.geo.synchronize()
-        gmsh.option.setNumber("Mesh.Algorithm", self.mesh_type)
-        self.get_boundaries()
-        gmsh.model.addPhysicalGroup(2, [1], name="My surface")
-        gmsh.model.mesh.generate(2)
-        gmsh.write(self.file_path)
-        gmsh.finalize()
-        self.num_boundary = len(self.lines)
-        self._mesh = Mesh(self.file_path)
-        return self._mesh
 
     def get_rand(self, mean, interval):
         return random.uniform(mean - interval, mean + interval)
@@ -197,43 +180,47 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
             )
         self.points = temp
 
-    def get_line(self):
-        for i in range(len(self.points)):
-            if i < len(self.points) - 1:
-                line = gmsh.model.geo.addLine(self.points[i], self.points[i + 1])
-                self.lines.append(line)
-            else:
-                line = gmsh.model.geo.addLine(self.points[i], self.points[0])
-                self.lines.append(line)
-        return
-
-    def get_boundaries(self):
-        print("in get_boundaries lines:", self.lines)
-        for i, line_tag in enumerate(self.lines):
-            gmsh.model.addPhysicalGroup(1, [line_tag], i + 1)
-            gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
-
-    def get_curve(self):
-        gmsh.model.geo.addCurveLoop([i for i in range(1, len(self.points) + 1)], 1)
-
-    def get_plane(self):
-        gmsh.model.geo.addPlaneSurface([1], 1)
-
-    def show(self, file_path):
-        from firedrake.pyplot import triplot
-
-        mesh = Mesh(file_path)
-        fig = triplot(mesh)
-        return fig
+    def generate_mesh(self, res=1e-1, file_path="./temp.msh"):
+        gmsh.initialize()
+        gmsh.model.add("t1")
+        # params setup
+        self.lc = res
+        self.start = 0
+        self.end = self.scale
+        self.mid = (self.start + self.end) / 2
+        self.quater = (self.start + self.mid) / 2
+        self.three_quater = (self.mid + self.end) / 2
+        self.mid_interval = (self.end - self.start) / 3
+        self.quater_interval = (self.mid - self.start) / 4
+        self.file_path = file_path
+        # temp vars
+        self.points = []
+        self.lines = []
+        # generate mesh
+        self.get_points()
+        self.get_line()
+        self.get_curve()
+        self.get_plane()
+        gmsh.model.geo.synchronize()
+        gmsh.option.setNumber("Mesh.Algorithm", self.mesh_type)
+        self.get_boundaries()
+        gmsh.model.addPhysicalGroup(2, [1], name="My surface")
+        gmsh.model.mesh.generate(2)
+        gmsh.write(self.file_path)
+        gmsh.finalize()
+        self.num_boundary = len(self.lines)
+        self._mesh = Mesh(self.file_path)
+        return self._mesh
 
 
 # TODO: Turn into unit test
 if __name__ == "__main__":
+    from firedrake.pyplot import triplot
     import matplotlib.pyplot as plt
 
     mesh_gen = RandPolyMeshGenerator(mesh_type=2)
     mesh_coarse = mesh_gen.generate_mesh(res=5e-2, file_path="./temp1.msh")
     mesh_fine = mesh_gen.generate_mesh(res=4e-2, file_path="./temp2.msh")
-    mesh_gen.show("./temp1.msh")
-    mesh_gen.show("./temp2.msh")
+    triplot(mesh_coarse)
+    triplot(mesh_fine)
     plt.show()
