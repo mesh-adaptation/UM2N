@@ -65,9 +65,7 @@ class UnstructuredMeshGenerator(abc.ABC):
         """
         gmsh.initialize()
         gmsh.model.add("t1")
-        # temp vars
         self.lc = res
-        # generate mesh
         self.get_points()
         self.get_lines()
         gmsh.model.geo.addCurveLoop([i + 1 for i in range(len(self.points))], 1)
@@ -113,13 +111,16 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
 
     def __init__(self, scale=1.0, mesh_type=2):
         super().__init__(mesh_type=mesh_type)
-        # params setup
         self.scale = scale
 
-    def get_rand(self, mean, interval):
+    @staticmethod
+    def sample_uniform(mean, interval):
         return random.uniform(mean - interval, mean + interval)
 
-    def get_rand_points(self):
+    @property
+    def corners(self):
+        if hasattr(self, "_corners"):
+            return self._corners
         start = 0
         end = self.scale
         split_threshold = 0.3
@@ -132,39 +133,41 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
         split_p = np.random.uniform(0, 1, 4)
         # edge 1
         if split_p[0] < split_threshold:
-            points.append([self.get_rand(quarter, quarter_interval), 0])
-            points.append([self.get_rand(three_quarter, quarter_interval), 0])
+            points.append([self.sample_uniform(quarter, quarter_interval), 0])
+            points.append([self.sample_uniform(three_quarter, quarter_interval), 0])
         else:
-            points.append([self.get_rand(mid, mid_interval), 0])
+            points.append([self.sample_uniform(mid, mid_interval), 0])
         # edge 2
         if split_p[1] < split_threshold:
-            points.append([self.scale, self.get_rand(quarter, quarter_interval)])
-            points.append([self.scale, self.get_rand(three_quarter, quarter_interval)])
+            points.append([self.scale, self.sample_uniform(quarter, quarter_interval)])
+            points.append(
+                [self.scale, self.sample_uniform(three_quarter, quarter_interval)]
+            )
         else:
-            points.append([self.scale, self.get_rand(mid, mid_interval)])
+            points.append([self.scale, self.sample_uniform(mid, mid_interval)])
         # edge 3
         if split_p[2] < split_threshold:
-            points.append([self.get_rand(three_quarter, quarter_interval), self.scale])
-            points.append([self.get_rand(quarter, quarter_interval), self.scale])
+            points.append(
+                [self.sample_uniform(three_quarter, quarter_interval), self.scale]
+            )
+            points.append([self.sample_uniform(quarter, quarter_interval), self.scale])
         else:
-            points.append([self.get_rand(mid, mid_interval), self.scale])
+            points.append([self.sample_uniform(mid, mid_interval), self.scale])
         # edge 4
         if split_p[3] < split_threshold:
-            points.append([0, self.get_rand(three_quarter, quarter_interval)])
-            points.append([0, self.get_rand(quarter, quarter_interval)])
+            points.append([0, self.sample_uniform(three_quarter, quarter_interval)])
+            points.append([0, self.sample_uniform(quarter, quarter_interval)])
         else:
-            points.append([0, self.get_rand(mid, mid_interval)])
-            # points.append(p1)
-        self.raw_points = points
-        return
+            points.append([0, self.sample_uniform(mid, mid_interval)])
+        self._corners = points
+        return self._corners
 
     def get_points(self):
-        self.get_rand_points()
         temp = []
-        for i in range(len(self.raw_points)):
+        for i in range(len(self.corners)):
             temp.append(
                 gmsh.model.geo.addPoint(
-                    self.raw_points[i][0], self.raw_points[i][1], 0, self.lc
+                    self.corners[i][0], self.corners[i][1], 0, self.lc
                 )
             )
         self._points = temp
