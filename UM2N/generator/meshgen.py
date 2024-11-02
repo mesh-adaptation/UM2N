@@ -35,6 +35,7 @@ class UnstructuredMeshGenerator(abc.ABC):
         pass
 
     def get_line(self):
+        self.lines = []
         for point, point_next in zip(self.points, self.points[1:] + [self.points[0]]):
             self.lines.append(gmsh.model.geo.addLine(point, point_next))
 
@@ -49,25 +50,6 @@ class UnstructuredMeshGenerator(abc.ABC):
 
     def get_plane(self):
         gmsh.model.geo.addPlaneSurface([1], 1)
-
-    @abc.abstractmethod
-    def generate_mesh(self, res=1e-1, file_path="./temp.msh"):
-        pass
-
-    def load_mesh(self, file_path):
-        self._mesh = Mesh(file_path)
-        return self._mesh
-
-
-class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
-    """
-    Generate an unstructured mesh of a 2D square domain using Gmsh.
-    """
-
-    def get_points(self):
-        self.points = [
-            gmsh.model.geo.addPoint(*corner, 0, self.lc) for corner in self.corners
-        ]
 
     def generate_mesh(self, res=1e-1, file_path="./temp.msh", remove_file=False):
         """
@@ -85,10 +67,7 @@ class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
         gmsh.model.add("t1")
         # temp vars
         self.lc = res
-        self.points = []
-        self.lines = []
         # generate mesh
-        self.corners = ((0, 0), (1, 0), (1, 1), (0, 1))
         self.get_points()
         self.get_line()
         self.get_curve()
@@ -105,6 +84,23 @@ class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
         if remove_file:
             os.remove(file_path)
         return self._mesh
+
+    def load_mesh(self, file_path):
+        self._mesh = Mesh(file_path)
+        return self._mesh
+
+
+class UnstructuredUnitSquareMeshGenerator(UnstructuredMeshGenerator):
+    """
+    Generate an unstructured mesh of a 2D square domain using Gmsh.
+    """
+
+    def get_points(self):
+        self.points = []
+        self.corners = ((0, 0), (1, 0), (1, 1), (0, 1))
+        self.points = [
+            gmsh.model.geo.addPoint(*corner, 0, self.lc) for corner in self.corners
+        ]
 
 
 class RandPolyMeshGenerator(UnstructuredMeshGenerator):
@@ -171,6 +167,14 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
         return
 
     def get_points(self):
+        self.start = 0
+        self.end = self.scale
+        self.mid = (self.start + self.end) / 2
+        self.quater = (self.start + self.mid) / 2
+        self.three_quater = (self.mid + self.end) / 2
+        self.mid_interval = (self.end - self.start) / 3
+        self.quater_interval = (self.mid - self.start) / 4
+        self.points = []
         temp = []
         for i in range(len(self.raw_points)):
             temp.append(
@@ -179,38 +183,6 @@ class RandPolyMeshGenerator(UnstructuredMeshGenerator):
                 )
             )
         self.points = temp
-
-    def generate_mesh(self, res=1e-1, file_path="./temp.msh"):
-        gmsh.initialize()
-        gmsh.model.add("t1")
-        # params setup
-        self.lc = res
-        self.start = 0
-        self.end = self.scale
-        self.mid = (self.start + self.end) / 2
-        self.quater = (self.start + self.mid) / 2
-        self.three_quater = (self.mid + self.end) / 2
-        self.mid_interval = (self.end - self.start) / 3
-        self.quater_interval = (self.mid - self.start) / 4
-        self.file_path = file_path
-        # temp vars
-        self.points = []
-        self.lines = []
-        # generate mesh
-        self.get_points()
-        self.get_line()
-        self.get_curve()
-        self.get_plane()
-        gmsh.model.geo.synchronize()
-        gmsh.option.setNumber("Mesh.Algorithm", self.mesh_type)
-        self.get_boundaries()
-        gmsh.model.addPhysicalGroup(2, [1], name="My surface")
-        gmsh.model.mesh.generate(2)
-        gmsh.write(self.file_path)
-        gmsh.finalize()
-        self.num_boundary = len(self.lines)
-        self._mesh = Mesh(self.file_path)
-        return self._mesh
 
 
 # TODO: Turn into unit test
