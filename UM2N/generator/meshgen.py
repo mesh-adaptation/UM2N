@@ -30,20 +30,6 @@ class UnstructuredMeshGenerator(abc.ABC):
         self.mesh_type = mesh_type
         self._mesh = None
 
-    def get_lines(self):
-        self._lines = [
-            gmsh.model.geo.addLine(point, point_next)
-            for point, point_next in zip(
-                self._points, self._points[1:] + [self._points[0]]
-            )
-        ]
-
-    @property
-    def lines(self):
-        if not hasattr(self, "_lines"):
-            self.get_lines()
-        return self._lines
-
     def generate_mesh(self, res=1e-1, file_path="./temp.msh", remove_file=False):
         """
         Generate a mesh at a given resolution level.
@@ -62,19 +48,24 @@ class UnstructuredMeshGenerator(abc.ABC):
         self._points = [
             gmsh.model.geo.addPoint(*corner, 0, self.lc) for corner in self.corners
         ]
-        self.get_lines()
+        self._lines = [
+            gmsh.model.geo.addLine(point, point_next)
+            for point, point_next in zip(
+                self._points, self._points[1:] + [self._points[0]]
+            )
+        ]
         gmsh.model.geo.addCurveLoop([i + 1 for i in range(len(self._points))], 1)
         gmsh.model.geo.addPlaneSurface([1], 1)
         gmsh.model.geo.synchronize()
         gmsh.option.setNumber("Mesh.Algorithm", self.mesh_type)
-        for i, line_tag in enumerate(self.lines):
+        for i, line_tag in enumerate(self._lines):
             gmsh.model.addPhysicalGroup(1, [line_tag], i + 1)
             gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
         gmsh.model.addPhysicalGroup(2, [1], name="My surface")
         gmsh.model.mesh.generate(2)
         gmsh.write(file_path)
         gmsh.finalize()
-        self.num_boundary = len(self.lines)
+        self.num_boundary = len(self._lines)
         self._mesh = Mesh(file_path)
         if remove_file:
             os.remove(file_path)
@@ -151,5 +142,5 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
             points.append([0, self.sample_uniform(quarter, quarter_interval)])
         else:
             points.append([0, self.sample_uniform(mid, mid_interval)])
-        self._corners = points
+        self._corners = tuple(points)
         return self._corners
