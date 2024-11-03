@@ -131,7 +131,8 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
         """
         Sample a point from a uniform distribution with a given mean and interval.
 
-        Note that the interval is *either side* of the mean, not the overall interval.
+        Note that the interval is *either side* of the mean, not the overall interval,
+        i.e., overall interval is symmetric: `[mean - interval, mean + interval]`.
 
         :arg mean: the mean value of the uniform distribution
         :type mean: float
