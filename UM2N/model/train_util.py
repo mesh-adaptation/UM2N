@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-# FIXME: Hack to handle the case where pytorch3d cannot be installed
+# FIXME: Hack to handle the case where pytorch3d cannot be installed (#41)
 try:
     from pytorch3d.loss import chamfer_distance
 except ImportError:
