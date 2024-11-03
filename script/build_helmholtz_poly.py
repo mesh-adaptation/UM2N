@@ -216,9 +216,11 @@ if __name__ == "__main__":
     while i < n_samples:
         try:
             print("Generating Sample: " + str(i))
-            rand_poly_mesh_gen = UM2N.RandPolyMesh(scale=scale_x, mesh_type=mesh_type)  # noqa
-            mesh = rand_poly_mesh_gen.get_mesh(
-                res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
+            rand_poly_mesh_gen = UM2N.UnstructuredRandomPolygonalMeshGenerator(
+                scale=scale_x, mesh_type=mesh_type
+            )  # noqa
+            mesh = rand_poly_mesh_gen.generate_mesh(
+                res=lc, output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
             )
             num_boundary = rand_poly_mesh_gen.num_boundary
             # Generate Random solution field
@@ -258,8 +260,9 @@ if __name__ == "__main__":
             hessian = UM2N.MeshGenerator(
                 params={
                     "eq": helmholtz_eq,
-                    "mesh": rand_poly_mesh_gen.get_mesh(
-                        res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
+                    "mesh": rand_poly_mesh_gen.generate_mesh(
+                        res=lc,
+                        output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh"),
                     ),
                 }
             ).get_hessian(mesh)
@@ -267,8 +270,9 @@ if __name__ == "__main__":
             hessian_norm = UM2N.MeshGenerator(
                 params={
                     "eq": helmholtz_eq,
-                    "mesh": rand_poly_mesh_gen.get_mesh(
-                        res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
+                    "mesh": rand_poly_mesh_gen.generate_mesh(
+                        res=lc,
+                        output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh"),
                     ),
                 }
             ).monitor_func(mesh)
@@ -281,8 +285,9 @@ if __name__ == "__main__":
             mesh_gen = UM2N.MeshGenerator(
                 params={
                     "eq": helmholtz_eq,
-                    "mesh": rand_poly_mesh_gen.get_mesh(
-                        res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
+                    "mesh": rand_poly_mesh_gen.generate_mesh(
+                        res=lc,
+                        output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh"),
                     ),
                 }
             )
@@ -381,8 +386,9 @@ if __name__ == "__main__":
             # ==========================================
 
             # generate log file
-            high_res_mesh = rand_poly_mesh_gen.get_mesh(
-                res=1e-2, file_path=os.path.join(problem_mesh_fine_dir, f"mesh{i}.msh")
+            high_res_mesh = rand_poly_mesh_gen.generate_mesh(
+                res=1e-2,
+                output_filename=os.path.join(problem_mesh_fine_dir, f"mesh{i}.msh"),
             )
 
             high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)

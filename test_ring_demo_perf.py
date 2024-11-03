@@ -1,11 +1,13 @@
 import os
+import pickle
 import time
 from types import SimpleNamespace
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import yaml
-import pickle
+
 import UM2N
 
 print("Setting up solver.")
