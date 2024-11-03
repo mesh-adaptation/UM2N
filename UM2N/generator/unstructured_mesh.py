@@ -29,7 +29,7 @@ class UnstructuredMeshGenerator(abc.ABC):
         :type mesh_type: int
         """
         self.scale = scale
-        # TODO: More detail on Gmsh algorithm number
+        # TODO: More detail on Gmsh algorithm number (#50)
         self.mesh_type = mesh_type
         self._mesh = None
 
@@ -125,8 +125,8 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
         :kwarg mesh_type: Gmsh algorithm number
         :type mesh_type: int
         """
-        super().__init__(mesh_type=mesh_type)
-        self.scale = scale
+        # TODO: More detail on Gmsh algorithm number (#50)
+        super().__init__(scale=scale, mesh_type=mesh_type)
 
     @staticmethod
     def sample_uniform(mean, interval):
