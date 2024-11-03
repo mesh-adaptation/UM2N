@@ -37,7 +37,10 @@ class UnstructuredMeshGenerator(abc.ABC):
     @abc.abstractmethod
     def corners(self):
         """
-        :returns: corner vertices of the domain
+        Property defining the coordinates of the corner vertices of the domain to be
+        meshed.
+
+        :returns: coordinates of the corner vertices of the domain
         :rtype: tuple
         """
         pass
@@ -106,7 +109,10 @@ class UnstructuredSquareMeshGenerator(UnstructuredMeshGenerator):
     @property
     def corners(self):
         """
-        :returns: corner vertices of the square domain
+        Property defining the coordinates of the corner vertices of the domain to be
+        meshed.
+
+        :returns: coordinates of the corner vertices of the domain
         :rtype: tuple
         """
         return ((0, 0), (self.scale, 0), (self.scale, self.scale), (0, self.scale))
@@ -147,7 +153,10 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
     @property
     def corners(self):
         """
-        :returns: corner vertices of a randomly generated polygonal domain
+        Property defining the coordinates of the corner vertices of the domain to be
+        meshed.
+
+        :returns: coordinates of the corner vertices of the domain
         :rtype: tuple
         """
         if hasattr(self, "_corners"):
