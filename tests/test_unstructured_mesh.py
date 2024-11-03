@@ -79,9 +79,7 @@ def test_boundary_segments(generator):
     """
     mesh = generate_mesh(generator, 1, res=1.0)
     boundary_ids = mesh.exterior_facets.unique_markers
-    assert (
-        set(boundary_ids).difference({i + 1 for i in range(len(boundary_ids))}) == set()
-    )
+    assert set(boundary_ids) == set(range(1, len(boundary_ids) + 1))
 
 
 def test_num_points_boundaries_square(num_elem_bnd, mesh_algorithm):
