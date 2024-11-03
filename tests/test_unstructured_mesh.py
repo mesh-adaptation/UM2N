@@ -2,17 +2,19 @@
 Unit tests for the generate_mesh mesh generator module.
 """
 
+import os
+
+import numpy as np
+import pytest
+import ufl
+from firedrake.assemble import assemble
+from firedrake.bcs import DirichletBC
+from firedrake.constant import Constant
+
 from UM2N.generator.unstructured_mesh import (
     UnstructuredRandomPolygonalMeshGenerator,
     UnstructuredSquareMeshGenerator,
 )
-from firedrake.assemble import assemble
-from firedrake.bcs import DirichletBC
-from firedrake.constant import Constant
-import numpy as np
-import os
-import pytest
-import ufl
 
 
 @pytest.fixture(params=[1, 2, 3, 4])

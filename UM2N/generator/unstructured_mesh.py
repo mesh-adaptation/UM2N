@@ -2,13 +2,13 @@
 Module for handling generating unstructured meshes.
 """
 
-from firedrake.mesh import Mesh
-
 import abc
-import gmsh
-import numpy as np
 import os
 import random
+
+import gmsh
+import numpy as np
+from firedrake.mesh import Mesh
 
 __all__ = [
     "UnstructuredSquareMeshGenerator",
