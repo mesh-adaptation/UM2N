@@ -578,7 +578,7 @@ variables_collections = {
 num_variables = len(variables_collections.keys())
 
 font_size = 24
-mesh_gen = UM2N.UnstructuredUnitSquareMesh()
+mesh_gen = UM2N.UnstructuredSquareMesh()
 
 if dataset_name == "helmholtz":
     model_mesh = mesh_gen.load_mesh(

@@ -45,14 +45,15 @@ class UnstructuredMeshGenerator(abc.ABC):
         """
         pass
 
-    def generate_mesh(self, res=1e-1, file_path="./temp.msh", remove_file=False):
+    def generate_mesh(self, res=1e-1, output_filename="./temp.msh", remove_file=False):
         """
         Generate a mesh at a given resolution level.
 
         :kwarg res: mesh resolution (element diameter)
         :type res: float
-        :kwarg file_path: file name for saving the mesh in .msh format
-        :type file_path: str
+        :kwarg output_filename: filename for saving the mesh, including the path and .msh
+            extension
+        :type output_filename: str
         :kwarg remove_file: should the .msh file be removed after generation? (False by
             default)
         :type remove_file: bool
@@ -80,24 +81,24 @@ class UnstructuredMeshGenerator(abc.ABC):
             gmsh.model.setPhysicalName(1, i + 1, "Boundary " + str(i + 1))
         gmsh.model.addPhysicalGroup(2, [1], name="My surface")
         gmsh.model.mesh.generate(2)
-        gmsh.write(file_path)
+        gmsh.write(output_filename)
         gmsh.finalize()
         self.num_boundary = len(self._lines)
-        self._mesh = Mesh(file_path)
+        self._mesh = Mesh(output_filename)
         if remove_file:
-            os.remove(file_path)
+            os.remove(output_filename)
         return self._mesh
 
-    def load_mesh(self, file_path):
+    def load_mesh(self, filename):
         """
         Load a mesh from a file saved in .msh format.
 
-        :arg file_path: filename including the .msh extension
-        :type file_path: str
+        :arg filename: filename including path and the .msh extension
+        :type filename: str
         :returns: mesh loaded from file
         :rtype: :class:`firedrake.mesh.MeshGeometry`
         """
-        self._mesh = Mesh(file_path)
+        self._mesh = Mesh(filename)
         return self._mesh
 
 

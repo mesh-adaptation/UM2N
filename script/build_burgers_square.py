@@ -402,15 +402,16 @@ if __name__ == "__main__":
             mesh_new = None
             mesh_fine = None
             if mesh_type != 0:
-                unstructure_square_mesh_gen = UM2N.UnstructuredUnitSquareMesh(
+                unstructured_square_mesh_gen = UM2N.UnstructuredUnitSquareMesh(
                     scale=scale_x, mesh_type=mesh_type
                 )  # noqa
-                mesh = unstructure_square_mesh_gen.generate_mesh(
-                    res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
+                mesh = unstructured_square_mesh_gen.generate_mesh(
+                    res=lc, output_filename=os.path.join(problem_mesh_dir, "mesh.msh")
                 )
                 mesh_new = fd.Mesh(os.path.join(problem_mesh_dir, "mesh.msh"))
-                mesh_fine = unstructure_square_mesh_gen.generate_mesh(
-                    res=1e-2, file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh")
+                mesh_fine = unstructured_square_mesh_gen.generate_mesh(
+                    res=1e-2,
+                    output_filename=os.path.join(problem_mesh_fine_dir, "mesh.msh"),
                 )
             else:
                 mesh = fd.UnitSquareMesh(n_grid, n_grid)

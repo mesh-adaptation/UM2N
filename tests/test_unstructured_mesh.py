@@ -55,20 +55,22 @@ def test_file_removal():
     """
     Test that the remove_file keyword argument works as expected.
     """
-    file_path = "./tmp.msh"
-    assert not os.path.exists(file_path)
+    output_filename = "./tmp.msh"
+    assert not os.path.exists(output_filename)
     generate_mesh(
         UnstructuredSquareMeshGenerator,
         1,
         res=1.0,
-        file_path=file_path,
+        output_filename=output_filename,
         remove_file=False,
     )
-    assert os.path.exists(file_path)
-    os.remove(file_path)
-    assert not os.path.exists(file_path)
-    generate_mesh(UnstructuredSquareMeshGenerator, 1, res=1.0, file_path=file_path)
-    assert not os.path.exists(file_path)
+    assert os.path.exists(output_filename)
+    os.remove(output_filename)
+    assert not os.path.exists(output_filename)
+    generate_mesh(
+        UnstructuredSquareMeshGenerator, 1, res=1.0, output_filename=output_filename
+    )
+    assert not os.path.exists(output_filename)
 
 
 def test_boundary_segments(generator):

@@ -130,7 +130,7 @@ for i in range(6):
     )
 
 
-mesh_gen = UM2N.UnstructuredUnitSquareMesh()
+mesh_gen = UM2N.UnstructuredSquareMesh()
 
 mesh_old = mesh_gen.load_mesh(
     file_path=os.path.join(f"{data_root_old}/mesh", f"mesh{num_selected}.msh")

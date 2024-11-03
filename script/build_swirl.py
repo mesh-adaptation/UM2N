@@ -418,19 +418,19 @@ if __name__ == "__main__":
     mesh_fine = None
     mesh_new = None
     if mesh_type != 0:
-        mesh_gen = UM2N.UnstructuredUnitSquareMesh(mesh_type=mesh_type)
+        mesh_gen = UM2N.UnstructuredSquareMesh(mesh_type=mesh_type)
         mesh = mesh_gen.generate_mesh(
-            res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
+            res=lc, output_filename=os.path.join(problem_mesh_dir, "mesh.msh")
         )
         mesh_new = mesh_gen.generate_mesh(
-            res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
+            res=lc, output_filename=os.path.join(problem_mesh_dir, "mesh.msh")
         )
         mesh_model = mesh_gen.generate_mesh(
-            res=lc, file_path=os.path.join(problem_mesh_dir, "mesh.msh")
+            res=lc, output_filename=os.path.join(problem_mesh_dir, "mesh.msh")
         )
-        mesh_gen_fine = UM2N.UnstructuredUnitSquareMesh(mesh_type=mesh_type)
+        mesh_gen_fine = UM2N.UnstructuredSquareMesh(mesh_type=mesh_type)
         mesh_fine = mesh_gen_fine.generate_mesh(
-            res=1e-2, file_path=os.path.join(problem_mesh_fine_dir, "mesh.msh")
+            res=1e-2, output_filename=os.path.join(problem_mesh_fine_dir, "mesh.msh")
         )
     else:
         mesh = fd.UnitSquareMesh(n_grid, n_grid)

@@ -214,11 +214,11 @@ if __name__ == "__main__":
     while i < n_samples:
         try:
             print("Generating Sample: " + str(i))
-            unstructure_square_mesh_gen = UM2N.UnstructuredUnitSquareMesh(
+            unstructure_square_mesh_gen = UM2N.UnstructuredSquareMesh(
                 scale=scale_x, mesh_type=mesh_type
             )  # noqa
             mesh = unstructure_square_mesh_gen.generate_mesh(
-                res=lc, file_path=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
+                res=lc, output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
             )
             # Generate Random solution field
             rand_u_generator = UM2N.RandSourceGenerator(
@@ -375,7 +375,8 @@ if __name__ == "__main__":
 
             # generate log file
             high_res_mesh = unstructure_square_mesh_gen.generate_mesh(
-                res=1e-2, file_path=os.path.join(problem_mesh_fine_dir, f"mesh{i}.msh")
+                res=1e-2,
+                output_filename=os.path.join(problem_mesh_fine_dir, f"mesh{i}.msh"),
             )
             high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)
 
