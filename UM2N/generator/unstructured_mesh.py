@@ -23,9 +23,9 @@ class UnstructuredMeshGenerator(abc.ABC):
 
     def __init__(self, scale=1.0, mesh_type=2):
         """
-        :kwarg scale: overall scale factor for the domain size
+        :kwarg scale: overall scale factor for the domain size (default: 1.0)
         :type scale: float
-        :kwarg mesh_type: Gmsh algorithm number
+        :kwarg mesh_type: Gmsh algorithm number (default: 2)
         :type mesh_type: int
         """
         self.scale = scale
@@ -45,17 +45,18 @@ class UnstructuredMeshGenerator(abc.ABC):
         """
         pass
 
-    def generate_mesh(self, res=1e-1, output_filename="./temp.msh", remove_file=False):
+    def generate_mesh(self, res=0.1, output_filename="./temp.msh", remove_file=False):
         """
         Generate a mesh at a given resolution level.
 
-        :kwarg res: mesh resolution (element diameter)
+        :kwarg res: mesh resolution (element diameter) (default: 0.1, suitable for mesh
+            with scale 1.0)
         :type res: float
         :kwarg output_filename: filename for saving the mesh, including the path and .msh
-            extension
+            extension (default: './temp.msh')
         :type output_filename: str
-        :kwarg remove_file: should the .msh file be removed after generation? (False by
-            default)
+        :kwarg remove_file: should the .msh file be removed after generation? (default:
+            False)
         :type remove_file: bool
         :returns: mesh generated
         :rtype: :class:`firedrake.mesh.MeshGeometry`
@@ -124,16 +125,6 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
     Create a random polygonal mesh by spliting the edge of a
     square randomly.
     """
-
-    def __init__(self, scale=1.0, mesh_type=2):
-        """
-        :kwarg scale: overall scale factor for the domain size
-        :type scale: float
-        :kwarg mesh_type: Gmsh algorithm number
-        :type mesh_type: int
-        """
-        # TODO: More detail on Gmsh algorithm number (#50)
-        super().__init__(scale=scale, mesh_type=mesh_type)
 
     @staticmethod
     def sample_uniform(mean, interval):
