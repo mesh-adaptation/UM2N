@@ -13,10 +13,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 __all__ = ["check_dataset_tangle", "plot_prediction", "plot_sample"]
 
 
-def check_tangle_pi(model, x):
-    pass
-
-
 def check_dataset_tangle(
     dataset,
     model,
