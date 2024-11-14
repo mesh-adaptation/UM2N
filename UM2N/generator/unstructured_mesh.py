@@ -126,30 +126,6 @@ class UnstructuredRandomPolygonalMeshGenerator(UnstructuredMeshGenerator):
     square randomly.
     """
 
-    def generate_mesh(self, seed=None, **kwargs):
-        """
-        Generate a mesh at a given resolution level.
-
-        :kwarg res: mesh resolution (element diameter) (default: 0.1, suitable for mesh
-            with scale 1.0)
-        :type res: float
-        :kwarg output_filename: filename for saving the mesh, including the path and .msh
-            extension (default: './temp.msh')
-        :type output_filename: str
-        :kwarg remove_file: should the .msh file be removed after generation? (default:
-            False)
-        :type remove_file: bool
-        :kwarg seed: optional random seed for reproducibility (default: None, i.e., do
-            not use a random seed)
-        :type seed: int
-        :returns: mesh generated
-        :rtype: :class:`firedrake.mesh.MeshGeometry`
-        """
-        # TODO: Write tests that make use of the random seed (#51)
-        if seed is not None:
-            np.random.seed(seed)
-        return super().generate_mesh(**kwargs)
-
     @staticmethod
     def sample_uniform(mean, interval):
         """
