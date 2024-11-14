@@ -402,7 +402,7 @@ if __name__ == "__main__":
             mesh_new = None
             mesh_fine = None
             if mesh_type != 0:
-                unstructured_square_mesh_gen = UM2N.UnstructuredUnitSquareMesh(
+                unstructured_square_mesh_gen = UM2N.UnstructuredSquareMesh(
                     scale=scale_x, mesh_type=mesh_type
                 )  # noqa
                 mesh = unstructured_square_mesh_gen.generate_mesh(
