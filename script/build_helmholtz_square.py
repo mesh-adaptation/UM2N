@@ -234,12 +234,12 @@ if __name__ == "__main__":
         try:
             print("Generating Sample: " + str(i))
             if mesh_type != 0:
-                unstructure_square_mesh_gen = UM2N.UnstructuredSquareMesh(
+                unstructured_square_mesh_gen = UM2N.UnstructuredSquareMesh(
                     scale=scale_x, mesh_type=mesh_type
                 )  # noqa
-                mesh = unstructure_square_mesh_gen.get_mesh(
+                mesh = unstructured_square_mesh_gen.generate_mesh(
                     res=lc,
-                    file_path=os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"),
+                    output_filename=os.path.join(problem_mesh_dir, f"mesh_{i:04d}.msh"),
                 )
             else:
                 n_grid = int(1 / lc)
@@ -427,9 +427,11 @@ if __name__ == "__main__":
 
             if mesh_type != 0:
                 # generate log file
-                high_res_mesh = unstructure_square_mesh_gen.get_mesh(
+                high_res_mesh = unstructured_square_mesh_gen.generate_mesh(
                     res=1e-2,
-                    file_path=os.path.join(problem_mesh_fine_dir, f"mesh_{i:04d}.msh"),
+                    output_filename=os.path.join(
+                        problem_mesh_fine_dir, f"mesh_{i:04d}.msh"
+                    ),
                 )
             else:
                 high_res_mesh = fd.UnitSquareMesh(100, 100)
