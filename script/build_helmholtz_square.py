@@ -246,7 +246,7 @@ if __name__ == "__main__":
                 mesh = fd.UnitSquareMesh(n_grid, n_grid)
 
             # Generate Random solution field
-            rand_u_generator = UM2N.RandSourceGenerator(
+            rand_u_generator = UM2N.RandomSolutionGenerator(
                 use_iso=use_iso,
                 dist_params={
                     "max_dist": max_dist,

@@ -224,7 +224,7 @@ if __name__ == "__main__":
             )
             num_boundary = rand_poly_mesh_gen.num_boundary
             # Generate Random solution field
-            rand_u_generator = UM2N.RandSourceGenerator(
+            rand_u_generator = UM2N.RandomSolutionGenerator(
                 use_iso=use_iso,
                 dist_params={
                     "max_dist": max_dist,

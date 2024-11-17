@@ -208,7 +208,7 @@ if __name__ == "__main__":
             print("Generating Sample: " + str(i))
             mesh = fd.RectangleMesh(num_grid_x, num_grid_y, scale_x, scale_y)
             # Generate Random solution field
-            rand_u_generator = UM2N.RandSourceGenerator(
+            rand_u_generator = UM2N.RandomSolutionGenerator(
                 use_iso=use_iso,
                 dist_params={
                     "max_dist": max_dist,
@@ -404,7 +404,9 @@ if __name__ == "__main__":
                 add_nei=True,
             )
             print(dataset[i].dist_params)
-            compare_res = UM2N.compare_error(dataset[i], mesh, high_res_mesh, new_mesh, 0)
+            compare_res = UM2N.compare_error(
+                dataset[i], mesh, high_res_mesh, new_mesh, 0
+            )
 
             print("compare_res", compare_res)
 

@@ -1,28 +1,22 @@
-# Author: Chunyang Wang
-# GitHub Username: chunyang-w
+"""
+Module for generating random exact solutions.
+"""
 
 import random
 
 import firedrake as fd
 
-__all__ = ["RandSourceGenerator"]
+__all__ = ["RandomSolutionGenerator"]
 
 
-class RandSourceGenerator:
+class RandomSolutionGenerator:
     """
-    Class for generating a random Helmholtz equation based on a
-    Gaussian distribution.
+    Class for generating a random solution field for a PDE with a scalar-valued solution.
 
-    Attributes:
-        simple_u (bool): Flag for using simpler form of u.
-        dist_params (dict): Parameters for Gaussian distribution.
-        u_exact: Analytical Helmholtz equation solution.
-        f: Simulated source function.
-        function_space: Function space for problem.
-        LHS: Left-hand side of Helmholtz equation.
-        RHS: Right-hand side of Helmholtz equation.
-        bc: Dirichlet boundary condition.
+    Random values are sampled from a Gaussian distribution.
     """
+
+    # TODO: Provide documentation on the two forms that can be specified using use_iso
 
     def __init__(
         self,
@@ -46,13 +40,13 @@ class RandSourceGenerator:
         },
     ):
         """
-        Initialize RandomHelmholtzGenerator.
-
-        Parameters:
-            simple_u (bool): Use simpler form of u (isotripic dataset) if True.
-              Default False.
-            dist_params (dict): Parameters for Gaussian distribution.
+        :kwarg use_iso: Flag for using simpler form of u
+        :type use_iso: bool
+        :kwarg dist_params: Parameters for Gaussian distribution.
+        :type dist_params: dict
         """
+        # TODO: Pass params directly
+        # TODO: Docstring arg descriptions
         self.use_iso = use_iso
         self.dist_params = dist_params
         self.σ_dict = {"x": [], "y": []}
@@ -62,16 +56,17 @@ class RandSourceGenerator:
         self.set_dist_params(eps=self.dist_params["sigma_eps"])
 
         self.u_exact = 0  # analytical solution
-        self.f = 0  # simulated source function
-        self.function_space = None
-        self.LHS = None
-        self.RHS = None
-        self.bc = None  # boundary conditions
+        self.f = 0  # simulated source function # TODO: Never gets used?
+        self.function_space = None  # TODO: Never gets used?
+        self.LHS = None  # TODO: Never gets used?
+        self.RHS = None  # TODO: Never gets used?
+        self.bc = None  # boundary conditions # TODO: Never gets used?
 
     def set_dist_params(self, eps=1 / 20):
         """
         Set parameters for Gaussian distribution from dist_params.
         """
+        # TODO: Docstring arg description for eps
         if self.dist_params["n_dist"] is None:
             self.n_dist = random.randint(1, self.dist_params["max_dist"])
         else:
@@ -120,57 +115,14 @@ class RandSourceGenerator:
                     3,
                 )
             )
-        # for i in range(self.n_dist):
-        #     σ_mean = random.gauss(
-        #         (self.dist_params["x_end"] - self.dist_params["x_start"]) / 24, 1
-        #     )
-        #     σ_sigma = random.gauss(
-        #         (self.dist_params["y_end"] - self.dist_params["y_start"]) / 48, 1
-        #     )
-
-        #     self.μ_dict["x"].append(
-        #         round(
-        #             random.uniform(
-        #                 self.dist_params["c_min"], self.dist_params["c_max"]
-        #             ),
-        #             4,
-        #         )
-        #     )  # noqa
-        #     self.μ_dict["y"].append(
-        #         round(
-        #             random.uniform(
-        #                 self.dist_params["c_min"], self.dist_params["c_max"]
-        #             ),
-        #             4,
-        #         )
-        #     )  # noqa
-
-        #     self.σ_dict["x"].append(round(random.gauss(σ_mean, σ_sigma), 4))
-        #     self.σ_dict["y"].append(round(random.gauss(σ_mean, σ_sigma), 4))
-        #     self.z_list.append(
-        #         round(
-        #             random.uniform(
-        #                 self.dist_params["z_min"], self.dist_params["z_max"]
-        #             ),
-        #             4,
-        #         )
-        #     )
-        #     self.w_list.append(
-        #         round(
-        #             random.uniform(
-        #                 self.dist_params["w_min"], self.dist_params["w_max"]
-        #             ),
-        #             4,
-        #         )
-        #     )
 
     def get_dist_params(self):
         """
-        Return dictionary containing distribution parameters.
-
-        Returns:
-            dict: Dictionary of distribution parameters.
+        :return: Distribution parameters
+        :rtype: dict
         """
+        # TODO: Why does this set differ from the one passed in?
+        # TODO: Create class for distribution parameters
         dist = {
             "n_dist": self.n_dist,
             "σ_x": self.σ_dict["x"],
@@ -194,10 +146,11 @@ class RandSourceGenerator:
         },
     ):
         """
-        Return analytical solution field.
-        Returns:
-            firedrake.Function: Analytical solution.
+        :return: analytical solution field
+        :rtype: `firedrake.firedrake.Function`
         """
+        # TODO: Pass params directly
+        # TODO: Docstring arg descriptions
         x, y = (params[key] for key in ("x", "y"))
         self.u_exact = 0
         if self.use_iso:  # use simpler form of u

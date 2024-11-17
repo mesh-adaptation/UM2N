@@ -221,7 +221,7 @@ if __name__ == "__main__":
                 res=lc, output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh")
             )
             # Generate Random solution field
-            rand_u_generator = UM2N.RandSourceGenerator(
+            rand_u_generator = UM2N.RandomSolutionGenerator(
                 use_iso=use_iso,
                 dist_params={
                     "max_dist": max_dist,
