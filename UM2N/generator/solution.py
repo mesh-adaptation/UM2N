@@ -54,9 +54,23 @@ class RandomSolutionGenerator:
         :type use_iso: bool
         :kwarg dist_params: Parameters for Gaussian distribution.
         :type dist_params: dict
+        :key max_dist: Maximum number of distributions
+        :key n_dist: Number of distributions (if None, then random)
+        :key x_start: Start of x range
+        :key x_end: End of x range
+        :key y_start: Start of y range
+        :key y_end: End of y range
+        :key z_max: Maximum value for z
+        :key z_min: Minimum value for z
+        :key w_min: Minimum value for w
+        :key w_max: Maximum value for w
+        :key c_min: Minimum value for c
+        :key c_max: Maximum value for c
+        :key sigma_mean_scaler: Scaler for sigma mean
+        :key sigma_sigma_scaler: Scaler for sigma sigma
+        :key sigma_eps: Epsilon value for sigma
         """
         # TODO: Pass params directly
-        # TODO: Docstring arg descriptions
         self.use_iso = use_iso
         self.dist_params = dist_params
         self.σ_dict = {"x": [], "y": []}
@@ -75,8 +89,10 @@ class RandomSolutionGenerator:
     def set_dist_params(self, eps=1 / 20):
         """
         Set parameters for Gaussian distribution from dist_params.
+
+        :param eps: Epsilon value to ensure minimum standard deviation.
+        :type eps: float
         """
-        # TODO: Docstring arg description for eps
         if self.dist_params["n_dist"] is None:
             self.n_dist = random.randint(1, self.dist_params["max_dist"])
         else:
