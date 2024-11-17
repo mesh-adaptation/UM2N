@@ -1,10 +1,11 @@
-# Author: Chunyang Wang
-# GitHub Username: chunyang-w
-import os
+"""
+Module for generating random equations.
+"""
+
+import abc
 
 import firedrake as fd
 
-os.environ["OMP_NUM_THREADS"] = "1"
 __all__ = [
     "RandHelmholtzEqGenerator",
     "RandPoissonEqGenerator",
@@ -13,15 +14,35 @@ __all__ = [
 ]
 
 
-# Generate a random Helmholtz equation based on a Gaussian distribution.
-# The funnction has the form:
-# $-\delta^{2} \mu + \mu = f$
-class RandHelmholtzEqGenerator:
+class EquationGenerator(abc.ABC):
+    """
+    Base class for equation generators.
+    """
+
+
+class RandomEquationGenerator(abc.ABC):
+    """
+    Base class for random equation generators.
+    """
+
+
+class RandHelmholtzEqGenerator(RandomEquationGenerator):
+    r"""
+      Generate a random Helmholtz equation based on a Gaussian distribution.
+
+      The function has the form:
+
+    ..math::
+          -\delta^{2} \mu + \mu = f
+    """
+
     def __init__(self, rand_u_generator):
+        # TODO: Docstring
         self.rand_u_generator = rand_u_generator
         self.problem_name = "rand_helmholtz"
 
     def discretise(self, mesh):
+        # TODO: Docstring; use HelmholtzEqGenerator code
         x, y = fd.SpatialCoordinate(mesh)
         V = fd.FunctionSpace(mesh, "CG", 1)
         u = fd.TrialFunction(V)
@@ -51,7 +72,7 @@ class RandHelmholtzEqGenerator:
         }
 
 
-class HelmholtzEqGenerator:
+class HelmholtzEqGenerator(EquationGenerator):
     def __init__(
         self,
         params={
@@ -61,6 +82,7 @@ class HelmholtzEqGenerator:
         self.u_exact_func = params["u_exact_func"]
 
     def discretise(self, mesh):
+        # TODO: Docstring
         x, y = fd.SpatialCoordinate(mesh)
         V = fd.FunctionSpace(mesh, "CG", 1)
         u = fd.TrialFunction(V)
@@ -86,12 +108,15 @@ class HelmholtzEqGenerator:
         }
 
 
-class RandPoissonEqGenerator:
+class RandPoissonEqGenerator(RandomEquationGenerator):
+    # TODO: Docstring
     def __init__(self, rand_u_generator):
+        # TODO: Docstring
         self.rand_u_generator = rand_u_generator
         self.problem_name = "rand_helmholtz"
 
     def discretise(self, mesh):
+        # TODO: Docstring; use PoissonEqGenerator code
         x, y = fd.SpatialCoordinate(mesh)
         V = fd.FunctionSpace(mesh, "CG", 1)
         u = fd.TrialFunction(V)
@@ -121,8 +146,10 @@ class RandPoissonEqGenerator:
         }
 
 
-class PoissonEqGenerator:
+class PoissonEqGenerator(EquationGenerator):
+    # TODO: Docstring
     def __init__(
+        # TODO: Docstring
         self,
         params={
             "u_exact_func": None,
@@ -131,6 +158,7 @@ class PoissonEqGenerator:
         self.u_exact_func = params["u_exact_func"]
 
     def discretise(self, mesh):
+        # TODO: Docstring
         x, y = fd.SpatialCoordinate(mesh)
         V = fd.FunctionSpace(mesh, "CG", 1)
         u = fd.TrialFunction(V)
