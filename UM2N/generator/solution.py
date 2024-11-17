@@ -10,13 +10,23 @@ __all__ = ["RandomSolutionGenerator"]
 
 
 class RandomSolutionGenerator:
-    """
+    r"""
     Class for generating a random solution field for a PDE with a scalar-valued solution.
 
     Random values are sampled from a Gaussian distribution.
-    """
 
-    # TODO: Provide documentation on the two forms that can be specified using use_iso
+    There are two forms of the solution that can be specified using the `use_iso`
+    parameter. If `use_iso` is True, a simpler isotropic form of the solution is used,
+    according to the formula
+
+    ..math::
+        u_{exact} += \exp\left(-1 \cdot \left(\frac{(x - \mu_x)^2 + (y - \mu_y)^2}{w}\right)\right)
+
+    If `use_iso` is False, a more complex anisotropic form of the solution is used:
+
+    ..math::
+        u_{exact} += z \cdot \exp\left(-1 \cdot \left(\frac{(x - \mu_x)^2}{\sigma_x^2} + \frac{(y - \mu_y)^2}{\sigma_y^2}\right)\right)
+    """
 
     def __init__(
         self,
