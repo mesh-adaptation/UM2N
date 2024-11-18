@@ -1,63 +1,30 @@
-name: Install and test UM2N
+name: 'Run UM2N Test Suite'
 
 on:
+  # Run test suite whenever main is updated
   push:
     branches:
       - main
 
+  # Run test suite whenever commits are pushed to an open PR
   pull_request:
 
+  # Run test suite every Sunday at 1AM
+  schedule:
+    - cron: '0 1 * * 0'
+
 jobs:
-  test-warpmesh:
-    name: Test UM2N
-    runs-on: ubuntu-latest
-    container:
-      image: firedrakeproject/firedrake:latest
-      options: --user root
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Cleanup
-        if: ${{ always() }}
-        run: |
-          cd ..
-          rm -rf build
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Lint check
-        if: ${{ always() }}
-        run: |
-          . /home/firedrake/firedrake/bin/activate
-          python3 -m pip install ruff
-          ruff check
-
-      - name: Install Movement
-        run: |
-          . /home/firedrake/firedrake/bin/activate
-          git clone https://github.com/mesh-adaptation/movement.git
-          cd movement
-          python3 -m pip install -e .
-
-      - name: Install PyTorch
-        run: |
-          . /home/firedrake/firedrake/bin/activate
-          python3 -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-      - name: Install PyTorch3d
-        run: |
-          . /home/firedrake/firedrake/bin/activate
-          python3 -m pip install 'git+https://github.com/facebookresearch/pytorch3d.git'
-
-      - name: Install UM2N
-        run: |
-          . /home/firedrake/firedrake/bin/activate
-          python3 -m pip install -e .
-
-      - name: Run UM2N test suite
-        run: |
-          . /home/firedrake/firedrake/bin/activate
-          python3 -m pytest tests/test* -v
+  test_suite:
+    uses: mesh-adaptation/mesh-adaptation-docs/.github/workflows/reusable_test_suite.yml@main
+    with:
+      install-command: 'python -m pip uninstall -y UM2N && python -m pip install -e .'
+      test-command: |
+        export GITHUB_ACTIONS_TEST_RUN=1
+        python $(which firedrake-clean)
+        python -m coverage erase
+        python -m coverage run -a --source=UM2N -m pytest -v --durations=20 test
+        python -m coverage report
+      changed-files-patterns: |
+        **/*.py
+        **/*.msh
+        **/*.geo
