@@ -33,7 +33,7 @@ class RandomSolutionGenerator:
         use_iso=False,
         dist_params={
             "max_dist": 10,
-            "n_dist": None,  # if None, then random
+            "n_dist": None,
             "x_start": 0,
             "x_end": 1,
             "y_start": 0,
@@ -179,18 +179,15 @@ class RandomSolutionGenerator:
         # TODO: Docstring arg descriptions
         x, y = (params[key] for key in ("x", "y"))
         self.u_exact = 0
-        if self.use_iso:  # use simpler form of u
-            for i in range(self.n_dist):
-                μ_x = self.μ_dict["x"][i]
-                μ_y = self.μ_dict["y"][i]
+        for i in range(self.n_dist):
+            μ_x = self.μ_dict["x"][i]
+            μ_y = self.μ_dict["y"][i]
+            if self.use_iso:
                 w = self.w_list[i]
                 self.u_exact += fd.exp(-1 * ((((x - μ_x) ** 2) + ((y - μ_y) ** 2)) / w))
-        else:  # use more complex form of u
-            for i in range(self.n_dist):
+            else:
                 σ_x = self.σ_dict["x"][i]
                 σ_y = self.σ_dict["y"][i]
-                μ_x = self.μ_dict["x"][i]
-                μ_y = self.μ_dict["y"][i]
                 z = self.z_list[i]
                 self.u_exact += z * fd.exp(
                     -1 * ((((x - μ_x) ** 2) / (σ_x**2)) + (((y - μ_y) ** 2) / (σ_y**2)))
