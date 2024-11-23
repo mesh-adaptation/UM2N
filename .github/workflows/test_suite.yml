@@ -28,3 +28,4 @@ jobs:
         **/*.py
         **/*.msh
         **/*.geo
+      docker-image: firedrake-um2n
