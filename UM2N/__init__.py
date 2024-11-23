@@ -1,5 +1,13 @@
 import os
 
+try:
+    import torch  # noqa
+except ImportError:
+    raise ImportError(
+        "PyTorch is required to use this package. Please install it first."
+        " Visit https://pytorch.org/get-started/locally/ for installation instructions."
+    )
+
 os.environ["OMP_NUM_THREADS"] = "1"
 
 from pkg_resources import DistributionNotFound, get_distribution  # noqa

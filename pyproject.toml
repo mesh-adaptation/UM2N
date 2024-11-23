@@ -10,16 +10,15 @@ dependencies = [
   "jupyter",
   "ipython",
   "matplotlib",
-  "meshio",
   "numpy",
   "pandas",
   "pytest",
   "rich",
   "ruff",
   "seaborn",
-  "tensorboardX",
-  "torch",
+  # "torch", # NOTE: Should be installed beforehand
   "torch_geometric",
+  "wandb",
 ]
 authors = [
   {name = "Chunyang Wang"},
