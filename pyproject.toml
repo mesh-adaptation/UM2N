@@ -18,6 +18,7 @@ dependencies = [
   "seaborn",
   # "torch", # NOTE: Should be installed beforehand
   "torch_geometric",
+  "wandb",
 ]
 authors = [
   {name = "Chunyang Wang"},
