@@ -15,7 +15,7 @@ on:
 
 jobs:
   test_suite:
-    uses: mesh-adaptation/mesh-adaptation-docs/.github/workflows/reusable_test_suite.yml@main
+    uses: mesh-adaptation/docs/.github/workflows/reusable_test_suite.yml@main
     with:
       install-command: 'python -m pip uninstall -y UM2N && python -m pip install -e .'
       test-command: |
