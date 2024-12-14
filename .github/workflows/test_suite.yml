@@ -9,7 +9,7 @@ on:
       - '**.py'
       - '**.msh'
       - '**.geo'
-      - '..github/workflows/test_suite.yml'
+      - '.github/workflows/test_suite.yml'
 
   # Run test suite whenever commits are pushed to an open PR
   pull_request:
@@ -17,7 +17,7 @@ on:
       - '**.py'
       - '**.msh'
       - '**.geo'
-      - '..github/workflows/test_suite.yml'
+      - '.github/workflows/test_suite.yml'
 
   # Run test suite every Sunday at 1AM
   schedule:
