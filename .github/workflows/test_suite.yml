@@ -5,9 +5,19 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.py'
+      - '**.msh'
+      - '**.geo'
+      - '.github/workflows/test_suite.yml'
 
   # Run test suite whenever commits are pushed to an open PR
   pull_request:
+    paths:
+      - '**.py'
+      - '**.msh'
+      - '**.geo'
+      - '.github/workflows/test_suite.yml'
 
   # Run test suite every Sunday at 1AM
   schedule:
@@ -17,15 +27,4 @@ jobs:
   test_suite:
     uses: mesh-adaptation/docs/.github/workflows/reusable_test_suite.yml@main
     with:
-      install-command: 'python -m pip uninstall -y UM2N && python -m pip install -e .'
-      test-command: |
-        export GITHUB_ACTIONS_TEST_RUN=1
-        python $(which firedrake-clean)
-        python -m coverage erase
-        python -m coverage run -a --source=UM2N -m pytest -v --durations=20 test
-        python -m coverage report
-      changed-files-patterns: |
-        **/*.py
-        **/*.msh
-        **/*.geo
       docker-image: firedrake-um2n
