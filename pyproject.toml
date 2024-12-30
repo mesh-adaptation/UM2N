@@ -4,22 +4,6 @@ requires = ["setuptools"]
 [project]
 name = "UM2N"
 version = "1.0"
-dependencies = [
-  "einops",
-  "gmsh",
-  "jupyter",
-  "ipython",
-  "matplotlib",
-  "numpy",
-  "pandas",
-  "pytest",
-  "rich",
-  "ruff",
-  "seaborn",
-  # "torch", # NOTE: Should be installed beforehand
-  "torch_geometric",
-  "wandb",
-]
 authors = [
   {name = "Chunyang Wang"},
   {name = "Mingrui Zhang"},
@@ -34,6 +18,26 @@ keywords = ["python", "meshing", "machine-learning", "firedrake"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
+]
+dependencies = [
+  "einops",
+  "gmsh",
+  "jupyter",
+  "ipython",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "rich",
+  "seaborn",
+  # "torch", # NOTE: Should be installed beforehand
+  "torch_geometric",
+  "wandb",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
 ]
 
 [project.urls]
