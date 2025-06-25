@@ -18,7 +18,7 @@ for mt in "${mesh_type[@]}"; do
     for i in "${lcs[@]}"; do
         for n_s in "${n_samples_train[@]}"; do
             echo "lc = $i meshtype = $mt num samples = $n_s"
-            python ./script/build_helmholtz_square.py --lc=$i   --rand_seed=$rand_seed --n_samples=$n_s --field_type="aniso" --boundary_scheme="full" --mesh_type=$mt
+            python build_helmholtz_square.py --lc=$i   --rand_seed=$rand_seed --n_samples=$n_s --field_type="aniso" --boundary_scheme="full" --mesh_type=$mt
             # python ./script/build_helmholtz_square.py --lc=$i   --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="pad" --mesh_type=$mesh_type
             # python ./script/build_helmholtz_square.py --lc=$i   --rand_seed=$rand_seed --n_samples=$n_samples_train --field_type="iso" --boundary_scheme="full" --mesh_type=$mesh_type
             # python ./script/build_helmholtz_square.py --lc=$i   --rand_seed $rand_seed --n_samples $n_samples_train --field_type "aniso" --boundary_scheme "pad" --mesh_type=$mesh_type
