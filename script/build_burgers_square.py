@@ -30,6 +30,18 @@ def parse_arguments():
     parser.add_argument("--n_case", type=int, default=5, help="Number of simulation cases.")
     parser.add_argument("--n_grid", type=int, default=20, help="Number of grids for uniform mesh if mesh_type 0.")
     parser.add_argument("--rand_seed", type=int, default=63, help="number of samples generated / Random seed for reproducibility.")
+    
+    parsed_args = parser.parse_args()
+
+    # Handle dependency between max_dist and n_dist
+    # max number of distributions used to generate the dataset
+    # only if n_dist is not set if n_dist is set, max_dist will be disabled
+    if parsed_args.n_dist is not None:
+        parsed_args.max_dist = None  # Disable max_dist if n_dist is set
+        print("Warning: max_dist is ignored because n_dist is set.")
+    # QC:
+    print(parsed_args)
+    
     return parser.parse_args()
 
 def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_format=None):
@@ -125,21 +137,49 @@ def output_csv(parameters, key_list, output_dir):
 
     print(f"Parameters saved to {csv_file_path}")
 
-def move_data(target, source, start, num_file):
+def move_data(target, source, start, num_files):
+    """
+    Move data files from the source directory to the target directory.
+
+    Args:
+        target (str): The path to the target directory.
+        source (str): The path to the source directory.
+        start (int): The starting index of the files to move.
+        num_files (int): The total number of files to move.
+
+    Raises:
+        FileNotFoundError: If the source directory does not exist.
+        ValueError: If the start index or num_files is invalid.
+    """
+    if not os.path.exists(source):
+        raise FileNotFoundError(f"Source directory '{source}' does not exist.")
+
+    if start < 0 or num_files <= 0:
+        raise ValueError("Invalid start index or number of files to move.")
+
+    # Create the target directory if it doesn't exist
     if not os.path.exists(target):
         os.makedirs(target)
     else:
-        # delete all files under the directory
-        filelist = [f for f in os.listdir(target)]
-        for f in filelist:
-            os.remove(os.path.join(target, f))
-    # copy data from data dir to train dir
-    for i in range(start, num_file):
-        shutil.copy(
-            os.path.join(source, "data_{}.npy".format(i)),
-            os.path.join(target, "data_{}.npy".format(i)),
-        )
+        # Clear the target directory by removing all files
+        for file in os.listdir(target):
+            os.remove(os.path.join(target, file))
 
+    # Copy files sequentially starting from the specified index
+    for i in range(start, start + num_files):
+        try:
+            # Copy the data file
+            shutil.copy(
+                os.path.join(source, f"data_{i:04d}.npy"),
+                os.path.join(target, f"data_{i:04d}.npy"),
+            )
+        except FileNotFoundError:
+            print(f"File data_{i:04d}.npy not found in {source}. Skipping.")
+            continue
+        except Exception as e:
+            print(f"An error occurred while copying data_{i:04d}.npy: {e}")
+            continue
+            
 def generate_mesh(parameters, dirs):
     """Generate the mesh based on the specified type."""
     if parameters["mesh_type"] != 0:
@@ -443,7 +483,7 @@ if __name__ == "__main__":
 
 
     # ====  Setup Directories ======================
-    dir_format = "lc={lc}_ngrid_{n_grid}_n={n_case}_{data_type}_{scheme}_meshtype_{mesh_type}".format(
+    problem_specific_dir = "lc={lc}_ngrid_{n_grid}_n={n_case}_{data_type}_{scheme}_meshtype_{mesh_type}".format(
         lc=parameters["lc"],
         n_grid=parameters["n_grid"],
         n_case=parameters["n_case"],
@@ -453,14 +493,14 @@ if __name__ == "__main__":
     )
 
     subdirs = ["data", "plot", "log", "mesh", "mesh_fine",
-            #    "plot_compare", "train", "test", "val"
+               "plot_compare", "train", "test", "val"
                ]
 
     dirs = setup_directories(problem = parameters["problem"],
                             mesh_type = parameters["mesh_type"],
-                            base_dir= None,
-                            subdirs=subdirs,
-                            dir_format=dir_format)
+                            base_dir = None,
+                            subdirs = subdirs,
+                            dir_format = problem_specific_dir)
 
     # ====  Output CSV ======================
     key_list = [

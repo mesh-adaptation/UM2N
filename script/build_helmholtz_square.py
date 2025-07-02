@@ -12,6 +12,10 @@ import firedrake as fd
 import matplotlib.pyplot as plt
 from firedrake.__future__ import interpolate
 
+
+# dd the parent directory to the Python path
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import UM2N
 
 
@@ -42,39 +46,107 @@ def parse_arguments():
     return parsed_args
 
 
-def setup_and_clear_directories(base_dir, subdirs):
+def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_format=None):
     """
-    Create and clear multiple directories under a base directory.
+    Set up directories for storing data, plots, and logs.
 
     Args:
-        base_dir: The base directory where subdirectories will be created.
-        subdirs: A list of subdirectory names to create and clear.
+        base_dir (str): Base directory for the project.
+        parameters (dict): Dictionary of parameters, including "mesh_type" and "problem".
+            - "mesh_type" (int): Type of mesh used in the simulation (default: 0).
+            - "problem" (str): Name of the problem (e.g., "burgers" or "helmholtz") (default: "default_problem").
+        subdirs (list, optional): List of subdirectories to create. Defaults to:
+            ["data", "plot", "log", "mesh", "mesh_fine"].
+            Additional subdirectories like "plot_compare", "train", "test", and "val" are added for "helmholtz".
+        dir_format (str, optional): Format string for the problem-specific directory. Must use placeholders
+            matching keys in the `parameters` dictionary. Example:
+            "lc={lc}_ngrid_{n_grid}_n={n_case}_{data_type}_{scheme}_meshtype_{mesh_type}".
+            If not provided, raises a ValueError.
 
     Returns:
         dict: A dictionary mapping subdirectory names to their full paths.
+
+    Raises:
+        ValueError: If `dir_format` is not provided or is invalid.
     """
-    paths = {}
+
+    # Define the project directory
+    if base_dir:
+        project_dir = os.path.abspath(base_dir)
+    else:
+        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    # QC:
+    print(f"Project Directory: {project_dir}")
+
+    # Define the dataset directory
+    dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)
+
+    # Use the provided format string for the problem-specific directory
+    if dir_format is None:
+        problem_specific_dir = os.path.join(dataset_dir, f"{problem}_meshtype_{mesh_type}")
+    else:
+        # check if dir_format is a valid string format
+        if not isinstance(dir_format, str):
+            raise ValueError("dir_format must be a string.")
+        problem_specific_dir = os.path.join(dataset_dir, dir_format)
+
+    # Define default subdirectories if not provided
+    if subdirs is None:
+        subdirs = ["data", "plot", "log", "mesh", "mesh_fine",
+                   "plot_compare", "train", "test", "val"]
+
+    # Create and clear directories
+    directories = {}
     for subdir in subdirs:
-        path = os.path.join(base_dir, subdir)
-        if not os.path.exists(path):
-            os.makedirs(path)
+        dir_path = os.path.join(problem_specific_dir, subdir)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
         else:
             # Clear the directory by removing all files
-            for file in os.listdir(path):
-                os.remove(os.path.join(path, file))
-        paths[subdir] = path
-    return paths
+            for file in os.listdir(dir_path):
+                os.remove(os.path.join(dir_path, file))
+        directories[subdir] = dir_path
 
+    # QC:
+    print(f"Subdirectories created: {directories}")
+
+    return directories
+
+
+
+# def setup_and_clear_directories(base_dir, subdirs):
+#     """
+#     Create and clear multiple directories under a base directory.
+
+#     Args:
+#         base_dir: The base directory where subdirectories will be created.
+#         subdirs: A list of subdirectory names to create and clear.
+
+#     Returns:
+#         dict: A dictionary mapping subdirectory names to their full paths.
+#     """
+#     paths = {}
+#     for subdir in subdirs:
+#         path = os.path.join(base_dir, subdir)
+#         if not os.path.exists(path):
+#             os.makedirs(path)
+#         else:
+#             # Clear the directory by removing all files
+#             for file in os.listdir(path):
+#                 os.remove(os.path.join(path, file))
+#         paths[subdir] = path
+#     return paths
 
 def move_data(target, source, start, num_files):
     """
     Move data files from the source directory to the target directory.
 
     Args:
-        target: The path to the target directory.
-        source: The path to the source directory.
-        start: The starting index of the files to move.
-        num_files: The total number of files to move.
+        target (str): The path to the target directory.
+        source (str): The path to the source directory.
+        start (int): The starting index of the files to move.
+        num_files (int): The total number of files to move.
 
     Raises:
         FileNotFoundError: If the source directory does not exist.
@@ -94,14 +166,20 @@ def move_data(target, source, start, num_files):
         for file in os.listdir(target):
             os.remove(os.path.join(target, file))
 
-    #copy files sequentially starting from the specified index
-    for i in range(start, num_files):
-        shutil.copy(
-            os.path.join(source, f"data_{i:04d}.npy"),
-            os.path.join(target, f"data_{i:04d}.npy"),
-        )
-
-
+    # Copy files sequentially starting from the specified index
+    for i in range(start, start + num_files):
+        try:
+            # Copy the data file
+            shutil.copy(
+                os.path.join(source, f"data_{i:04d}.npy"),
+                os.path.join(target, f"data_{i:04d}.npy"),
+            )
+        except FileNotFoundError:
+            print(f"File data_{i:04d}.npy not found in {source}. Skipping.")
+            continue
+        except Exception as e:
+            print(f"An error occurred while copying data_{i:04d}.npy: {e}")
+            continue
 
 def create_mesh(i, mesh_type, lc, scale_x, problem_mesh_dir):
     """
@@ -241,9 +319,10 @@ def process_features(parameters, problem_data_dir):
 
     # save out data
     mesh_processor.save_taining_data(
-        os.path.join(problem_data_dir, f"data_{i:04d}")
+        os.path.join(dirs["data"], f"data_{i:04d}")
     )
 
+    # ====  Log File ============================================
     high_res_mesh = create_mesh(
         i, mesh_type = parameters["mesh_type"], lc = 1e-2,
         scale_x = parameters["scale_x"], problem_mesh_dir = directories["mesh_fine"]
@@ -432,39 +511,34 @@ if __name__ == "__main__":
     # Set random seed
     random.seed(args.rand_seed)
 
-    # Initialize directories
-    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    # QC:
-    print(f"Project Directory: {project_dir}")
-
-    dataset_dir = os.path.join(
-        project_dir, "data", f"dataset_meshtype_{args.mesh_type}", "helmholtz"
-    )
-    problem_specific_dir = os.path.join(
-        dataset_dir, "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype_{}".format(
+    # ====  Setup Directories ======================
+    problem_specific_dir = "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype_{}".format(
             parameters["z_min"], parameters["z_max"],
             parameters["n_dist"],parameters["max_dist"],
             parameters["lc"], parameters["n_samples"],
             parameters["data_type"], parameters["scheme"], parameters["mesh_type"]
-        ),
-    )
+        )
+
     subdirs = [
         "data", "plot", "plot_compare", "log", "mesh", "mesh_fine",
         "train", "test", "val",
     ]
 
-    # setup directory structure
-    directories = setup_and_clear_directories(problem_specific_dir,subdirs)
+    dirs = setup_directories(problem = parameters["problem"],
+                        mesh_type = parameters["mesh_type"],
+                        base_dir = None,
+                        subdirs = subdirs,
+                        dir_format = problem_specific_dir)
 
-    # output parameters to csv
-    output_csv(parameters, [
+
+    # ====  Output CSV ======================
+    key_list = [
         "cmin","cmax", "sigma_mean_scaler", "sigma_sigma_scaler", "sigma_eps"
         "data_type", "scheme", "n_samples", "lc", "mesh_type"
-        ],
-        problem_specific_dir
-        )
+    ]
+    output_csv(parameters, key_list, dirs["data"])
 
-    # Generate samples
+    # ====  Data Generation Scripts ======================
     for i in range(parameters["n_samples"]):
         try:
             print(f"Generating Sample: {i}")
@@ -476,7 +550,7 @@ if __name__ == "__main__":
             print(f"Iteration {i} did not converge.")
             continue
 
-    # Split data into train, test, and validation sets
+    # ====  Data Splits ============================================
     num_train = int(parameters["n_samples"] * parameters["p_train"])
     num_test = int(parameters["n_samples"] * parameters["p_test"])
     num_val = parameters["n_samples"] - num_train - num_test
