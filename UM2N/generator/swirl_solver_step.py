@@ -755,7 +755,8 @@ class SwirlSolver:
                     hessian = self.l2_projection
                     phi = adapter.phi
                     phi_grad = adapter.grad_phi
-                    sigma = adapter.sigma
+                    # sigma = adapter.sigma
+                    sigma = adapter.H # ej321 - this may be the updated hessian?
                     I = fd.Identity(2)  # noqa
                     jacobian = I + sigma
                     jacobian_det = fd.Function(function_space, name="jacobian_det")

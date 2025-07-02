@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt  # noqa
 import movement as mv
 import numpy as np  # noqa
 
+from firedrake.__future__ import interpolate # ej321 add
+
 __all__ = ["BurgersSolver"]
 
 
@@ -203,6 +205,9 @@ class BurgersSolver:
                 monitor_function=self.monitor_function,
                 rtol=1e-3,
             )
+            # ej321 - added monitor_function for feature extraction
+            raw_monitor_val = self.monitor_function(self.mesh) # ej321 - is this the correct mesh to use?
+
             adapter.move()
             end = time.perf_counter()
             dur_ms = (end - start) * 1000
@@ -216,6 +221,10 @@ class BurgersSolver:
             function_space = fd.FunctionSpace(self.mesh, "CG", 1)
             uh_0 = fd.Function(function_space)
             uh_0.project(self.u[0])
+            
+            # ej321 - added monitor_function for feature extraction
+            monitor_val = fd.Function(function_space)
+            monitor_val.assign(raw_monitor_val)
 
             # calculate solution on adapted mesh
             self.mesh.coordinates.dat.data[:] = self.adapt_coord
@@ -240,27 +249,42 @@ class BurgersSolver:
 
             func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
             uh_grad = fd.interpolate(fd.grad(uh_0), func_vec_space)
+
+            # ej321 - grad_norm copied from build_helmholtz_square.py
+            grad_uh_interpolate = fd.assemble(interpolate(fd.grad(self.u[0]),func_vec_space))
+            grad_norm = fd.Function(function_space)
+            grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
+            grad_norm /= grad_norm.vector().max()
+
             hessian_norm = self.f_norm
             hessian = self.l2_projection
             phi = adapter.phi
             phi_grad = adapter.grad_phi
-            sigma = adapter.sigma
+            # sigma = adapter.sigma
+            sigma = adapter.H # ej321 - this may be the updated hessian?
             I = fd.Identity(2)  # noqa
             jacobian = I + sigma
-            jacobian_det = fd.Function(function_space, name="jacobian_det")
-            jacobian_det.project(
+            # jacobian_det = fd.Function(function_space, name="jacobian_det")
+            # jacobian_det = fd.Function(adapter.P1, name="jacobian_det")
+            self.jacob_det = fd.Function(adapter.P1, name="jacobian_det").project(
                 jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
             )
-            self.jacob_det = fd.project(
-                jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1)
-            )
-            self.jacob = fd.project(
-                jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
-            )
+            # self.jacob_det = jacobian_det
+            # self.jacob_det = fd.project(
+            #     jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1)
+            # ) #  ej321 - not needed?
+            # self.jacob = jacobian # ej321 - this is copied from mesh_generator.py
+            self.jacob = fd.Function(adapter.P1_ten, name="jacobian").project(jacobian)
+            # self.jacob.project(jacobian)
+            # self.jacob = fd.project(
+            #     jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
+            # ) #  ej321 - not needed?
+            
 
             callback(
                 uh=uh_0,
                 uh_grad=uh_grad,
+                grad_norm = grad_norm,  # ej321 - added grad_norm
                 hessian_norm=hessian_norm,
                 hessian=hessian,
                 phi=phi,
@@ -280,6 +304,7 @@ class BurgersSolver:
                 dur=dur_ms,
                 t=t,
                 idx=self.idx,
+                monitor_val=monitor_val,  # ej321 - added monitor_val
             )
 
             # step forward in time

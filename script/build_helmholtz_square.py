@@ -15,7 +15,7 @@ from firedrake.__future__ import interpolate
 import UM2N
 
 
-def parse_arguments() -> ArgumentParser:
+def parse_arguments():
     """Parse command-line arguments."""
     parser = ArgumentParser()
     parser.add_argument("--mesh_type", type=int, default=2, help="Algorithm used to generate mesh")
@@ -386,12 +386,17 @@ if __name__ == "__main__":
 
     # parse args
     args = parse_arguments()
-
+    
+    # ====  Parameters ======================
     parameters = {
+        # parameters for problem
+        "problem": "helmholtz",
+        # "n_case": args.n_case, # burgers problem only
         # parameters for random source
         "n_dist": args.n_dist,
         "max_dist": args.max_dist,
         "lc": args.lc,
+        # "n_grig": args.n_grid, # burgers problem only
         # parameters for ??????
         "n_samples": args.n_samples,
         "data_type": args.field_type,
@@ -429,7 +434,9 @@ if __name__ == "__main__":
 
     # Initialize directories
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    print(project_dir)
+    # QC:
+    print(f"Project Directory: {project_dir}")
+
     dataset_dir = os.path.join(
         project_dir, "data", f"dataset_meshtype_{args.mesh_type}", "helmholtz"
     )
