@@ -113,31 +113,6 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
 
     return directories
 
-
-
-# def setup_and_clear_directories(base_dir, subdirs):
-#     """
-#     Create and clear multiple directories under a base directory.
-
-#     Args:
-#         base_dir: The base directory where subdirectories will be created.
-#         subdirs: A list of subdirectory names to create and clear.
-
-#     Returns:
-#         dict: A dictionary mapping subdirectory names to their full paths.
-#     """
-#     paths = {}
-#     for subdir in subdirs:
-#         path = os.path.join(base_dir, subdir)
-#         if not os.path.exists(path):
-#             os.makedirs(path)
-#         else:
-#             # Clear the directory by removing all files
-#             for file in os.listdir(path):
-#                 os.remove(os.path.join(path, file))
-#         paths[subdir] = path
-#     return paths
-
 def move_data(target, source, start, num_files):
     """
     Move data files from the source directory to the target directory.
@@ -208,7 +183,7 @@ def create_mesh(i, mesh_type, lc, scale_x, problem_mesh_dir):
         return fd.UnitSquareMesh(n_grid, n_grid)
 
 
-def process_features(parameters, problem_data_dir):
+def process_features(parameters, directories):
 
     # create mesh
     mesh = create_mesh(
@@ -319,7 +294,7 @@ def process_features(parameters, problem_data_dir):
 
     # save out data
     mesh_processor.save_taining_data(
-        os.path.join(dirs["data"], f"data_{i:04d}")
+        os.path.join(directories["data"], f"data_{i:04d}")
     )
 
     # ====  Log File ============================================
@@ -524,7 +499,7 @@ if __name__ == "__main__":
         "train", "test", "val",
     ]
 
-    dirs = setup_directories(problem = parameters["problem"],
+    directories = setup_directories(problem = parameters["problem"],
                         mesh_type = parameters["mesh_type"],
                         base_dir = None,
                         subdirs = subdirs,
@@ -536,7 +511,7 @@ if __name__ == "__main__":
         "cmin","cmax", "sigma_mean_scaler", "sigma_sigma_scaler", "sigma_eps"
         "data_type", "scheme", "n_samples", "lc", "mesh_type"
     ]
-    output_csv(parameters, key_list, dirs["data"])
+    output_csv(parameters, key_list, directories["data"])
 
     # ====  Data Generation Scripts ======================
     for i in range(parameters["n_samples"]):
@@ -544,7 +519,7 @@ if __name__ == "__main__":
             print(f"Generating Sample: {i}")
 
             # create dataset
-            process_features(parameters, directories["data"])
+            process_features(parameters, directories)
 
         except fd.exceptions.ConvergenceError:
             print(f"Iteration {i} did not converge.")
