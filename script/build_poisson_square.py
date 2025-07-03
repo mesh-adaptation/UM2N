@@ -183,11 +183,11 @@ def process_features(parameters, problem_data_dir):
     scale_x = parameters["scale_x"]
     mesh_type = parameters["mesh_type"]
     lc = parameters["lc"]
-    unstructured_square_mesh_gen = UM2N.UnstructuredSquareMesh(
+    unstructured_square_mesh_gen = UM2N.UnstructuredSquareMeshGenerator(
         scale=scale_x, mesh_type=mesh_type
     )  # noqa
     mesh = unstructured_square_mesh_gen.generate_mesh(
-        res=lc, output_filename=os.path.join(dirs["data"], f"mesh{i}.msh")
+        res=lc, output_filename=os.path.join(directories["data"], f"mesh{i}.msh")
     )
     # Generate Random solution field
     rand_u_generator = UM2N.RandSourceGenerator(
@@ -294,16 +294,19 @@ def process_features(parameters, problem_data_dir):
         feature={
             "uh": uh.dat.data_ro.reshape(-1, 1),
             "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(-1, 2),
+            "grad_uh_norm": grad_norm.dat.data_ro.reshape(-1, 1), # ej321 - added grad_norm
             "hessian": hessian.dat.data_ro.reshape(-1, 4),
             "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
             "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
             "jacobian_det": jacobian_det.dat.data_ro.reshape(-1, 1),
             "phi": phi.dat.data_ro.reshape(-1, 1),
             "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
+            "monitor_val": monitor_val.dat.data_ro.reshape(-1, 1), # ej321 - added monitor_val
         },
         raw_feature={
             "uh": uh,
             "hessian_norm": hessian_norm,
+            "monitor_val": monitor_val, # ej321 - added monitor_val
             "jacobian": jacobian,
             "jacobian_det": jacobian_det,
         },
@@ -311,7 +314,7 @@ def process_features(parameters, problem_data_dir):
     )
 
     mesh_processor.save_taining_data(
-        os.path.join(problem_data_dir, "data_{}".format(i))
+        os.path.join(directories["data"], "data_{}".format(i))
     )
 
     # ====  Plot Scripts ======================
@@ -344,13 +347,13 @@ def process_features(parameters, problem_data_dir):
     fd.tripcolor(uh_new, cmap="coolwarm", axes=ax6)
     fd.triplot(new_mesh, axes=ax6)
 
-    fig.savefig(os.path.join(problem_plot_dir, "plot_{}.png".format(i)))
+    fig.savefig(os.path.join(directories["plot"], "plot_{}.png".format(i)))
     # ==========================================
 
     # generate log file
     high_res_mesh = unstructured_square_mesh_gen.generate_mesh(
         res=1e-2,
-        output_filename=os.path.join(problem_mesh_fine_dir, f"mesh{i}.msh"),
+        output_filename=os.path.join(directories["mesh"], f"mesh{i}.msh"),
     )
     high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)
 
@@ -365,15 +368,14 @@ def process_features(parameters, problem_data_dir):
     error_original_mesh = fd.errornorm(u_exact, uh)
     error_optimal_mesh = fd.errornorm(u_exact, uh_new)
 
-    df = pd.DataFrame(
-        {
-            "error_og": error_original_mesh,
-            "error_adapt": error_optimal_mesh,
-            "time": dur,
-        },
-        index=[0],
-    )
-    df.to_csv(os.path.join(problem_log_dir, "log{}.csv".format(i)))
+    # Write to CSV
+    with open(os.path.join(directories["log"], f"log_{i:04d}.csv"), mode="w", newline="") as csvfile:
+        csv_writer = csv.writer(csvfile)
+        # Write header (keys)
+        csv_writer.writerow(["error_og", "error_adapt", "time"])
+        # Write data (values)
+        csv_writer.writerow([error_original_mesh, error_optimal_mesh, dur])
+        
     print("error og/optimal:", error_original_mesh, error_optimal_mesh)
     
 
@@ -460,7 +462,7 @@ if __name__ == "__main__":
             print(f"Generating Sample: {i}")
 
             # create dataset
-            process_features(parameters, directories["data"])
+            process_features(parameters, directories)
 
         except fd.exceptions.ConvergenceError:
             print(f"Iteration {i} did not converge.")
@@ -485,7 +487,7 @@ if __name__ == "__main__":
         try:
             print("Generating Sample: " + str(i))
             # create dataset
-            process_features(parameters, directories["data"])
+            process_features(parameters, directories)
         #    i += 1
         except fd.exceptions.ConvergenceError:
             pass
