@@ -660,19 +660,24 @@ class SwirlSolver:
                 hessian = self.l2_projection
                 phi = adapter.phi
                 phi_grad = adapter.grad_phi
-                sigma = adapter.sigma
+                # sigma = adapter.sigma
+                sigma = adapter.H # ej321 - this may be the updated hessian?
                 I = fd.Identity(2)  # noqa
                 jacobian = I + sigma
-                jacobian_det = fd.Function(function_space, name="jacobian_det")
-                jacobian_det.project(
-                    jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
-                )
-                self.jacob_det = fd.project(
-                    jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1)
-                )
-                self.jacob = fd.project(
-                    jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
-                )
+                # jacobian_det = fd.Function(function_space, name="jacobian_det")
+                # jacobian_det.project(
+                #     jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
+                # )
+                # self.jacob_det = fd.project(
+                #     jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1)
+                # )
+                self.jacob_det = fd.Function(adapter.P1, name="jacobian_det").project(
+                jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
+            )
+                # self.jacob = fd.project(
+                #     jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
+                # )
+                self.jacob = fd.Function(adapter.P1_ten, name="jacobian").project(jacobian)
 
                 if ((step + 1) % self.save_interval == 0) or (step == 0):
                     callback(
@@ -698,6 +703,8 @@ class SwirlSolver:
                         sigma=self.sigma,
                         alpha=self.alpha,
                         r_0=self.r_0,
+                        x_0=self.x_0,
+                        y_0=self.y_0,
                         t=self.t,
                     )
 
