@@ -9,28 +9,48 @@ from argparse import ArgumentParser
 
 import firedrake as fd
 import matplotlib.pyplot as plt
-# import pandas as pd
 
-# dd the parent directory to the Python path
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import UM2N
 
 
 def parse_arguments():
     """Parse command-line arguments."""
     parser = ArgumentParser(description="Build Burgers dataset with square meshes.")
-    parser.add_argument("--mesh_type", type=int, default=2, help="Algorithm used to generate mesh.")
-    parser.add_argument("--max_dist", type=int, default=6, help="Max number of distributions.")
-    parser.add_argument("--n_dist", type=int, default=None, help="Number of distributions.")
-    parser.add_argument("--lc", type=float, default=6e-2, help="Length characteristic of mesh elements.")
-    parser.add_argument("--field_type", type=str, default="iso", help="Data type (aniso/iso).")
+    parser.add_argument(
+        "--mesh_type", type=int, default=2, help="Algorithm used to generate mesh."
+    )
+    parser.add_argument(
+        "--max_dist", type=int, default=6, help="Max number of distributions."
+    )
+    parser.add_argument(
+        "--n_dist", type=int, default=None, help="Number of distributions."
+    )
+    parser.add_argument(
+        "--lc", type=float, default=6e-2, help="Length characteristic of mesh elements."
+    )
+    parser.add_argument(
+        "--field_type", type=str, default="iso", help="Data type (aniso/iso)."
+    )
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument("--boundary_scheme", type=str, default="pad", help="Boundary scheme (pad/full).")
-    parser.add_argument("--n_case", type=int, default=5, help="Number of simulation cases.")
-    parser.add_argument("--n_grid", type=int, default=20, help="Number of grids for uniform mesh if mesh_type 0.")
-    parser.add_argument("--rand_seed", type=int, default=63, help="number of samples generated / Random seed for reproducibility.")
-    
+    parser.add_argument(
+        "--boundary_scheme", type=str, default="pad", help="Boundary scheme (pad/full)."
+    )
+    parser.add_argument(
+        "--n_case", type=int, default=5, help="Number of simulation cases."
+    )
+    parser.add_argument(
+        "--n_grid",
+        type=int,
+        default=20,
+        help="Number of grids for uniform mesh if mesh_type 0.",
+    )
+    parser.add_argument(
+        "--rand_seed",
+        type=int,
+        default=63,
+        help="number of samples generated / Random seed for reproducibility.",
+    )
+
     parsed_args = parser.parse_args()
 
     # Handle dependency between max_dist and n_dist
@@ -40,11 +60,12 @@ def parse_arguments():
         parsed_args.max_dist = None  # Disable max_dist if n_dist is set
         print("Warning: max_dist is ignored because n_dist is set.")
     # QC:
-    print(parsed_args)
-    
+    # print(parsed_args)
+
     return parser.parse_args()
 
-def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_format=None):
+
+def setup_directories(problem, mesh_type, base_dir=None, subdirs=None, dir_format=None):
     """
     Set up directories for storing data, plots, and logs.
 
@@ -73,16 +94,20 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
         project_dir = os.path.abspath(base_dir)
     else:
         project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
+
     # QC:
     print(f"Project Directory: {project_dir}")
 
     # Define the dataset directory
-    dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)
+    dataset_dir = os.path.join(
+        project_dir, "data", f"dataset_meshtype_{mesh_type}", problem
+    )
 
     # Use the provided format string for the problem-specific directory
     if dir_format is None:
-        problem_specific_dir = os.path.join(dataset_dir, f"{problem}_meshtype_{mesh_type}")
+        problem_specific_dir = os.path.join(
+            dataset_dir, f"{problem}_meshtype_{mesh_type}"
+        )
     else:
         # check if dir_format is a valid string format
         if not isinstance(dir_format, str):
@@ -91,8 +116,17 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
 
     # Define default subdirectories if not provided
     if subdirs is None:
-        subdirs = ["data", "plot", "log", "mesh", "mesh_fine",
-                   "plot_compare", "train", "test", "val"]
+        subdirs = [
+            "data",
+            "plot",
+            "log",
+            "mesh",
+            "mesh_fine",
+            "plot_compare",
+            "train",
+            "test",
+            "val",
+        ]
 
     # Create and clear directories
     directories = {}
@@ -107,9 +141,10 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
         directories[subdir] = dir_path
 
     # QC:
-    print(f"Subdirectories created: {directories}")
+    # print(f"Subdirectories created: {directories}")
 
     return directories
+
 
 def output_csv(parameters, key_list, output_dir):
     """
@@ -136,6 +171,7 @@ def output_csv(parameters, key_list, output_dir):
         csv_writer.writerow(csv_data)
 
     print(f"Parameters saved to {csv_file_path}")
+
 
 def move_data(target, source, start, num_files):
     """
@@ -179,17 +215,22 @@ def move_data(target, source, start, num_files):
         except Exception as e:
             print(f"An error occurred while copying data_{i:04d}.npy: {e}")
             continue
-            
-def generate_mesh(parameters, dirs):
+
+
+def generate_mesh(parameters, directories):
     """Generate the mesh based on the specified type."""
     if parameters["mesh_type"] != 0:
-        mesh_gen = UM2N.UnstructuredSquareMeshGenerator(scale=parameters["scale_x"],
-        mesh_type=parameters["mesh_type"])
-        mesh = mesh_gen.generate_mesh(res=parameters["lc"],
-        output_filename=os.path.join(dirs["mesh"], "mesh.msh"))
-        mesh_new = fd.Mesh(os.path.join(dirs["mesh"], "mesh.msh"))
-        mesh_fine = mesh_gen.generate_mesh(res=1e-2,
-        output_filename=os.path.join(dirs["mesh_fine"], "mesh.msh"))
+        mesh_gen = UM2N.UnstructuredSquareMeshGenerator(
+            scale=parameters["scale_x"], mesh_type=parameters["mesh_type"]
+        )
+        mesh = mesh_gen.generate_mesh(
+            res=parameters["lc"],
+            output_filename=os.path.join(directories["mesh"], "mesh.msh"),
+        )
+        mesh_new = fd.Mesh(os.path.join(directories["mesh"], "mesh.msh"))
+        mesh_fine = mesh_gen.generate_mesh(
+            res=1e-2, output_filename=os.path.join(directories["mesh_fine"], "mesh.msh")
+        )
     else:
         n_grid = parameters["n_grid"]
         mesh = fd.UnitSquareMesh(n_grid, n_grid)
@@ -213,23 +254,56 @@ def get_sample_param_of_nu_generalization_by_idx_train(idx_in):
         1: ({"cx": 0.225, "cy": 0.5, "w": 0.01}, 0.0001),
         2: ({"cx": 0.225, "cy": 0.5, "w": 0.01}, 0.001),
         3: ({"cx": 0.225, "cy": 0.5, "w": 0.01}, 0.002),
-        4: ([{"cx": 0.3, "cy": 0.35, "w": 0.01}, {"cx": 0.15, "cy": 0.65, "w": 0.01}], 0.0001),
-        5: ([{"cx": 0.3, "cy": 0.35, "w": 0.01}, {"cx": 0.15, "cy": 0.65, "w": 0.01}], 0.001),
-        6: ([{"cx": 0.3, "cy": 0.35, "w": 0.01}, {"cx": 0.15, "cy": 0.65, "w": 0.01}], 0.002),
-        7: ([{"cx": 0.3, "cy": 0.7, "w": 0.01}, {"cx": 0.3, "cy": 0.3, "w": 0.01}, {"cx": 0.15, "cy": 0.5, "w": 0.01}], 0.0001),
-        8: ([{"cx": 0.3, "cy": 0.7, "w": 0.01}, {"cx": 0.3, "cy": 0.3, "w": 0.01}, {"cx": 0.15, "cy": 0.5, "w": 0.01}], 0.001),
-        9: ([{"cx": 0.3, "cy": 0.7, "w": 0.01}, {"cx": 0.3, "cy": 0.3, "w": 0.01}, {"cx": 0.15, "cy": 0.5, "w": 0.01}], 0.002),
+        4: (
+            [{"cx": 0.3, "cy": 0.35, "w": 0.01}, {"cx": 0.15, "cy": 0.65, "w": 0.01}],
+            0.0001,
+        ),
+        5: (
+            [{"cx": 0.3, "cy": 0.35, "w": 0.01}, {"cx": 0.15, "cy": 0.65, "w": 0.01}],
+            0.001,
+        ),
+        6: (
+            [{"cx": 0.3, "cy": 0.35, "w": 0.01}, {"cx": 0.15, "cy": 0.65, "w": 0.01}],
+            0.002,
+        ),
+        7: (
+            [
+                {"cx": 0.3, "cy": 0.7, "w": 0.01},
+                {"cx": 0.3, "cy": 0.3, "w": 0.01},
+                {"cx": 0.15, "cy": 0.5, "w": 0.01},
+            ],
+            0.0001,
+        ),
+        8: (
+            [
+                {"cx": 0.3, "cy": 0.7, "w": 0.01},
+                {"cx": 0.3, "cy": 0.3, "w": 0.01},
+                {"cx": 0.15, "cy": 0.5, "w": 0.01},
+            ],
+            0.001,
+        ),
+        9: (
+            [
+                {"cx": 0.3, "cy": 0.7, "w": 0.01},
+                {"cx": 0.3, "cy": 0.3, "w": 0.01},
+                {"cx": 0.15, "cy": 0.5, "w": 0.01},
+            ],
+            0.002,
+        ),
     }
 
     # Retrieve the parameters and viscosity for the given index
     if idx_in not in param_map:
-        raise ValueError(f"Invalid index: {idx_in}. Supported indices are {list(param_map.keys())}.")
+        raise ValueError(
+            f"Invalid index: {idx_in}. Supported indices are {list(param_map.keys())}."
+        )
 
     params, nu_ = param_map[idx_in]
     # Ensure params is always a list
     gauss_list_ = params if isinstance(params, list) else [params]
 
     return gauss_list_, nu_
+
 
 # def get_sample_params(idx):
 #     """Retrieve sample parameters for the Burgers problem."""
@@ -299,6 +373,7 @@ def get_sample_param_of_nu_generalization_by_idx_train(idx_in):
 #         {"error_og": [error_original_mesh], "error_adapt": [error_optimal_mesh], "time": [dur]}
 #     ).to_csv(os.path.join(dirs["log"], f"log_{idx}.csv"), index=False)
 
+
 def sample_from_loop(
     uh,
     uh_grad,
@@ -334,7 +409,9 @@ def sample_from_loop(
         feature={
             "uh": uh.dat.data_ro.reshape(-1, 1),
             "grad_uh": uh_grad.dat.data_ro.reshape(-1, 2),
-            "grad_uh_norm": grad_norm.dat.data_ro.reshape(-1, 1), # ej321 - added grad_norm
+            "grad_uh_norm": grad_norm.dat.data_ro.reshape(
+                -1, 1
+            ),  # ej321 - added grad_norm
             "hessian": hessian.dat.data_ro.reshape(-1, 4),
             "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
             "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
@@ -346,7 +423,7 @@ def sample_from_loop(
         raw_feature={
             "uh": uh,
             "hessian_norm": hessian_norm,
-            "monitor_val": monitor_val, # ej321 - added monitor_val
+            "monitor_val": monitor_val,  # ej321 - added monitor_val
             "jacobian": jacobian,
             "jacobian_det": jacobian_det,
         },
@@ -357,9 +434,7 @@ def sample_from_loop(
         idx=idx,
     )
 
-    mesh_processor.save_taining_data(
-        os.path.join(dirs["data"], "data_{}".format(i))
-    )
+    mesh_processor.save_taining_data(os.path.join(directories["data"], f"data_{i:04d}"))
 
     # ====  Plot Scripts ======================
     fig = plt.figure(figsize=(15, 10))
@@ -391,7 +466,7 @@ def sample_from_loop(
     fd.tripcolor(uh_new, cmap="coolwarm", axes=ax6)
     fd.triplot(mesh_new, axes=ax6)
 
-    fig.savefig(os.path.join(dirs["plot"], "plot_{}.png".format(i)))
+    fig.savefig(os.path.join(directories["plot"], "plot_{}.png".format(i)))
     i += 1
 
     # fig, ax = plt.subplots()
@@ -408,9 +483,10 @@ def sample_from_loop(
     error_original_mesh = fd.errornorm(uh, uh_fine, norm_type="L2")
     error_optimal_mesh = fd.errornorm(uh_new, uh_fine, norm_type="L2")
 
-
     # Write to CSV
-    with open(os.path.join(dirs["log"], f"log_{i:04d}.csv"), mode="w", newline="") as csvfile:
+    with open(
+        os.path.join(directories["log"], f"log_{i:04d}.csv"), mode="w", newline=""
+    ) as csvfile:
         csv_writer = csv.writer(csvfile)
         # Write header (keys)
         csv_writer.writerow(["error_og", "error_adapt", "time"])
@@ -432,7 +508,6 @@ def sample_from_loop(
 
 
 if __name__ == "__main__":
-    
     # parse args
     args = parse_arguments()
 
@@ -481,7 +556,6 @@ if __name__ == "__main__":
     # Set random seed
     random.seed(args.rand_seed)
 
-
     # ====  Setup Directories ======================
     problem_specific_dir = "lc={lc}_ngrid_{n_grid}_n={n_case}_{data_type}_{scheme}_meshtype_{mesh_type}".format(
         lc=parameters["lc"],
@@ -492,21 +566,29 @@ if __name__ == "__main__":
         mesh_type=parameters["mesh_type"],
     )
 
-    subdirs = ["data", "plot", "log", "mesh", "mesh_fine",
-               "plot_compare", "train", "test", "val"
-               ]
+    subdirs = [
+        "data",
+        "plot",
+        "log",
+        "mesh",
+        "mesh_fine",
+        "plot_compare",
+        "train",
+        "test",
+        "val",
+    ]
 
-    dirs = setup_directories(problem = parameters["problem"],
-                            mesh_type = parameters["mesh_type"],
-                            base_dir = None,
-                            subdirs = subdirs,
-                            dir_format = problem_specific_dir)
+    directories = setup_directories(
+        problem=parameters["problem"],
+        mesh_type=parameters["mesh_type"],
+        base_dir=None,
+        subdirs=subdirs,
+        dir_format=problem_specific_dir,
+    )
 
     # ====  Output CSV ======================
-    key_list = [
-        "cmin","cmax", "data_type", "scheme", "lc", "mesh_type"
-    ]
-    output_csv(parameters, key_list, dirs["data"])
+    key_list = ["cmin", "cmax", "data_type", "scheme", "lc", "mesh_type"]
+    output_csv(parameters, key_list, directories["log"])
 
     # ====  Data Generation Scripts ======================
 
@@ -519,12 +601,11 @@ if __name__ == "__main__":
         try:
             # QC:
             print(f"Case {idx} building ...")
-            mesh, mesh_new, mesh_fine = generate_mesh(parameters, dirs)
+            mesh, mesh_new, mesh_fine = generate_mesh(parameters, directories)
             # Generate Random solution field
             gaussian_list, nu = get_sample_param_of_nu_generalization_by_idx_train(idx)  # noqa
             solver = UM2N.BurgersSolver(
-                mesh, mesh_fine, mesh_new,
-                gauss_list=gaussian_list, nu=nu, idx=idx
+                mesh, mesh_fine, mesh_new, gauss_list=gaussian_list, nu=nu, idx=idx
             )
             solver.solve_problem(sample_from_loop)
             print()

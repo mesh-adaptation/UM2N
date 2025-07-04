@@ -12,24 +12,34 @@ import firedrake as fd
 import matplotlib.pyplot as plt
 from firedrake.__future__ import interpolate
 
-
-# dd the parent directory to the Python path
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import UM2N
 
 
 def parse_arguments():
     """Parse command-line arguments."""
     parser = ArgumentParser()
-    parser.add_argument("--mesh_type", type=int, default=2, help="Algorithm used to generate mesh")
-    parser.add_argument("--max_dist", type=int, default=6, help="Max number of distributions")
-    parser.add_argument("--n_dist", type=int, default=None, help="Number of distributions")
-    parser.add_argument("--lc", type=float, default=5e-2, help="Length characteristic of mesh elements")
-    parser.add_argument("--field_type", type=str, default="aniso", help="Data type (aniso/iso)")
+    parser.add_argument(
+        "--mesh_type", type=int, default=2, help="Algorithm used to generate mesh"
+    )
+    parser.add_argument(
+        "--max_dist", type=int, default=6, help="Max number of distributions"
+    )
+    parser.add_argument(
+        "--n_dist", type=int, default=None, help="Number of distributions"
+    )
+    parser.add_argument(
+        "--lc", type=float, default=5e-2, help="Length characteristic of mesh elements"
+    )
+    parser.add_argument(
+        "--field_type", type=str, default="aniso", help="Data type (aniso/iso)"
+    )
     # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
-    parser.add_argument("--boundary_scheme", type=str, default="full", help="Boundary scheme (pad/full)")
-    parser.add_argument("--n_samples", type=int, default=100, help="Number of samples generated")
+    parser.add_argument(
+        "--boundary_scheme", type=str, default="full", help="Boundary scheme (pad/full)"
+    )
+    parser.add_argument(
+        "--n_samples", type=int, default=100, help="Number of samples generated"
+    )
     parser.add_argument("--rand_seed", type=int, default=63, help="Random seed")
 
     parsed_args = parser.parse_args()
@@ -41,12 +51,12 @@ def parse_arguments():
         parsed_args.max_dist = None  # Disable max_dist if n_dist is set
         print("Warning: max_dist is ignored because n_dist is set.")
     # QC:
-    print(parsed_args)
+    # print(parsed_args)
 
     return parsed_args
 
 
-def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_format=None):
+def setup_directories(problem, mesh_type, base_dir=None, subdirs=None, dir_format=None):
     """
     Set up directories for storing data, plots, and logs.
 
@@ -75,16 +85,20 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
         project_dir = os.path.abspath(base_dir)
     else:
         project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
+
     # QC:
     print(f"Project Directory: {project_dir}")
 
     # Define the dataset directory
-    dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)
+    dataset_dir = os.path.join(
+        project_dir, "data", f"dataset_meshtype_{mesh_type}", problem
+    )
 
     # Use the provided format string for the problem-specific directory
     if dir_format is None:
-        problem_specific_dir = os.path.join(dataset_dir, f"{problem}_meshtype_{mesh_type}")
+        problem_specific_dir = os.path.join(
+            dataset_dir, f"{problem}_meshtype_{mesh_type}"
+        )
     else:
         # check if dir_format is a valid string format
         if not isinstance(dir_format, str):
@@ -93,8 +107,17 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
 
     # Define default subdirectories if not provided
     if subdirs is None:
-        subdirs = ["data", "plot", "log", "mesh", "mesh_fine",
-                   "plot_compare", "train", "test", "val"]
+        subdirs = [
+            "data",
+            "plot",
+            "log",
+            "mesh",
+            "mesh_fine",
+            "plot_compare",
+            "train",
+            "test",
+            "val",
+        ]
 
     # Create and clear directories
     directories = {}
@@ -109,52 +132,10 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
         directories[subdir] = dir_path
 
     # QC:
-    print(f"Subdirectories created: {directories}")
+    # print(f"Subdirectories created: {directories}")
 
     return directories
 
-def move_data(target, source, start, num_files):
-    """
-    Move data files from the source directory to the target directory.
-
-    Args:
-        target (str): The path to the target directory.
-        source (str): The path to the source directory.
-        start (int): The starting index of the files to move.
-        num_files (int): The total number of files to move.
-
-    Raises:
-        FileNotFoundError: If the source directory does not exist.
-        ValueError: If the start index or num_files is invalid.
-    """
-    if not os.path.exists(source):
-        raise FileNotFoundError(f"Source directory '{source}' does not exist.")
-
-    if start < 0 or num_files <= 0:
-        raise ValueError("Invalid start index or number of files to move.")
-
-    # Create the target directory if it doesn't exist
-    if not os.path.exists(target):
-        os.makedirs(target)
-    else:
-        # Clear the target directory by removing all files
-        for file in os.listdir(target):
-            os.remove(os.path.join(target, file))
-
-    # Copy files sequentially starting from the specified index
-    for i in range(start, start + num_files):
-        try:
-            # Copy the data file
-            shutil.copy(
-                os.path.join(source, f"data_{i:04d}.npy"),
-                os.path.join(target, f"data_{i:04d}.npy"),
-            )
-        except FileNotFoundError:
-            print(f"File data_{i:04d}.npy not found in {source}. Skipping.")
-            continue
-        except Exception as e:
-            print(f"An error occurred while copying data_{i:04d}.npy: {e}")
-            continue
 
 def create_mesh(i, mesh_type, lc, scale_x, problem_mesh_dir):
     """
@@ -184,16 +165,17 @@ def create_mesh(i, mesh_type, lc, scale_x, problem_mesh_dir):
 
 
 def process_features(parameters, directories):
-
     # create mesh
     mesh = create_mesh(
-        i, mesh_type = parameters["mesh_type"], lc = parameters["lc"],
-        scale_x = parameters["scale_x"], problem_mesh_dir = directories["mesh"]
+        i,
+        mesh_type=parameters["mesh_type"],
+        lc=parameters["lc"],
+        scale_x=parameters["scale_x"],
+        problem_mesh_dir=directories["mesh"],
     )
     # Generate Random solution field
     rand_u_generator = UM2N.RandSourceGenerator(
-        use_iso= parameters["data_type"] == "iso",
-        dist_params = parameters
+        use_iso=parameters["data_type"] == "iso", dist_params=parameters
     )
 
     # generate equation
@@ -214,9 +196,9 @@ def process_features(parameters, directories):
     # original solution field
     uh = solver.solve_eq()
 
-    grad_uh_interpolate = fd.assemble(interpolate(fd.grad(uh),
-                                fd.VectorFunctionSpace(mesh, "CG", 1)
-                                ))
+    grad_uh_interpolate = fd.assemble(
+        interpolate(fd.grad(uh), fd.VectorFunctionSpace(mesh, "CG", 1))
+    )
     grad_norm = fd.Function(res["function_space"])
     grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
     grad_norm /= grad_norm.vector().max()
@@ -225,15 +207,14 @@ def process_features(parameters, directories):
     # RHS of helmholtz problem
     f_rhs = fd.assemble(interpolate(helmholtz_eq.f, helmholtz_eq.function_space))
 
-
     # generate mesh?
 
     mesh_gen = UM2N.MeshGenerator(params={"eq": helmholtz_eq, "mesh": mesh})
     monitor_val = mesh_gen.monitor_func(mesh)
     hessian = mesh_gen.get_hessian(mesh)
-    hessian_norm = fd.project(mesh_gen.get_hessian_norm(mesh),
-                                fd.FunctionSpace(mesh, "CG", 1)
-                                )
+    hessian_norm = fd.project(
+        mesh_gen.get_hessian_norm(mesh), fd.FunctionSpace(mesh, "CG", 1)
+    )
 
     # move the mesh?
     start = time.perf_counter()
@@ -293,20 +274,21 @@ def process_features(parameters, directories):
     )
 
     # save out data
-    mesh_processor.save_taining_data(
-        os.path.join(directories["data"], f"data_{i:04d}")
-    )
+    mesh_processor.save_taining_data(os.path.join(directories["data"], f"data_{i:04d}"))
 
     # ====  Log File ============================================
     high_res_mesh = create_mesh(
-        i, mesh_type = parameters["mesh_type"], lc = 1e-2,
-        scale_x = parameters["scale_x"], problem_mesh_dir = directories["mesh_fine"]
+        i,
+        mesh_type=parameters["mesh_type"],
+        lc=1e-2,
+        scale_x=parameters["scale_x"],
+        problem_mesh_dir=directories["mesh_fine"],
     )
 
     res_high_res = helmholtz_eq.discretise(high_res_mesh)
-    u_exact = fd.assemble(interpolate(res_high_res["u_exact"],
-                            res_high_res["function_space"])
-                            )
+    u_exact = fd.assemble(
+        interpolate(res_high_res["u_exact"], res_high_res["function_space"])
+    )
 
     uh_proj = fd.project(uh, fd.FunctionSpace(high_res_mesh, "CG", 1))
     uh_new_proj = fd.project(uh_new, fd.FunctionSpace(high_res_mesh, "CG", 1))
@@ -315,7 +297,9 @@ def process_features(parameters, directories):
     error_optimal_mesh = fd.errornorm(u_exact, uh_new_proj)
 
     # Write to CSV
-    with open(os.path.join(directories["log"], f"log_{i:04d}.csv"), mode="w", newline="") as csvfile:
+    with open(
+        os.path.join(directories["log"], f"log_{i:04d}.csv"), mode="w", newline=""
+    ) as csvfile:
         csv_writer = csv.writer(csvfile)
         # Write header (keys)
         csv_writer.writerow(["error_og", "error_adapt", "time"])
@@ -410,6 +394,7 @@ def process_features(parameters, directories):
     fig.savefig(os.path.join(directories["plot_compare"], f"plot_{i:04d}.png"))
     plt.close()
 
+
 def output_csv(parameters, key_list, output_dir):
     """
     Write selected parameters to a CSV file.
@@ -436,11 +421,76 @@ def output_csv(parameters, key_list, output_dir):
 
     print(f"Parameters saved to {csv_file_path}")
 
-if __name__ == "__main__":
 
+def split_data(
+    source_dir,
+    train_dir,
+    test_dir,
+    val_dir,
+    train_ratio=0.75,
+    test_ratio=0.15,
+    val_ratio=0.1,
+):
+    """
+    Split files in a source directory into train, test, and validation directories.
+
+    Args:
+        source_dir (str): Path to the source directory containing files.
+        train_dir (str): Path to the train directory.
+        test_dir (str): Path to the test directory.
+        val_dir (str): Path to the validation directory.
+        train_ratio (float): Proportion of files to allocate to the train set.
+        test_ratio (float): Proportion of files to allocate to the test set.
+        val_ratio (float): Proportion of files to allocate to the validation set.
+
+    Raises:
+        ValueError: If the sum of train_ratio, test_ratio, and val_ratio is not 1.
+    """
+    # Validate ratios
+    if not (0 <= train_ratio <= 1 and 0 <= test_ratio <= 1 and 0 <= val_ratio <= 1):
+        raise ValueError("Ratios must be between 0 and 1.")
+    if train_ratio + test_ratio + val_ratio != 1:
+        raise ValueError(
+            "The sum of train_ratio, test_ratio, and val_ratio must equal 1."
+        )
+
+    # Get all files in the source directory
+    files = [
+        f for f in os.listdir(source_dir) if os.path.isfile(os.path.join(source_dir, f))
+    ]
+    random.shuffle(files)  # Shuffle files for unbiased distribution
+
+    # QC:
+    # print(f'files {files}')
+
+    # Calculate split indices - preference train > test > val
+    total_files = len(files)
+    num_train = int(total_files * train_ratio)
+    num_test = max(int(total_files * test_ratio), total_files - num_train)
+    num_val = total_files - num_train - num_test
+
+    # Distribute files
+    train_files = files[:num_train]
+    test_files = files[num_train : num_train + num_test]
+    val_files = files[num_train + num_test :]
+
+    for datafiles, target_dir in zip(
+        [train_files, test_files, val_files], [train_dir, test_dir, val_dir]
+    ):
+        for datafile in datafiles:
+            shutil.copy(
+                os.path.join(source_dir, datafile), os.path.join(target_dir, datafile)
+            )
+
+    print(
+        f"Data split complete: {num_train} train, {num_test} test, {num_val} validation files."
+    )
+
+
+if __name__ == "__main__":
     # parse args
     args = parse_arguments()
-    
+
     # ====  Parameters ======================
     parameters = {
         # parameters for problem
@@ -450,7 +500,7 @@ if __name__ == "__main__":
         "n_dist": args.n_dist,
         "max_dist": args.max_dist,
         "lc": args.lc,
-        # "n_grig": args.n_grid, # burgers problem only
+        # "n_grid": args.n_grid, # burgers problem only
         # parameters for ??????
         "n_samples": args.n_samples,
         "data_type": args.field_type,
@@ -487,31 +537,53 @@ if __name__ == "__main__":
     random.seed(args.rand_seed)
 
     # ====  Setup Directories ======================
-    problem_specific_dir = "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype_{}".format(
-            parameters["z_min"], parameters["z_max"],
-            parameters["n_dist"],parameters["max_dist"],
-            parameters["lc"], parameters["n_samples"],
-            parameters["data_type"], parameters["scheme"], parameters["mesh_type"]
+    problem_specific_dir = (
+        "z=<{},{}>_ndist={}_max_dist={}_lc={}_n={}_{}_{}_meshtype_{}".format(
+            parameters["z_min"],
+            parameters["z_max"],
+            parameters["n_dist"],
+            parameters["max_dist"],
+            parameters["lc"],
+            parameters["n_samples"],
+            parameters["data_type"],
+            parameters["scheme"],
+            parameters["mesh_type"],
         )
+    )
 
     subdirs = [
-        "data", "plot", "plot_compare", "log", "mesh", "mesh_fine",
-        "train", "test", "val",
+        "data",
+        "plot",
+        "plot_compare",
+        "log",
+        "mesh",
+        "mesh_fine",
+        "train",
+        "test",
+        "val",
     ]
 
-    directories = setup_directories(problem = parameters["problem"],
-                        mesh_type = parameters["mesh_type"],
-                        base_dir = None,
-                        subdirs = subdirs,
-                        dir_format = problem_specific_dir)
-
+    directories = setup_directories(
+        problem=parameters["problem"],
+        mesh_type=parameters["mesh_type"],
+        base_dir=None,
+        subdirs=subdirs,
+        dir_format=problem_specific_dir,
+    )
 
     # ====  Output CSV ======================
     key_list = [
-        "cmin","cmax", "sigma_mean_scaler", "sigma_sigma_scaler", "sigma_eps"
-        "data_type", "scheme", "n_samples", "lc", "mesh_type"
+        "cmin",
+        "cmax",
+        "sigma_mean_scaler",
+        "sigma_sigma_scaler",
+        "sigma_eps" "data_type",
+        "scheme",
+        "n_samples",
+        "lc",
+        "mesh_type",
     ]
-    output_csv(parameters, key_list, directories["data"])
+    output_csv(parameters, key_list, directories["log"])
 
     # ====  Data Generation Scripts ======================
     for i in range(parameters["n_samples"]):
@@ -526,10 +598,13 @@ if __name__ == "__main__":
             continue
 
     # ====  Data Splits ============================================
-    num_train = int(parameters["n_samples"] * parameters["p_train"])
-    num_test = int(parameters["n_samples"] * parameters["p_test"])
-    num_val = parameters["n_samples"] - num_train - num_test
-
-    move_data(directories["train"], directories["data"], 0, num_train)
-    move_data(directories["test"], directories["data"], num_train, num_train + num_test)
-    move_data(directories["val"], directories["data"], num_train + num_test, num_train + num_test + num_val)
+    # TODO: this should probably be done in the training script, not the build script
+    split_data(
+        source_dir=directories["data"],
+        train_dir=directories["train"],
+        test_dir=directories["test"],
+        val_dir=directories["val"],
+        train_ratio=parameters["p_train"],
+        test_ratio=parameters["p_test"],
+        val_ratio=parameters["p_val"],
+    )

@@ -7,33 +7,51 @@ from argparse import ArgumentParser
 
 import firedrake as fd
 import matplotlib.pyplot as plt
-import pandas as pd
 
-# import UM2N
-
-# import pandas as pd
-from firedrake.__future__ import interpolate
-
-# dd the parent directory to the Python path
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import UM2N
+
 
 def parse_arguments():
     """Parse command-line arguments."""
     parser = ArgumentParser(description="Build Burgers dataset with square meshes.")
-    parser.add_argument("--mesh_type", type=int, default=2, help="Algorithm used to generate mesh.")
-    parser.add_argument("--sigma", type=float, default=(0.05 / 3), help="initial ring shape control")
+    parser.add_argument(
+        "--mesh_type", type=int, default=2, help="Algorithm used to generate mesh."
+    )
+    parser.add_argument(
+        "--sigma", type=float, default=(0.05 / 3), help="initial ring shape control"
+    )
     parser.add_argument("--r_0", type=float, default=0.2, help="initial ring radius")
-    parser.add_argument("--x_0", type=float, default=0.5, help="ring center x coordinate")
-    parser.add_argument("--y_0", type=float, default=0.5, help="ring center y coordinate")
-    parser.add_argument("--alpha", type=float, default=1.5, help="swirl (velocity) scalar coefficient")
-    parser.add_argument("--save_interval", type=int, default=10, help="output sample file interval")
-    parser.add_argument("--lc", type=float, default=5e-2, help="Length characteristic of unstructured mesh elements.")
-    parser.add_argument("--n_grid", type=int, default=20, help="number number of grids in a mesh when mesh_type is 0)")
-    parser.add_argument("--n_monitor_smooth", type=int, default=10, help="apply Laplacian smoother n time to monitor function")
-   
-    
+    parser.add_argument(
+        "--x_0", type=float, default=0.5, help="ring center x coordinate"
+    )
+    parser.add_argument(
+        "--y_0", type=float, default=0.5, help="ring center y coordinate"
+    )
+    parser.add_argument(
+        "--alpha", type=float, default=1.5, help="swirl (velocity) scalar coefficient"
+    )
+    parser.add_argument(
+        "--save_interval", type=int, default=10, help="output sample file interval"
+    )
+    parser.add_argument(
+        "--lc",
+        type=float,
+        default=5e-2,
+        help="Length characteristic of unstructured mesh elements.",
+    )
+    parser.add_argument(
+        "--n_grid",
+        type=int,
+        default=20,
+        help="number number of grids in a mesh when mesh_type is 0)",
+    )
+    parser.add_argument(
+        "--n_monitor_smooth",
+        type=int,
+        default=10,
+        help="apply Laplacian smoother n time to monitor function",
+    )
+
     parsed_args = parser.parse_args()
 
     # Handle dependency between max_dist and n_dist
@@ -43,12 +61,12 @@ def parse_arguments():
     #     parsed_args.max_dist = None  # Disable max_dist if n_dist is set
     #     print("Warning: max_dist is ignored because n_dist is set.")
     # QC:
-    print(parsed_args)
-    
-    return parser.parse_args()
+    # print(parsed_args)
+
+    return parsed_args
 
 
-def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_format=None):
+def setup_directories(problem, mesh_type, base_dir=None, subdirs=None, dir_format=None):
     """
     Set up directories for storing data, plots, and logs.
 
@@ -77,16 +95,20 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
         project_dir = os.path.abspath(base_dir)
     else:
         project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
+
     # QC:
     print(f"Project Directory: {project_dir}")
 
     # Define the dataset directory
-    dataset_dir = os.path.join(project_dir, "data", f"dataset_meshtype_{mesh_type}", problem)
+    dataset_dir = os.path.join(
+        project_dir, "data", f"dataset_meshtype_{mesh_type}", problem
+    )
 
     # Use the provided format string for the problem-specific directory
     if dir_format is None:
-        problem_specific_dir = os.path.join(dataset_dir, f"{problem}_meshtype_{mesh_type}")
+        problem_specific_dir = os.path.join(
+            dataset_dir, f"{problem}_meshtype_{mesh_type}"
+        )
     else:
         # check if dir_format is a valid string format
         if not isinstance(dir_format, str):
@@ -95,8 +117,17 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
 
     # Define default subdirectories if not provided
     if subdirs is None:
-        subdirs = ["data", "plot", "log", "mesh", "mesh_fine",
-                   "plot_compare", "train", "test", "val"]
+        subdirs = [
+            "data",
+            "plot",
+            "log",
+            "mesh",
+            "mesh_fine",
+            "plot_compare",
+            "train",
+            "test",
+            "val",
+        ]
 
     # Create and clear directories
     directories = {}
@@ -111,9 +142,10 @@ def setup_directories(problem, mesh_type, base_dir= None, subdirs=None, dir_form
         directories[subdir] = dir_path
 
     # QC:
-    print(f"Subdirectories created: {directories}")
+    # print(f"Subdirectories created: {directories}")
 
     return directories
+
 
 def output_csv(parameters, key_list, output_dir):
     """
@@ -138,7 +170,8 @@ def output_csv(parameters, key_list, output_dir):
         csv_writer.writerow(csv_keys)
         # Write data (values)
         csv_writer.writerow(csv_data)
-        
+
+
 def move_data(target, source, start, num_files):
     """
     Move data files from the source directory to the target directory.
@@ -183,13 +216,13 @@ def move_data(target, source, start, num_files):
             continue
 
 
-
 def fail_callback(t):
     """
     Call back for failing cases.
     Log current time for those cases which MA did not converge.
     """
-    fail_t.append(t)
+    print(f"fail to converge at {t}")
+    # fail_t.append(t) #
 
 
 def sample_from_loop(
@@ -213,8 +246,8 @@ def sample_from_loop(
     sigma,
     alpha,
     r_0,
-    x_0, # ej321 - added x_0
-    y_0, # ej321 - added y_0
+    x_0,  # ej321 - added x_0
+    y_0,  # ej321 - added y_0
     t,
     error_og_list=[],
     error_adapt_list=[],
@@ -317,14 +350,15 @@ def sample_from_loop(
     error_optimal_mesh = fd.errornorm(uh_new_proj, uh_fine, norm_type="L2")
 
     # Write to CSV
-    with open(os.path.join(directories["log"], f"log_{i:04d}.csv"), mode="w", newline="") as csvfile:
+    with open(
+        os.path.join(directories["log"], f"log_{i:04d}.csv"), mode="w", newline=""
+    ) as csvfile:
         csv_writer = csv.writer(csvfile)
         # Write header (keys)
         csv_writer.writerow(["error_og", "error_adapt", "time"])
         # Write data (values)
         csv_writer.writerow([error_original_mesh, error_optimal_mesh, dur])
     print("error og/optimal:", error_original_mesh, error_optimal_mesh)
-
 
     # ====  Plot mesh, solution, error ======================
     rows, cols = 3, 3
@@ -406,10 +440,9 @@ def sample_from_loop(
 
 
 if __name__ == "__main__":
-
     # parse args
     args = parse_arguments()
-    
+
     # ====  Parameters ======================
     parameters = {
         # parameters for problem
@@ -423,7 +456,7 @@ if __name__ == "__main__":
         # "n_dist": args.n_dist,
         # "max_dist": args.max_dist,
         "lc": args.lc,
-        "n_grid": args.n_grid if args.n_grid else int(1 / lc),
+        "n_grid": args.n_grid if args.n_grid else int(1 / args.lc),
         # parameters for ??????
         # "n_samples": args.n_samples,
         # "data_type": args.field_type,
@@ -450,7 +483,6 @@ if __name__ == "__main__":
         # parameters for storing files
         "save_interval": args.save_interval,
         "fail_t": [],  # list storing failing dts
-        
         # parameters for isotropic data
         # "w_min": 0.05,
         # "w_max": 0.2,
@@ -472,42 +504,53 @@ if __name__ == "__main__":
 
     # ====  Setup Directories ======================
     problem_specific_dir = "sigma_{:.3f}_alpha_{}_r0_{}_x0_{}_y0_{}_lc_{}_ngrid_{}_interval_{}_meshtype_{}_smooth_{}".format(
-            parameters["sigma"], parameters["alpha"],
-            parameters["r_0"], parameters["x_0"], parameters["y_0"],
-            parameters["lc"], parameters["n_grid"],
-            parameters["save_interval"], parameters["mesh_type"],
-            parameters["n_monitor_smooth"]
+        parameters["sigma"],
+        parameters["alpha"],
+        parameters["r_0"],
+        parameters["x_0"],
+        parameters["y_0"],
+        parameters["lc"],
+        parameters["n_grid"],
+        parameters["save_interval"],
+        parameters["mesh_type"],
+        parameters["n_monitor_smooth"],
     )
 
     subdirs = [
-        "data", "plot","plot_compare","log", "mesh", "mesh_fine",
+        "data",
+        "plot",
+        "plot_compare",
+        "log",
+        "mesh",
+        "mesh_fine",
         # "train", "test", "val",
     ]
 
-    directories = setup_directories(problem = parameters["problem"],
-                        mesh_type = parameters["mesh_type"],
-                        base_dir = None,
-                        subdirs = subdirs,
-                        dir_format = problem_specific_dir)
-
+    directories = setup_directories(
+        problem=parameters["problem"],
+        mesh_type=parameters["mesh_type"],
+        base_dir=None,
+        subdirs=subdirs,
+        dir_format=problem_specific_dir,
+    )
 
     # ====  Output CSV ======================
     key_list = [
-            "sigma",
-            "alpha",
-            "r_0",
-            "x_0",
-            "y_0",
-            "save_interval",
-            "T",
-            "n_step",
-            "dt",
-            "fail_t",
-            "lc",
-            "fail_cases",
-            "mesh_type",
+        "sigma",
+        "alpha",
+        "r_0",
+        "x_0",
+        "y_0",
+        "save_interval",
+        "T",
+        "n_step",
+        "dt",
+        "fail_t",
+        "lc",
+        "fail_cases",
+        "mesh_type",
     ]
-    output_csv(parameters, key_list, directories["data"])
+    output_csv(parameters, key_list, directories["log"])
 
     # ====  Data Generation Scripts ======================
     print("In build_dataset.py")
@@ -547,7 +590,7 @@ if __name__ == "__main__":
         mesh_fine,
         mesh_new,
         mesh_model=mesh_model,
-        **parameters
+        **parameters,
         # sigma=sigma,
         # alpha=alpha,
         # r_0=r_0,
@@ -563,4 +606,3 @@ if __name__ == "__main__":
     swirl_solver.solve_problem(callback=sample_from_loop, fail_callback=fail_callback)
 
     print("Done!")
-
