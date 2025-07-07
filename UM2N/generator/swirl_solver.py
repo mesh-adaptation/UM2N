@@ -575,7 +575,7 @@ class SwirlSolver:
         print("In solve problem")
         self.t = 0.0
         step = 0
-        adapter = mv.MongeAmpereMover(
+        adaptor = mv.MongeAmpereMover(
             self.mesh, monitor_function=self.monitor_function, rtol=1e-3, maxiter=500
         )
         for i in range(self.n_step):
@@ -602,15 +602,15 @@ class SwirlSolver:
                 # self.mesh.coordinates.dat.data[:] = self.adapt_coord_prev
                 # mesh movement - calculate the adapted coords
                 start = time.perf_counter()
-                # adapter = mv.MongeAmpereMover(
+                # adaptor = mv.MongeAmpereMover(
                 #     self.mesh, monitor_function=self.monitor_function, rtol=1e-3, maxiter=100
                 # )
-                adapter.move()
+                adaptor.move()
                 end = time.perf_counter()
                 dur_ms = (end - start) * 1e3
                 # self.mesh_new.coordinates.dat.data[:] = self.adapt_coord
                 self.mesh_new.coordinates.dat.data[:] = (
-                    adapter.mesh.coordinates.dat.data[:]
+                    adaptor.mesh.coordinates.dat.data[:]
                 )
                 # self.adapt_coord_prev = self.mesh_new.coordinates.dat.data[:]
 
@@ -658,26 +658,18 @@ class SwirlSolver:
                 uh_grad = fd.interpolate(fd.grad(uh), func_vec_space)
 
                 hessian = self.l2_projection
-                phi = adapter.phi
-                phi_grad = adapter.grad_phi
-                # sigma = adapter.sigma
-                sigma = adapter.H # ej321 - this may be the updated hessian?
+                phi = adaptor.phi
+                phi_grad = adaptor.grad_phi
+                sigma = adaptor.H
                 I = fd.Identity(2)  # noqa
                 jacobian = I + sigma
-                # jacobian_det = fd.Function(function_space, name="jacobian_det")
-                # jacobian_det.project(
-                #     jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
-                # )
-                # self.jacob_det = fd.project(
-                #     jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1)
-                # )
-                self.jacob_det = fd.Function(adapter.P1, name="jacobian_det").project(
-                jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
-            )
-                # self.jacob = fd.project(
-                #     jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
-                # )
-                self.jacob = fd.Function(adapter.P1_ten, name="jacobian").project(jacobian)
+                self.jacob_det = fd.Function(adaptor.P1, name="jacobian_det").project(
+                    jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
+                )
+
+                self.jacob = fd.Function(adaptor.P1_ten, name="jacobian").project(
+                    jacobian
+                )
 
                 if ((step + 1) % self.save_interval == 0) or (step == 0):
                     callback(

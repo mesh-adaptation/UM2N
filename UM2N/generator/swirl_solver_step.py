@@ -698,13 +698,13 @@ class SwirlSolver:
                     # self.mesh.coordinates.dat.data[:] = self.adapt_coord_prev
                     # mesh movement - calculate the adapted coords
                     start = time.perf_counter()
-                    adapter = mv.MongeAmpereMover(
+                    adaptor = mv.MongeAmpereMover(
                         self.mesh,
                         monitor_function=self.monitor_function,
                         rtol=1e-3,
                         maxiter=100,
                     )
-                    adapter.move()
+                    adaptor.move()
                     end = time.perf_counter()
                     dur_ms = (end - start) * 1e3
                     self.mesh_new.coordinates.dat.data[:] = self.adapt_coord
@@ -750,13 +750,11 @@ class SwirlSolver:
 
                     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
                     uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
-                    # hessian_norm = self.f_norm
-                    # monitor_values = adapter.monitor
+
                     hessian = self.l2_projection
-                    phi = adapter.phi
-                    phi_grad = adapter.grad_phi
-                    # sigma = adapter.sigma
-                    sigma = adapter.H # ej321 - this may be the updated hessian?
+                    phi = adaptor.phi
+                    phi_grad = adaptor.grad_phi
+                    sigma = adaptor.H
                     I = fd.Identity(2)  # noqa
                     jacobian = I + sigma
                     jacobian_det = fd.Function(function_space, name="jacobian_det")

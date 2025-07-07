@@ -10,8 +10,6 @@ from argparse import ArgumentParser
 import firedrake as fd
 import matplotlib.pyplot as plt
 import numpy as np
-
-# import pandas as pd
 from firedrake.__future__ import interpolate
 
 import UM2N
@@ -35,9 +33,11 @@ def parse_arguments():
     parser.add_argument(
         "--field_type", type=str, default="iso", help="Data type (aniso/iso)."
     )
-    # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
     parser.add_argument(
-        "--boundary_scheme", type=str, default="pad", help="Boundary scheme (pad/full)."
+        "--boundary_scheme",
+        type=str,
+        default="pad",
+        help="Use padded scheme or full-scale scheme to sample central point of the bump (pad/full).",
     )
     parser.add_argument(
         "--n_samples", type=int, default=100, help="Number of samples generated"
@@ -270,7 +270,6 @@ def process_features(parameters, directories):
     func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
     grad_uh_interpolate = fd.assemble(interpolate(fd.grad(uh), func_vec_space))
 
-    # ej321 - grad_norm copied from build_helmholtz_square.py
     grad_norm = fd.Function(res["function_space"])
     grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
     grad_norm /= grad_norm.vector().max()
@@ -278,17 +277,6 @@ def process_features(parameters, directories):
     # RHS of helmholtz problem
     f_rhs = fd.assemble(interpolate(helmholtz_eq.f, helmholtz_eq.function_space))
 
-    # ej321 - this seems extra - the mesh is never used, just to build 'eq'?
-    # hessian = UM2N.MeshGenerator(
-    #     params={
-    #         "eq": helmholtz_eq,
-    #         "mesh": rand_poly_mesh_gen.generate_mesh(
-    #             res=lc,
-    #             output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh"),
-    #         ),
-    #     }
-    # ).get_hessian(mesh)
-    # ej321 - using script from build_helmholtz_square.py
     mesh_gen = UM2N.MeshGenerator(params={"eq": helmholtz_eq, "mesh": mesh})
     monitor_val = mesh_gen.monitor_func(mesh)
     hessian = mesh_gen.get_hessian(mesh)
@@ -296,7 +284,7 @@ def process_features(parameters, directories):
         mesh_gen.get_hessian_norm(mesh), fd.FunctionSpace(mesh, "CG", 1)
     )
 
-    # move the mesh?
+    # move the mesh
     start = time.perf_counter()
     new_mesh = mesh_gen.move_mesh()
     end = time.perf_counter()
@@ -334,7 +322,7 @@ def process_features(parameters, directories):
         feature={
             "uh": uh.dat.data_ro.reshape(-1, 1),
             "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(-1, 2),
-            "grad_uh_norm": grad_norm.dat.data_ro.reshape(-1, 1),  # ej321 - added
+            "grad_uh_norm": grad_norm.dat.data_ro.reshape(-1, 1),
             "hessian": hessian.dat.data_ro.reshape(-1, 4),
             "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
             "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
@@ -342,13 +330,13 @@ def process_features(parameters, directories):
             "phi": phi.dat.data_ro.reshape(-1, 1),
             "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
             "f": f_rhs.dat.data_ro.reshape(-1, 1),
-            "monitor_val": monitor_val.dat.data_ro.reshape(-1, 1),  # ej321 - added
+            "monitor_val": monitor_val.dat.data_ro.reshape(-1, 1),
         },
         raw_feature={
             "uh": uh,
             "hessian_norm": hessian_norm,
-            "monitor_val": monitor_val,  # ej321 - added
-            "grad_uh_norm": grad_norm,  # ej321 - added needed for poly only
+            "monitor_val": monitor_val,
+            "grad_uh_norm": grad_norm,
             "jacobian": jacobian,
             "jacobian_det": jacobian_det,
         },
@@ -412,16 +400,6 @@ def process_features(parameters, directories):
     error_original_mesh = fd.errornorm(u_exact, uh_proj)
     error_optimal_mesh = fd.errornorm(u_exact, uh_new_proj)
 
-    # df = pd.DataFrame(
-    #     {
-    #         "error_og": error_original_mesh,
-    #         "error_adapt": error_optimal_mesh,
-    #         "time": dur,
-    #     },
-    #     index=[0],
-    # )
-    # df.to_csv(os.path.join(problem_log_dir, "log{}.csv".format(i)))
-
     # Write to CSV
     with open(
         os.path.join(directories["log"], f"log_{i:04d}.csv"), mode="w", newline=""
@@ -442,12 +420,10 @@ if __name__ == "__main__":
     parameters = {
         # parameters for problem
         "problem": "holmholtz_poly",
-        # "n_case": args.n_case, # burgers problem only
         # parameters for random source
         "n_dist": args.n_dist,
         "max_dist": args.max_dist,
         "lc": args.lc,
-        # "n_grig": args.n_grid, # burgers problem only
         # parameters for ??????
         "n_samples": args.n_samples,
         "data_type": args.field_type,

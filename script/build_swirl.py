@@ -54,15 +54,6 @@ def parse_arguments():
 
     parsed_args = parser.parse_args()
 
-    # Handle dependency between max_dist and n_dist
-    # max number of distributions used to generate the dataset
-    # only if n_dist is not set if n_dist is set, max_dist will be disabled
-    # if parsed_args.n_dist is not None:
-    #     parsed_args.max_dist = None  # Disable max_dist if n_dist is set
-    #     print("Warning: max_dist is ignored because n_dist is set.")
-    # QC:
-    # print(parsed_args)
-
     return parsed_args
 
 
@@ -246,8 +237,8 @@ def sample_from_loop(
     sigma,
     alpha,
     r_0,
-    x_0,  # ej321 - added x_0
-    y_0,  # ej321 - added y_0
+    x_0,
+    y_0,
     t,
     error_og_list=[],
     error_adapt_list=[],
@@ -295,51 +286,6 @@ def sample_from_loop(
     )
 
     mesh_processor.save_taining_data(os.path.join(directories["data"], f"data_{i:04d}"))
-
-    # # ====  Plot Scripts ======================
-    # fig = plt.figure(figsize=(15, 10))
-    # ax1 = fig.add_subplot(2, 3, 1, projection='3d')
-    # # Plot the exact solution
-    # ax1.set_title('Solution field (HR)')
-    # fd.trisurf(uh_fine, axes=ax1)
-    # # Plot the solved solution
-    # ax2 = fig.add_subplot(2, 3, 2, projection='3d')
-    # ax2.set_title('Solution field (Original Mesh)')
-    # fd.trisurf(uh, axes=ax2)
-
-    # ax3 = fig.add_subplot(2, 3, 3, projection='3d')
-    # ax3.set_title('Solution field (Adapted Mesh)')
-    # fd.trisurf(uh_new, axes=ax3)
-
-    # # Plot the mesh
-    # ax4 = fig.add_subplot(2, 3, 4)
-    # ax4.set_title('Original Mesh ')
-    # fd.triplot(mesh_og, axes=ax4)
-
-    # ax5 = fig.add_subplot(2, 3, 5)
-    # ax5.set_title('Optimal Mesh')
-    # # fd.tripcolor(
-    # #     uh, cmap='coolwarm', axes=ax5)
-    # fd.triplot(mesh_new, axes=ax5)
-
-    # # plot mesh with function evaluated on it
-    # ax6 = fig.add_subplot(2, 3, 6)
-    # ax6.set_title('Solution Projected on Optimal Mesh')
-    # fd.tripcolor(
-    #     uh_new, cmap='coolwarm', axes=ax6)
-    # fd.triplot(mesh_new, axes=ax6)
-
-    # fig.savefig(
-    #     os.path.join(
-    #         problem_plot_dir, f"plot_{i:04d}.png")
-    # )
-    # plt.close()
-    # fig, ax = plt.subplots()
-    # ax.set_title("adapt error list")
-    # ax.plot(error_adapt_list, linestyle='--', color='blue', label='adapt')
-    # # ax.plot(error_og_list, linestyle='--', color='red', label='og')
-    # ax.legend()
-    # plt.show()
 
     # ====  Log File ============================================
     # function_space_fine = fd.FunctionSpace(mesh_fine, 'CG', 1)
@@ -402,11 +348,6 @@ def sample_from_loop(
     err_v_max = err_abs_max_val
     err_v_min = -err_v_max
 
-    # # Error on high resolution mesh
-    # cb = fd.tripcolor(fd.assemble(uh_fine - uh_fine), cmap=cmap, axes=ax[2, 0], vmax=err_v_max, vmin=err_v_min)
-    # ax[2, 0].set_title(f"Error Map High Resolution")
-    # plt.colorbar(cb)
-
     # Monitor values
     cb = fd.tripcolor(monitor_values, cmap=cmap, axes=ax[2, 0])
     ax[2, 0].set_title("Monitor Values")
@@ -451,29 +392,14 @@ if __name__ == "__main__":
         "T": 1,
         "dt": 1e-3,  # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
         "n_step": 1000,
-        # "n_case": args.n_case, # burgers problem only
-        # parameters for random source
-        # "n_dist": args.n_dist,
-        # "max_dist": args.max_dist,
         "lc": args.lc,
         "n_grid": args.n_grid if args.n_grid else int(1 / args.lc),
-        # parameters for ??????
-        # "n_samples": args.n_samples,
-        # "data_type": args.field_type,
-        # "scheme": args.boundary_scheme,
+        # parameters for mesh def
         "mesh_type": int(args.mesh_type),
         "n_monitor_smooth": args.n_monitor_smooth,
         # parameters for domain scale
         "scale_x": 1,
         "scale_y": 1,
-        # parameters for anisotropic data - distribution height scaler
-        # "z_max": 1,
-        # "z_min": 0,
-        # parameters for ?????
-        # "x_start": 0,
-        # "x_end": 1,
-        # "y_start": 0,
-        # "y_end": 1,
         # parameters for initial condition
         "sigma": args.sigma,
         "r_0": args.r_0,
@@ -483,24 +409,7 @@ if __name__ == "__main__":
         # parameters for storing files
         "save_interval": args.save_interval,
         "fail_t": [],  # list storing failing dts
-        # parameters for isotropic data
-        # "w_min": 0.05,
-        # "w_max": 0.2,
-        # "c_min": 0.2 if args.boundary_scheme == "pad" else 0,
-        # "c_max": 0.8 if args.boundary_scheme == "pad" else 1,
-        # parameters for dataset challenging level
-        # larger, less challenging (because the gaussian is more like a circle)
-        # "sigma_mean_scaler": 1 / 4,
-        # "sigma_sigma_scaler": 1 / 6,
-        # "sigma_eps": 1 / 8,
-        # parameters for data split
-        # "p_train": 0.75,
-        # "p_test": 0.15,
-        # "p_val": 0.1,
     }
-
-    # # Set random seed
-    # random.seed(args.rand_seed)
 
     # ====  Setup Directories ======================
     problem_specific_dir = "sigma_{:.3f}_alpha_{}_r0_{}_x0_{}_y0_{}_lc_{}_ngrid_{}_interval_{}_meshtype_{}_smooth_{}".format(
@@ -573,7 +482,7 @@ if __name__ == "__main__":
         mesh_model = mesh_gen.generate_mesh(
             res=lc, output_filename=os.path.join(directories["mesh"], "mesh.msh")
         )
-        # ej321 - is this extra call to mesh gen needed?
+        # is this extra call to mesh gen needed?
         mesh_gen_fine = UM2N.UnstructuredSquareMeshGenerator(mesh_type=mesh_type)
         mesh_fine = mesh_gen_fine.generate_mesh(
             res=1e-2, output_filename=os.path.join(directories["mesh_fine"], "mesh.msh")
@@ -591,16 +500,6 @@ if __name__ == "__main__":
         mesh_new,
         mesh_model=mesh_model,
         **parameters,
-        # sigma=sigma,
-        # alpha=alpha,
-        # r_0=r_0,
-        # x_0=x_0,
-        # y_0=y_0,
-        # save_interval=save_interval,
-        # T=T,
-        # dt=dt,
-        # n_step=n_step,
-        # n_monitor_smooth=n_monitor_smooth,
     )
 
     swirl_solver.solve_problem(callback=sample_from_loop, fail_callback=fail_callback)

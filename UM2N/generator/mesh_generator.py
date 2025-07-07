@@ -54,8 +54,7 @@ class MeshGenerator:
         )
         mover.move()
         # extract Hessian of the movement
-        # sigma = mover.sigma
-        sigma = mover.H # ej321 - this may be the updated hessian?
+        sigma = mover.H
         I = fd.Identity(2)  # noqa
         jacobian = I + sigma
         jacobian_det = fd.Function(mover.P1, name="jacobian_det")

@@ -33,9 +33,11 @@ def parse_arguments():
     parser.add_argument(
         "--field_type", type=str, default="aniso", help="Data type (aniso/iso)"
     )
-    # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
     parser.add_argument(
-        "--boundary_scheme", type=str, default="full", help="Boundary scheme (pad/full)"
+        "--boundary_scheme",
+        type=str,
+        default="full",
+        help="Use padded scheme or full-scale scheme to sample central point of the bump (pad/full)",
     )
     parser.add_argument(
         "--n_samples", type=int, default=100, help="Number of samples generated"
@@ -207,8 +209,7 @@ def process_features(parameters, directories):
     # RHS of helmholtz problem
     f_rhs = fd.assemble(interpolate(helmholtz_eq.f, helmholtz_eq.function_space))
 
-    # generate mesh?
-
+    # generate mesh
     mesh_gen = UM2N.MeshGenerator(params={"eq": helmholtz_eq, "mesh": mesh})
     monitor_val = mesh_gen.monitor_func(mesh)
     hessian = mesh_gen.get_hessian(mesh)
@@ -216,7 +217,7 @@ def process_features(parameters, directories):
         mesh_gen.get_hessian_norm(mesh), fd.FunctionSpace(mesh, "CG", 1)
     )
 
-    # move the mesh?
+    # move the mesh
     start = time.perf_counter()
     new_mesh = mesh_gen.move_mesh()  # noqa
     end = time.perf_counter()
@@ -309,7 +310,6 @@ def process_features(parameters, directories):
     print("error og/optimal:", error_original_mesh, error_optimal_mesh)
 
     # ====  Plot mesh, solution, error ======================
-
     rows, cols = 3, 3
     cmap = "seismic"
 
@@ -495,13 +495,11 @@ if __name__ == "__main__":
     parameters = {
         # parameters for problem
         "problem": "helmholtz",
-        # "n_case": args.n_case, # burgers problem only
         # parameters for random source
         "n_dist": args.n_dist,
         "max_dist": args.max_dist,
         "lc": args.lc,
-        # "n_grid": args.n_grid, # burgers problem only
-        # parameters for ??????
+        # parameters for mesh def
         "n_samples": args.n_samples,
         "data_type": args.field_type,
         "scheme": args.boundary_scheme,

@@ -31,9 +31,11 @@ def parse_arguments():
     parser.add_argument(
         "--field_type", type=str, default="iso", help="Data type (aniso/iso)."
     )
-    # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
     parser.add_argument(
-        "--boundary_scheme", type=str, default="pad", help="Boundary scheme (pad/full)."
+        "--boundary_scheme",
+        type=str,
+        default="pad",
+        help="use padded scheme or full-scale scheme to sample central point of the bump (pad/full).",
     )
     parser.add_argument(
         "--n_case", type=int, default=5, help="Number of simulation cases."
@@ -305,79 +307,10 @@ def get_sample_param_of_nu_generalization_by_idx_train(idx_in):
     return gauss_list_, nu_
 
 
-# def get_sample_params(idx):
-#     """Retrieve sample parameters for the Burgers problem."""
-#     return UM2N.get_sample_param_of_nu_generalization_by_idx_train(idx)
-
-
-# def solve_case(idx, mesh, mesh_new, mesh_fine, dirs):
-#     """Solve a single case of the Burgers problem."""
-#     gauss_list, nu = get_sample_params(idx)
-#     solver = UM2N.BurgersSolver(mesh, mesh_fine, mesh_new, gauss_list=gauss_list, nu=nu, idx=idx)
-#     solver.solve_problem(lambda *args: sample_from_loop(*args, dirs))
-
-
-# def sample_from_loop(
-#     uh, uh_grad, hessian, hessian_norm, phi, grad_phi, jacobian, jacobian_det,
-#     uh_new, mesh_og, mesh_new, function_space, function_space_fine, uh_fine,
-#     dur, nu, gauss_list, t, idx, dirs, error_og_list=[], error_adapt_list=[]
-# ):
-#     """Process and save data from a single simulation loop."""
-#     mesh_processor = UM2N.MeshProcessor(
-#         original_mesh=mesh_og,
-#         optimal_mesh=mesh_new,
-#         function_space=function_space,
-#         use_4_edge=True,
-#         feature={
-#             "uh": uh.dat.data_ro.reshape(-1, 1),
-#             "grad_uh": uh_grad.dat.data_ro.reshape(-1, 2),
-#             "hessian": hessian.dat.data_ro.reshape(-1, 4),
-#             "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
-#             "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
-#             "jacobian_det": jacobian_det.dat.data_ro.reshape(-1, 1),
-#             "phi": phi.dat.data_ro.reshape(-1, 1),
-#             "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
-#         },
-#         raw_feature={
-#             "uh": uh,
-#             "hessian_norm": hessian_norm,
-#             "jacobian": jacobian,
-#             "jacobian_det": jacobian_det,
-#         },
-#         nu=nu,
-#         gauss_list=gauss_list,
-#         dur=dur,
-#         t=t,
-#         idx=idx,
-#     )
-
-#     mesh_processor.save_taining_data(os.path.join(dirs["data"], f"data_{idx}"))
-
-#     # Plot results
-#     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-#     fd.trisurf(uh_fine, axes=axes[0, 0]).set_title("Solution field (HR)")
-#     fd.trisurf(uh, axes=axes[0, 1]).set_title("Solution field (Original Mesh)")
-#     fd.trisurf(uh_new, axes=axes[0, 2]).set_title("Solution field (Adapted Mesh)")
-#     fd.triplot(mesh_og, axes=axes[1, 0]).set_title("Original Mesh")
-#     fd.triplot(mesh_new, axes=axes[1, 1]).set_title("Adapted Mesh")
-#     fd.tripcolor(uh_new, cmap="coolwarm", axes=axes[1, 2]).set_title("Solution on Optimal Mesh")
-#     fig.savefig(os.path.join(dirs["plot"], f"plot_{idx}.png"))
-#     plt.close(fig)
-
-#     # Save error metrics
-#     uh = fd.project(uh, function_space_fine)
-#     uh_new = fd.project(uh_new, function_space_fine)
-#     error_original_mesh = fd.errornorm(uh, uh_fine, norm_type="L2")
-#     error_optimal_mesh = fd.errornorm(uh_new, uh_fine, norm_type="L2")
-#     pd.DataFrame(
-#         {"error_og": [error_original_mesh], "error_adapt": [error_optimal_mesh], "time": [dur]}
-#     ).to_csv(os.path.join(dirs["log"], f"log_{idx}.csv"), index=False)
-
-
 def sample_from_loop(
     uh,
     uh_grad,
-    grad_norm,  # ej321 - added grad_norm
+    grad_norm,
     hessian,
     hessian_norm,
     phi,
@@ -409,9 +342,7 @@ def sample_from_loop(
         feature={
             "uh": uh.dat.data_ro.reshape(-1, 1),
             "grad_uh": uh_grad.dat.data_ro.reshape(-1, 2),
-            "grad_uh_norm": grad_norm.dat.data_ro.reshape(
-                -1, 1
-            ),  # ej321 - added grad_norm
+            "grad_uh_norm": grad_norm.dat.data_ro.reshape(-1, 1),
             "hessian": hessian.dat.data_ro.reshape(-1, 4),
             "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
             "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
@@ -423,7 +354,7 @@ def sample_from_loop(
         raw_feature={
             "uh": uh,
             "hessian_norm": hessian_norm,
-            "monitor_val": monitor_val,  # ej321 - added monitor_val
+            "monitor_val": monitor_val,
             "jacobian": jacobian,
             "jacobian_det": jacobian_det,
         },
@@ -469,13 +400,6 @@ def sample_from_loop(
     fig.savefig(os.path.join(directories["plot"], "plot_{}.png".format(i)))
     i += 1
 
-    # fig, ax = plt.subplots()
-    # ax.set_title("adapt error list")
-    # ax.plot(error_adapt_list, linestyle='--', color='blue', label='adapt')
-    # # ax.plot(error_og_list, linestyle='--', color='red', label='og')
-    # ax.legend()
-    # plt.show()
-
     # ==========================================
     uh = fd.project(uh, function_space_fine)
     uh_new = fd.project(uh_new, function_space_fine)
@@ -494,16 +418,6 @@ def sample_from_loop(
         csv_writer.writerow([error_original_mesh, error_optimal_mesh, dur])
 
     print("error og/optimal:", error_original_mesh, error_optimal_mesh)
-    # df = pd.DataFrame(
-    #     {
-    #         "error_og": error_original_mesh,
-    #         "error_adapt": error_optimal_mesh,
-    #         "time": dur,
-    #     },
-    #     index=[0],
-    # )
-    # df.to_csv(os.path.join(problem_log_dir, "log{}.csv".format(i)))
-    # print("error og/optimal:", error_original_mesh, error_optimal_mesh)
     return
 
 
@@ -521,8 +435,7 @@ if __name__ == "__main__":
         "max_dist": args.max_dist,
         "lc": args.lc,
         "n_grid": args.n_grid,
-        # parameters for ??????
-        # "n_samples": args.n_samples,
+        # parameters for mesh def
         "data_type": args.field_type,
         "scheme": args.boundary_scheme,
         "mesh_type": int(args.mesh_type),

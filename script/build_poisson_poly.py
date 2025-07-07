@@ -32,9 +32,12 @@ def parse_arguments():
     parser.add_argument(
         "--field_type", type=str, default="iso", help="Data type (aniso/iso)."
     )
-    # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
+    #   # noqa
     parser.add_argument(
-        "--boundary_scheme", type=str, default="pad", help="Boundary scheme (pad/full)."
+        "--boundary_scheme",
+        type=str,
+        default="pad",
+        help="Use padded scheme or full-scale scheme to sample central point of the bump (pad/full).",
     )
     parser.add_argument(
         "--n_samples", type=int, default=100, help="Number of samples generated"
@@ -268,48 +271,15 @@ def process_features(parameters, directories):
     hessian_norm = fd.project(
         mesh_gen.get_hessian_norm(mesh), fd.FunctionSpace(mesh, "CG", 1)
     )
-    # hessian = UM2N.MeshGenerator(
-    #     params={
-    #         "eq": poisson_eq,
-    #         "mesh": rand_poly_mesh_gen.generate_mesh(
-    #             res=lc,
-    #             output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh"),
-    #         ),
-    #     }
-    # ).get_hessian(mesh)
-
-    # hessian_norm = UM2N.MeshGenerator(
-    #     params={
-    #         "eq": poisson_eq,
-    #         "mesh": rand_poly_mesh_gen.generate_mesh(
-    #             res=lc,
-    #             output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh"),
-    #         ),
-    #     }
-    # ).monitor_func(mesh)
-
-    # is this the monitor function value?
-    # hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 
     func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
     grad_uh_interpolate = fd.assemble(interpolate(fd.grad(uh), func_vec_space))
 
-    # ej321 - grad_norm copied from build_helmholtz_square.py
     grad_norm = fd.Function(res["function_space"])
     grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
     grad_norm /= grad_norm.vector().max()
 
-    # mesh_gen = UM2N.MeshGenerator(
-    #     params={
-    #         "eq": poisson_eq,
-    #         "mesh": rand_poly_mesh_gen.generate_mesh(
-    #             res=lc,
-    #             output_filename=os.path.join(problem_mesh_dir, f"mesh{i}.msh"),
-    #         ),
-    #     }
-    # )
-
-    # move the mesh?
+    # move the mesh
     start = time.perf_counter()
     new_mesh = mesh_gen.move_mesh()
     end = time.perf_counter()
@@ -347,20 +317,20 @@ def process_features(parameters, directories):
         feature={
             "uh": uh.dat.data_ro.reshape(-1, 1),
             "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(-1, 2),
-            "grad_uh_norm": grad_norm.dat.data_ro.reshape(-1, 1),  # ej321 - added
+            "grad_uh_norm": grad_norm.dat.data_ro.reshape(-1, 1),
             "hessian": hessian.dat.data_ro.reshape(-1, 4),
             "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
             "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
             "jacobian_det": jacobian_det.dat.data_ro.reshape(-1, 1),
             "phi": phi.dat.data_ro.reshape(-1, 1),
             "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
-            "monitor_val": monitor_val.dat.data_ro.reshape(-1, 1),  # ej321 - added
+            "monitor_val": monitor_val.dat.data_ro.reshape(-1, 1),
         },
         raw_feature={
             "uh": uh,
             "hessian_norm": hessian_norm,
-            "monitor_val": monitor_val,  # ej321 - added
-            "grad_uh_norm": grad_norm,  # ej321 - added needed for poly only
+            "monitor_val": monitor_val,
+            "grad_uh_norm": grad_norm,
             "jacobian": jacobian,
             "jacobian_det": jacobian_det,
         },
@@ -444,13 +414,11 @@ if __name__ == "__main__":
     parameters = {
         # parameters for problem
         "problem": "poisson_poly",
-        # "n_case": args.n_case, # burgers problem only
         # parameters for random source
         "n_dist": args.n_dist,
         "max_dist": args.max_dist,
         "lc": args.lc,
-        # "n_grig": args.n_grid, # burgers problem only
-        # parameters for ??????
+        # parameters for mesh def
         "n_samples": args.n_samples,
         "data_type": args.field_type,
         "scheme": args.boundary_scheme,

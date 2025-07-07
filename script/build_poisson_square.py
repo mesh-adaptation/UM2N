@@ -32,9 +32,11 @@ def parse_arguments():
     parser.add_argument(
         "--field_type", type=str, default="iso", help="Data type (aniso/iso)."
     )
-    # use padded scheme or full-scale scheme to sample central point of the bump  # noqa
     parser.add_argument(
-        "--boundary_scheme", type=str, default="pad", help="Boundary scheme (pad/full)."
+        "--boundary_scheme",
+        type=str,
+        default="pad",
+        help="Use padded scheme or full-scale scheme to sample central point of the bump (pad/full).",
     )
     parser.add_argument(
         "--n_samples", type=int, default=100, help="Number of samples generated"
@@ -270,7 +272,6 @@ def process_features(parameters, problem_data_dir):
     func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
     grad_uh_interpolate = fd.assemble(interpolate(fd.grad(uh), func_vec_space))
 
-    # ej321 - grad_norm copied from build_helmholtz_square.py
     grad_norm = fd.Function(res["function_space"])
     grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
     grad_norm /= grad_norm.vector().max()
@@ -311,23 +312,19 @@ def process_features(parameters, problem_data_dir):
         feature={
             "uh": uh.dat.data_ro.reshape(-1, 1),
             "grad_uh": grad_uh_interpolate.dat.data_ro.reshape(-1, 2),
-            "grad_uh_norm": grad_norm.dat.data_ro.reshape(
-                -1, 1
-            ),  # ej321 - added grad_norm
+            "grad_uh_norm": grad_norm.dat.data_ro.reshape(-1, 1),
             "hessian": hessian.dat.data_ro.reshape(-1, 4),
             "hessian_norm": hessian_norm.dat.data_ro.reshape(-1, 1),
             "jacobian": jacobian.dat.data_ro.reshape(-1, 4),
             "jacobian_det": jacobian_det.dat.data_ro.reshape(-1, 1),
             "phi": phi.dat.data_ro.reshape(-1, 1),
             "grad_phi": grad_phi.dat.data_ro.reshape(-1, 2),
-            "monitor_val": monitor_val.dat.data_ro.reshape(
-                -1, 1
-            ),  # ej321 - added monitor_val
+            "monitor_val": monitor_val.dat.data_ro.reshape(-1, 1),
         },
         raw_feature={
             "uh": uh,
             "hessian_norm": hessian_norm,
-            "monitor_val": monitor_val,  # ej321 - added monitor_val
+            "monitor_val": monitor_val,
             "jacobian": jacobian,
             "jacobian_det": jacobian_det,
         },
@@ -410,13 +407,11 @@ if __name__ == "__main__":
     parameters = {
         # parameters for problem
         "problem": "poisson",
-        # "n_case": args.n_case, # burgers problem only
         # parameters for random source
         "n_dist": args.n_dist,
         "max_dist": args.max_dist,
         "lc": args.lc,
-        # "n_grig": args.n_grid, # burgers problem only
-        # parameters for ??????
+        # parameters for mesh def
         "n_samples": args.n_samples,
         "data_type": args.field_type,
         "scheme": args.boundary_scheme,
