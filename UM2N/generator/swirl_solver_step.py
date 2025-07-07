@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt  # noqa
 
 from tqdm import tqdm  # noqa
 
+from firedrake.__future__ import interpolate
+
 
 def get_c(x, y, t, threshold=0.5, alpha=1.5):
     """
@@ -459,7 +461,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.assemble(interpolate(fd.grad(self.u_cur), func_vec_space))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
@@ -481,7 +483,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.assemble(interpolate(fd.grad(self.u_cur), func_vec_space))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the grad
@@ -508,7 +510,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.assemble(interpolate(fd.grad(self.u_cur), func_vec_space))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
@@ -568,7 +570,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.assemble(interpolate(fd.grad(self.u_cur), func_vec_space))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
@@ -631,7 +633,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.assemble(interpolate(fd.grad(self.u_cur), func_vec_space))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
@@ -749,7 +751,7 @@ class SwirlSolver:
                     uh_fine.project(self.u_cur_fine)
 
                     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-                    uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
+                    uh_grad = fd.assemble(interpolate(fd.grad(self.uh), func_vec_space))
 
                     hessian = self.l2_projection
                     phi = adaptor.phi

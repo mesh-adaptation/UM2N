@@ -1,15 +1,12 @@
 # Author: Chunyang Wang
 # GitHub Username: chunyang-w
 
-import csv
-import os
-import random
-import shutil
 import time
 from argparse import ArgumentParser
 
 import firedrake as fd
 import matplotlib.pyplot as plt
+from build_helper import *
 from firedrake.__future__ import interpolate
 
 import UM2N
@@ -420,71 +417,6 @@ def output_csv(parameters, key_list, output_dir):
         csv_writer.writerow(csv_data)
 
     print(f"Parameters saved to {csv_file_path}")
-
-
-def split_data(
-    source_dir,
-    train_dir,
-    test_dir,
-    val_dir,
-    train_ratio=0.75,
-    test_ratio=0.15,
-    val_ratio=0.1,
-):
-    """
-    Split files in a source directory into train, test, and validation directories.
-
-    Args:
-        source_dir (str): Path to the source directory containing files.
-        train_dir (str): Path to the train directory.
-        test_dir (str): Path to the test directory.
-        val_dir (str): Path to the validation directory.
-        train_ratio (float): Proportion of files to allocate to the train set.
-        test_ratio (float): Proportion of files to allocate to the test set.
-        val_ratio (float): Proportion of files to allocate to the validation set.
-
-    Raises:
-        ValueError: If the sum of train_ratio, test_ratio, and val_ratio is not 1.
-    """
-    # Validate ratios
-    if not (0 <= train_ratio <= 1 and 0 <= test_ratio <= 1 and 0 <= val_ratio <= 1):
-        raise ValueError("Ratios must be between 0 and 1.")
-    if train_ratio + test_ratio + val_ratio != 1:
-        raise ValueError(
-            "The sum of train_ratio, test_ratio, and val_ratio must equal 1."
-        )
-
-    # Get all files in the source directory
-    files = [
-        f for f in os.listdir(source_dir) if os.path.isfile(os.path.join(source_dir, f))
-    ]
-    random.shuffle(files)  # Shuffle files for unbiased distribution
-
-    # QC:
-    # print(f'files {files}')
-
-    # Calculate split indices - preference train > test > val
-    total_files = len(files)
-    num_train = int(total_files * train_ratio)
-    num_test = max(int(total_files * test_ratio), total_files - num_train)
-    num_val = total_files - num_train - num_test
-
-    # Distribute files
-    train_files = files[:num_train]
-    test_files = files[num_train : num_train + num_test]
-    val_files = files[num_train + num_test :]
-
-    for datafiles, target_dir in zip(
-        [train_files, test_files, val_files], [train_dir, test_dir, val_dir]
-    ):
-        for datafile in datafiles:
-            shutil.copy(
-                os.path.join(source_dir, datafile), os.path.join(target_dir, datafile)
-            )
-
-    print(
-        f"Data split complete: {num_train} train, {num_test} test, {num_val} validation files."
-    )
 
 
 if __name__ == "__main__":

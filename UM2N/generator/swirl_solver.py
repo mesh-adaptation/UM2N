@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt  # noqa
 from tqdm import tqdm  # noqa
 from UM2N.model.train_util import model_forward
 
+from firedrake.__future__ import interpolate
+
 
 def get_log_og(log_path, idx):
     """
@@ -453,7 +455,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.assemble(interpolate(fd.grad(self.u_cur), func_vec_space))
         self.grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # filter_monitor_val = np.minimum(1e3, self.f_norm.dat.data[:])
@@ -526,7 +528,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.assemble(interpolate(fd.grad(self.u_cur), func_vec_space))
         self.grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
@@ -655,7 +657,7 @@ class SwirlSolver:
                 )
 
                 func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-                uh_grad = fd.interpolate(fd.grad(uh), func_vec_space)
+                uh_grad = fd.assemble(interpolate(fd.grad(uh), func_vec_space))
 
                 hessian = self.l2_projection
                 phi = adaptor.phi
