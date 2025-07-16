@@ -234,16 +234,18 @@ class MeshProcessor:
             for j in range(len(conv_y_fix)):
                 # (x, y) conv_feat
                 conv_xy_fix[:, i, j] = np.array([conv_x_fix[i], conv_y_fix[j]])
-                conv_uh_fix[:, i, j] = self.raw_feature["uh"].at(
-                    [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
-                )
+                if "uh" in self.raw_feature:
+                    conv_uh_fix[:, i, j] = self.raw_feature["uh"].at(
+                        [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
+                    )
                 if "grad_uh_norm" in self.raw_feature:
                     conv_grad_uh_norm_fix[:, i, j] = self.raw_feature[
                         "grad_uh_norm"
                     ].at([conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3)
-                conv_hessian_norm_fix[:, i, j] = self.raw_feature["hessian_norm"].at(
-                    [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
-                )
+                if "hessian_norm" in self.raw_feature:
+                    conv_hessian_norm_fix[:, i, j] = self.raw_feature[
+                        "hessian_norm"
+                    ].at([conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3)
                 conv_monitor_val_fix[:, i, j] = self.raw_feature["monitor_val"].at(
                     [conv_x_fix[i], conv_y_fix[j]], tolerance=1e-3
                 )
@@ -316,16 +318,6 @@ class MeshProcessor:
         np_data = {
             "x": self.x,
             "coord": self.coordinates,
-            "u": self.feature["uh"],
-            "grad_u": self.feature["grad_uh"],
-            "grad_u_norm": self.feature["grad_uh_norm"],
-            "hessian": self.feature["hessian"],
-            "phi": self.feature["phi"],
-            "grad_phi": self.feature["grad_phi"],
-            "hessian_norm": self.feature["hessian_norm"],
-            "jacobian": self.feature["jacobian"],
-            "jacobian_det": self.feature["jacobian_det"],
-            "monitor_val": self.feature["monitor_val"],
             "edge_index": self.edge_T,
             "edge_index_bi": self.edge_bi_T,
             "cluster_edges": None,  # this will be added if we use data_transform.py to add cluster edges  # noqa
@@ -365,6 +357,28 @@ class MeshProcessor:
             "swirl_params": self.swirl_params,
             "t": self.t,  # time step when solving burgers eq.
             "idx": self.idx,  # index number for picking params for burgers tracer.  # noqa
+            "u": self.feature["uh"] if "uh" in self.feature else None,
+            "grad_u": self.feature["grad_uh"] if "grad_uh" in self.feature else None,
+            "grad_u_norm": self.feature["grad_uh_norm"]
+            if "grad_uh_norm" in self.feature
+            else None,
+            "hessian": self.feature["hessian"] if "hessian" in self.feature else None,
+            "phi": self.feature["phi"] if "phi" in self.feature else None,
+            "grad_phi": self.feature["grad_phi"]
+            if "grad_phi" in self.feature
+            else None,
+            "hessian_norm": self.feature["hessian_norm"]
+            if "hessian_norm" in self.feature
+            else None,
+            "jacobian": self.feature["jacobian"]
+            if "jacobian" in self.feature
+            else None,
+            "jacobian_det": self.feature["jacobian_det"]
+            if "jacobian_det" in self.feature
+            else None,
+            "monitor_val": self.feature["monitor_val"]
+            if "monitor_val" in self.feature
+            else None,
             "f": self.feature["f"] if "f" in self.feature else None,
         }
         if "uh_adapt" in self.feature:  # currently only in swirl case
