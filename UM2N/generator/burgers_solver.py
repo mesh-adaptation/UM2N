@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt  # noqa
 import movement as mv
 import numpy as np  # noqa
 
+from firedrake.__future__ import interpolate
+
 __all__ = ["BurgersSolver"]
 
 
@@ -198,12 +200,15 @@ class BurgersSolver:
             # solve on fine mesh
             fd.solve(self.F_fine == 0, self.u_fine)
             start = time.perf_counter()
-            adapter = mv.MongeAmpereMover(
+            adaptor = mv.MongeAmpereMover(
                 self.mesh,
                 monitor_function=self.monitor_function,
                 rtol=1e-3,
             )
-            adapter.move()
+
+            raw_monitor_val = self.monitor_function(self.mesh)
+
+            adaptor.move()
             end = time.perf_counter()
             dur_ms = (end - start) * 1000
 
@@ -216,6 +221,9 @@ class BurgersSolver:
             function_space = fd.FunctionSpace(self.mesh, "CG", 1)
             uh_0 = fd.Function(function_space)
             uh_0.project(self.u[0])
+
+            monitor_val = fd.Function(function_space)
+            monitor_val.assign(raw_monitor_val)
 
             # calculate solution on adapted mesh
             self.mesh.coordinates.dat.data[:] = self.adapt_coord
@@ -240,27 +248,30 @@ class BurgersSolver:
 
             func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
             uh_grad = fd.interpolate(fd.grad(uh_0), func_vec_space)
+
+            grad_uh_interpolate = fd.assemble(
+                interpolate(fd.grad(self.u[0]), func_vec_space)
+            )
+            grad_norm = fd.Function(function_space)
+            grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
+            grad_norm /= grad_norm.vector().max()
+
             hessian_norm = self.f_norm
             hessian = self.l2_projection
-            phi = adapter.phi
-            phi_grad = adapter.grad_phi
-            sigma = adapter.sigma
+            phi = adaptor.phi
+            phi_grad = adaptor.grad_phi
+            sigma = adaptor.H
             I = fd.Identity(2)  # noqa
             jacobian = I + sigma
-            jacobian_det = fd.Function(function_space, name="jacobian_det")
-            jacobian_det.project(
+            self.jacob_det = fd.Function(adaptor.P1, name="jacobian_det").project(
                 jacobian[0, 0] * jacobian[1, 1] - jacobian[0, 1] * jacobian[1, 0]
             )
-            self.jacob_det = fd.project(
-                jacobian_det, fd.FunctionSpace(self.mesh, "CG", 1)
-            )
-            self.jacob = fd.project(
-                jacobian, fd.TensorFunctionSpace(self.mesh, "CG", 1)
-            )
+            self.jacob = fd.Function(adaptor.P1_ten, name="jacobian").project(jacobian)
 
             callback(
                 uh=uh_0,
                 uh_grad=uh_grad,
+                grad_norm=grad_norm,
                 hessian_norm=hessian_norm,
                 hessian=hessian,
                 phi=phi,
@@ -280,6 +291,7 @@ class BurgersSolver:
                 dur=dur_ms,
                 t=t,
                 idx=self.idx,
+                monitor_val=monitor_val,
             )
 
             # step forward in time

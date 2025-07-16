@@ -1,195 +1,208 @@
 # Author: Chunyang Wang
 # GitHub Username: chunyang-w
-
-import os
-import shutil
 from argparse import ArgumentParser
 
 import firedrake as fd
 import matplotlib.pyplot as plt
-import pandas as pd
+from build_helper import *
 
 import UM2N
 
 
-def arg_parse():
-    parser = ArgumentParser()
+def parse_arguments():
+    """Parse command-line arguments."""
+    parser = ArgumentParser(description="Build Burgers dataset with square meshes.")
     parser.add_argument(
-        "--mesh_type", type=int, default=6, help="algorithm used to generate mesh"
+        "--mesh_type", type=int, default=2, help="Algorithm used to generate mesh."
     )
     parser.add_argument(
-        "--sigma",
-        type=float,
-        default=(0.05 / 3),
-        help="sigma used to control the initial ring shape",
+        "--sigma", type=float, default=(0.05 / 3), help="initial ring shape control"
+    )
+    parser.add_argument("--r_0", type=float, default=0.2, help="initial ring radius")
+    parser.add_argument(
+        "--x_0", type=float, default=0.5, help="ring center x coordinate"
     )
     parser.add_argument(
-        "--r_0", type=float, default=0.2, help="radius of the initial ring"
+        "--y_0", type=float, default=0.5, help="ring center y coordinate"
     )
     parser.add_argument(
-        "--x_0", type=float, default=0.5, help="center of the ring in x"
+        "--alpha", type=float, default=1.5, help="swirl (velocity) scalar coefficient"
     )
     parser.add_argument(
-        "--y_0", type=float, default=0.5, help="center of the ring in y"
-    )
-    parser.add_argument(
-        "--alpha",
-        type=float,
-        default=1.5,
-        help="scalar coefficient of the swirl (velocity)",
-    )
-    parser.add_argument(
-        "--save_interval", type=int, default=10, help="interval for stroing sample file"
+        "--save_interval", type=int, default=10, help="output sample file interval"
     )
     parser.add_argument(
         "--lc",
         type=float,
         default=5e-2,
-        help="the length characteristic of the elements in the\
-                            mesh (if using unstructured mesh)",
+        help="Length characteristic of unstructured mesh elements.",
     )
     parser.add_argument(
         "--n_grid",
         type=int,
         default=20,
-        help="number of grids in a mesh (only appliable when\
-                                mesh_type is 0)",
+        help="number number of grids in a mesh when mesh_type is 0)",
     )
     parser.add_argument(
         "--n_monitor_smooth",
         type=int,
         default=10,
-        help="number of times for applying a Laplacian smoother for monitor function",
+        help="apply Laplacian smoother n time to monitor function",
     )
-    args_ = parser.parse_args()
-    print(args_)
-    return args_
+
+    parsed_args = parser.parse_args()
+
+    return parsed_args
 
 
-args = arg_parse()
+def setup_directories(problem, mesh_type, base_dir=None, subdirs=None, dir_format=None):
+    """
+    Set up directories for storing data, plots, and logs.
 
-mesh_type = args.mesh_type
+    Args:
+        base_dir (str): Base directory for the project.
+        parameters (dict): Dictionary of parameters, including "mesh_type" and "problem".
+            - "mesh_type" (int): Type of mesh used in the simulation (default: 0).
+            - "problem" (str): Name of the problem (e.g., "burgers" or "helmholtz") (default: "default_problem").
+        subdirs (list, optional): List of subdirectories to create. Defaults to:
+            ["data", "plot", "log", "mesh", "mesh_fine"].
+            Additional subdirectories like "plot_compare", "train", "test", and "val" are added for "helmholtz".
+        dir_format (str, optional): Format string for the problem-specific directory. Must use placeholders
+            matching keys in the `parameters` dictionary. Example:
+            "lc={lc}_ngrid_{n_grid}_n={n_case}_{data_type}_{scheme}_meshtype_{mesh_type}".
+            If not provided, raises a ValueError.
 
-# ====  Parameters ======================
-problem = "swirl"
+    Returns:
+        dict: A dictionary mapping subdirectory names to their full paths.
 
-# simulation time & time steps
-T = 1
-# n_step = 1000 # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
-# dt = T / n_step
-dt = 1e-3  # * 2 # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
-n_step = 1000
+    Raises:
+        ValueError: If `dir_format` is not provided or is invalid.
+    """
 
-# mesh setup
-lc = args.lc
-# n_grid = args.n_grid
-n_grid = int(1 / lc)
+    # Define the project directory
+    if base_dir:
+        project_dir = os.path.abspath(base_dir)
+    else:
+        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# number of times for applying a Laplacian smoother for monitor function
-n_monitor_smooth = args.n_monitor_smooth
+    # QC:
+    print(f"Project Directory: {project_dir}")
 
-# parameters for domain scale
-scale_x = 1
-scale_y = 1
+    # Define the dataset directory
+    dataset_dir = os.path.join(
+        project_dir, "data", f"dataset_meshtype_{mesh_type}", problem
+    )
 
-# params for initial condition
-sigma = args.sigma
-r_0 = args.r_0
-alpha = args.alpha
-x_0 = args.x_0
-y_0 = args.y_0
+    # Use the provided format string for the problem-specific directory
+    if dir_format is None:
+        problem_specific_dir = os.path.join(
+            dataset_dir, f"{problem}_meshtype_{mesh_type}"
+        )
+    else:
+        # check if dir_format is a valid string format
+        if not isinstance(dir_format, str):
+            raise ValueError("dir_format must be a string.")
+        problem_specific_dir = os.path.join(dataset_dir, dir_format)
 
-# params for stroing files
-save_interval = args.save_interval
-# list storing failing dts
-fail_t = []
+    # Define default subdirectories if not provided
+    if subdirs is None:
+        subdirs = [
+            "data",
+            "plot",
+            "log",
+            "mesh",
+            "mesh_fine",
+            "plot_compare",
+            "train",
+            "test",
+            "val",
+        ]
 
-# =======================================
+    # Create and clear directories
+    directories = {}
+    for subdir in subdirs:
+        dir_path = os.path.join(problem_specific_dir, subdir)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        else:
+            # Clear the directory by removing all files
+            for file in os.listdir(dir_path):
+                os.remove(os.path.join(dir_path, file))
+        directories[subdir] = dir_path
+
+    # QC:
+    # print(f"Subdirectories created: {directories}")
+
+    return directories
 
 
-def move_data(target, source, start, num_file):
+def output_csv(parameters, key_list, output_dir):
+    """
+    Write selected parameters to a CSV file.
+
+    Args:
+        parameters (dict): Dictionary of parameters to write.
+        key_list (list): List of keys to include in the CSV.
+        output_dir (str): Directory where the CSV file will be saved.
+    """
+    # Filter parameters based on key_list
+    csv_keys = [key for key in key_list if key in parameters]
+    csv_data = [parameters[key] for key in csv_keys]
+
+    # Define the output file path
+    csv_file_path = os.path.join(output_dir, "info.csv")
+
+    # Write to CSV
+    with open(csv_file_path, mode="w", newline="") as csvfile:
+        csv_writer = csv.writer(csvfile)
+        # Write header (keys)
+        csv_writer.writerow(csv_keys)
+        # Write data (values)
+        csv_writer.writerow(csv_data)
+
+
+def move_data(target, source, start, num_files):
+    """
+    Move data files from the source directory to the target directory.
+
+    Args:
+        target (str): The path to the target directory.
+        source (str): The path to the source directory.
+        start (int): The starting index of the files to move.
+        num_files (int): The total number of files to move.
+
+    Raises:
+        FileNotFoundError: If the source directory does not exist.
+        ValueError: If the start index or num_files is invalid.
+    """
+    if not os.path.exists(source):
+        raise FileNotFoundError(f"Source directory '{source}' does not exist.")
+
+    if start < 0 or num_files <= 0:
+        raise ValueError("Invalid start index or number of files to move.")
+
+    # Create the target directory if it doesn't exist
     if not os.path.exists(target):
         os.makedirs(target)
     else:
-        # delete all files under the directory
-        filelist = [f for f in os.listdir(target)]
-        for f in filelist:
-            os.remove(os.path.join(target, f))
-    # copy data from data dir to train dir
-    for i in range(start, num_file):
-        shutil.copy(
-            os.path.join(source, "data_{}.npy".format(i)),
-            os.path.join(target, "data_{}.npy".format(i)),
-        )
+        # Clear the target directory by removing all files
+        for file in os.listdir(target):
+            os.remove(os.path.join(target, file))
 
-
-project_dir = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
-dataset_dir = os.path.join(
-    project_dir, "data", f"dataset_meshtype_{mesh_type}", problem
-)  # noqa
-problem_specific_dir = os.path.join(
-    dataset_dir,
-    f"sigma_{sigma:.3f}_alpha_{alpha}_r0_{r_0}_x0_{x_0}_y0_{y_0}_lc_{lc}_ngrid_{n_grid}_interval_{save_interval}_meshtype_{mesh_type}_smooth_{n_monitor_smooth}",
-)  # noqa
-
-
-problem_data_dir = os.path.join(problem_specific_dir, "data")
-problem_plot_dir = os.path.join(problem_specific_dir, "plot")
-problem_plot_compare_dir = os.path.join(problem_specific_dir, "plot_compare")
-problem_log_dir = os.path.join(problem_specific_dir, "log")
-problem_mesh_dir = os.path.join(problem_specific_dir, "mesh")
-problem_mesh_fine_dir = os.path.join(problem_specific_dir, "mesh_fine")
-
-
-if not os.path.exists(problem_data_dir):
-    os.makedirs(problem_data_dir)
-else:
-    # delete all files under the directory
-    filelist = [f for f in os.listdir(problem_data_dir)]
-    for f in filelist:
-        os.remove(os.path.join(problem_data_dir, f))
-
-if not os.path.exists(problem_plot_dir):
-    os.makedirs(problem_plot_dir)
-else:
-    # delete all files under the directory
-    filelist = [f for f in os.listdir(problem_plot_dir)]
-    for f in filelist:
-        os.remove(os.path.join(problem_plot_dir, f))
-
-if not os.path.exists(problem_plot_compare_dir):
-    os.makedirs(problem_plot_compare_dir)
-else:
-    # delete all files under the directory
-    filelist = [f for f in os.listdir(problem_plot_compare_dir)]
-    for f in filelist:
-        os.remove(os.path.join(problem_plot_compare_dir, f))
-
-if not os.path.exists(problem_log_dir):
-    os.makedirs(problem_log_dir)
-else:
-    # delete all files under the directory
-    filelist = [f for f in os.listdir(problem_log_dir)]
-    for f in filelist:
-        os.remove(os.path.join(problem_log_dir, f))
-
-if not os.path.exists(problem_mesh_dir):
-    os.makedirs(problem_mesh_dir)
-else:
-    # delete all files under the directory
-    filelist = [f for f in os.listdir(problem_mesh_dir)]
-    for f in filelist:
-        os.remove(os.path.join(problem_mesh_dir, f))
-
-if not os.path.exists(problem_mesh_fine_dir):
-    os.makedirs(problem_mesh_fine_dir)
-else:
-    # delete all files under the directory
-    filelist = [f for f in os.listdir(problem_mesh_fine_dir)]
-    for f in filelist:
-        os.remove(os.path.join(problem_mesh_fine_dir, f))
-
-i = 0
+    # Copy files sequentially starting from the specified index
+    for i in range(start, start + num_files):
+        try:
+            # Copy the data file
+            shutil.copy(
+                os.path.join(source, f"data_{i:04d}.npy"),
+                os.path.join(target, f"data_{i:04d}.npy"),
+            )
+        except FileNotFoundError:
+            print(f"File data_{i:04d}.npy not found in {source}. Skipping.")
+            continue
+        except Exception as e:
+            print(f"An error occurred while copying data_{i:04d}.npy: {e}")
+            continue
 
 
 def fail_callback(t):
@@ -197,7 +210,8 @@ def fail_callback(t):
     Call back for failing cases.
     Log current time for those cases which MA did not converge.
     """
-    fail_t.append(t)
+    print(f"fail to converge at {t}")
+    # fail_t.append(t) #
 
 
 def sample_from_loop(
@@ -221,6 +235,8 @@ def sample_from_loop(
     sigma,
     alpha,
     r_0,
+    x_0,
+    y_0,
     t,
     error_og_list=[],
     error_adapt_list=[],
@@ -267,69 +283,25 @@ def sample_from_loop(
         dur=dur,
     )
 
-    mesh_processor.save_taining_data(os.path.join(problem_data_dir, f"data_{i:04d}"))
+    mesh_processor.save_taining_data(os.path.join(directories["data"], f"data_{i:04d}"))
 
-    # # ====  Plot Scripts ======================
-    # fig = plt.figure(figsize=(15, 10))
-    # ax1 = fig.add_subplot(2, 3, 1, projection='3d')
-    # # Plot the exact solution
-    # ax1.set_title('Solution field (HR)')
-    # fd.trisurf(uh_fine, axes=ax1)
-    # # Plot the solved solution
-    # ax2 = fig.add_subplot(2, 3, 2, projection='3d')
-    # ax2.set_title('Solution field (Original Mesh)')
-    # fd.trisurf(uh, axes=ax2)
-
-    # ax3 = fig.add_subplot(2, 3, 3, projection='3d')
-    # ax3.set_title('Solution field (Adapted Mesh)')
-    # fd.trisurf(uh_new, axes=ax3)
-
-    # # Plot the mesh
-    # ax4 = fig.add_subplot(2, 3, 4)
-    # ax4.set_title('Original Mesh ')
-    # fd.triplot(mesh_og, axes=ax4)
-
-    # ax5 = fig.add_subplot(2, 3, 5)
-    # ax5.set_title('Optimal Mesh')
-    # # fd.tripcolor(
-    # #     uh, cmap='coolwarm', axes=ax5)
-    # fd.triplot(mesh_new, axes=ax5)
-
-    # # plot mesh with function evaluated on it
-    # ax6 = fig.add_subplot(2, 3, 6)
-    # ax6.set_title('Solution Projected on Optimal Mesh')
-    # fd.tripcolor(
-    #     uh_new, cmap='coolwarm', axes=ax6)
-    # fd.triplot(mesh_new, axes=ax6)
-
-    # fig.savefig(
-    #     os.path.join(
-    #         problem_plot_dir, f"plot_{i:04d}.png")
-    # )
-    # plt.close()
-    # fig, ax = plt.subplots()
-    # ax.set_title("adapt error list")
-    # ax.plot(error_adapt_list, linestyle='--', color='blue', label='adapt')
-    # # ax.plot(error_og_list, linestyle='--', color='red', label='og')
-    # ax.legend()
-    # plt.show()
-
-    # ==========================================
+    # ====  Log File ============================================
     # function_space_fine = fd.FunctionSpace(mesh_fine, 'CG', 1)
     uh_proj = fd.project(uh, function_space_fine)
     uh_new_proj = fd.project(uh_new, function_space_fine)
 
     error_original_mesh = fd.errornorm(uh_proj, uh_fine, norm_type="L2")
     error_optimal_mesh = fd.errornorm(uh_new_proj, uh_fine, norm_type="L2")
-    df = pd.DataFrame(
-        {
-            "error_og": error_original_mesh,
-            "error_adapt": error_optimal_mesh,
-            "time": dur,
-        },
-        index=[0],
-    )
-    df.to_csv(os.path.join(problem_log_dir, f"log{i:04d}.csv"))
+
+    # Write to CSV
+    with open(
+        os.path.join(directories["log"], f"log_{i:04d}.csv"), mode="w", newline=""
+    ) as csvfile:
+        csv_writer = csv.writer(csvfile)
+        # Write header (keys)
+        csv_writer.writerow(["error_og", "error_adapt", "time"])
+        # Write data (values)
+        csv_writer.writerow([error_original_mesh, error_optimal_mesh, dur])
     print("error og/optimal:", error_original_mesh, error_optimal_mesh)
 
     # ====  Plot mesh, solution, error ======================
@@ -374,11 +346,6 @@ def sample_from_loop(
     err_v_max = err_abs_max_val
     err_v_min = -err_v_max
 
-    # # Error on high resolution mesh
-    # cb = fd.tripcolor(fd.assemble(uh_fine - uh_fine), cmap=cmap, axes=ax[2, 0], vmax=err_v_max, vmin=err_v_min)
-    # ax[2, 0].set_title(f"Error Map High Resolution")
-    # plt.colorbar(cb)
-
     # Monitor values
     cb = fd.tripcolor(monitor_values, cmap=cmap, axes=ax[2, 0])
     ax[2, 0].set_title("Monitor Values")
@@ -405,32 +372,118 @@ def sample_from_loop(
         for cc in range(cols):
             ax[rr, cc].set_aspect("equal", "box")
 
-    fig.savefig(os.path.join(problem_plot_compare_dir, f"plot_{i:04d}.png"))
+    fig.savefig(os.path.join(directories["plot_compare"], f"plot_{i:04d}.png"))
     plt.close()
     i += 1
     return
 
 
-# ====  Data Generation Scripts ======================
 if __name__ == "__main__":
+    # parse args
+    args = parse_arguments()
+
+    # ====  Parameters ======================
+    parameters = {
+        # parameters for problem
+        "problem": "swirl",
+        # parameters for simulation time & time steps
+        "T": 1,
+        "dt": 1e-3,  # The CFL condition requires that the timestep is less than 0.0014 for fine mesh
+        "n_step": 1000,
+        "lc": args.lc,
+        "n_grid": args.n_grid if args.n_grid else int(1 / args.lc),
+        # parameters for mesh def
+        "mesh_type": int(args.mesh_type),
+        "n_monitor_smooth": args.n_monitor_smooth,
+        # parameters for domain scale
+        "scale_x": 1,
+        "scale_y": 1,
+        # parameters for initial condition
+        "sigma": args.sigma,
+        "r_0": args.r_0,
+        "x_0": args.x_0,
+        "y_0": args.y_0,
+        "alpha": args.alpha,
+        # parameters for storing files
+        "save_interval": args.save_interval,
+        "fail_t": [],  # list storing failing dts
+    }
+
+    # ====  Setup Directories ======================
+    problem_specific_dir = "sigma_{:.3f}_alpha_{}_r0_{}_x0_{}_y0_{}_lc_{}_ngrid_{}_interval_{}_meshtype_{}_smooth_{}".format(
+        parameters["sigma"],
+        parameters["alpha"],
+        parameters["r_0"],
+        parameters["x_0"],
+        parameters["y_0"],
+        parameters["lc"],
+        parameters["n_grid"],
+        parameters["save_interval"],
+        parameters["mesh_type"],
+        parameters["n_monitor_smooth"],
+    )
+
+    subdirs = [
+        "data",
+        "plot",
+        "plot_compare",
+        "log",
+        "mesh",
+        "mesh_fine",
+        # "train", "test", "val",
+    ]
+
+    directories = setup_directories(
+        problem=parameters["problem"],
+        mesh_type=parameters["mesh_type"],
+        base_dir=None,
+        subdirs=subdirs,
+        dir_format=problem_specific_dir,
+    )
+
+    # ====  Output CSV ======================
+    key_list = [
+        "sigma",
+        "alpha",
+        "r_0",
+        "x_0",
+        "y_0",
+        "save_interval",
+        "T",
+        "n_step",
+        "dt",
+        "fail_t",
+        "lc",
+        "fail_cases",
+        "mesh_type",
+    ]
+    output_csv(parameters, key_list, directories["log"])
+
+    # ====  Data Generation Scripts ======================
     print("In build_dataset.py")
+
+    i = 0  # global variable to count the number of samples
     mesh = None
     mesh_fine = None
     mesh_new = None
+    mesh_type = parameters["mesh_type"]
+    lc = parameters["lc"]
+    n_grid = parameters["n_grid"]
     if mesh_type != 0:
-        mesh_gen = UM2N.UnstructuredSquareMesh(mesh_type=mesh_type)
+        mesh_gen = UM2N.UnstructuredSquareMeshGenerator(mesh_type=mesh_type)
         mesh = mesh_gen.generate_mesh(
-            res=lc, output_filename=os.path.join(problem_mesh_dir, "mesh.msh")
+            res=lc, output_filename=os.path.join(directories["mesh"], "mesh.msh")
         )
         mesh_new = mesh_gen.generate_mesh(
-            res=lc, output_filename=os.path.join(problem_mesh_dir, "mesh.msh")
+            res=lc, output_filename=os.path.join(directories["mesh"], "mesh.msh")
         )
         mesh_model = mesh_gen.generate_mesh(
-            res=lc, output_filename=os.path.join(problem_mesh_dir, "mesh.msh")
+            res=lc, output_filename=os.path.join(directories["mesh"], "mesh.msh")
         )
-        mesh_gen_fine = UM2N.UnstructuredSquareMesh(mesh_type=mesh_type)
+        # is this extra call to mesh gen needed?
+        mesh_gen_fine = UM2N.UnstructuredSquareMeshGenerator(mesh_type=mesh_type)
         mesh_fine = mesh_gen_fine.generate_mesh(
-            res=1e-2, output_filename=os.path.join(problem_mesh_fine_dir, "mesh.msh")
+            res=1e-2, output_filename=os.path.join(directories["mesh_fine"], "mesh.msh")
         )
     else:
         mesh = fd.UnitSquareMesh(n_grid, n_grid)
@@ -438,45 +491,15 @@ if __name__ == "__main__":
         mesh_model = fd.UnitSquareMesh(n_grid, n_grid)
         mesh_fine = fd.UnitSquareMesh(100, 100)
 
-    df = pd.DataFrame(
-        {
-            "sigma": [sigma],
-            "alpha": [alpha],
-            "r_0": [r_0],
-            "x_0": [x_0],
-            "y_0": [y_0],
-            "save_interval": [save_interval],
-            "T": [T],
-            "n_step": [n_step],
-            "dt": [dt],
-            "fail_t": [fail_t],
-            "lc": [lc],
-            "num_fail_cases": [len(fail_t)],
-            "mesh_type": [mesh_type],
-        }
-    )
-
-    df.to_csv(os.path.join(problem_specific_dir, "info.csv"))
-
     # solver defination
     swirl_solver = UM2N.SwirlSolver(
         mesh,
         mesh_fine,
         mesh_new,
         mesh_model=mesh_model,
-        sigma=sigma,
-        alpha=alpha,
-        r_0=r_0,
-        x_0=x_0,
-        y_0=y_0,
-        save_interval=save_interval,
-        T=T,
-        dt=dt,
-        n_step=n_step,
-        n_monitor_smooth=n_monitor_smooth,
+        **parameters,
     )
 
     swirl_solver.solve_problem(callback=sample_from_loop, fail_callback=fail_callback)
 
     print("Done!")
-# ====  Data Generation Scripts ======================
