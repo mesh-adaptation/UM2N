@@ -150,7 +150,7 @@ def monitor_func(mesh, u, alpha=5.0):
     vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
     uh_grad = fd.interpolate(fd.grad(u), vec_space)
     grad_norm = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
-    grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
+    grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
     # normalizer = (grad_norm.vector().max() + 1e-6)
     # grad_norm.interpolate(alpha * grad_norm / normalizer + 1.0)
     return grad_norm
