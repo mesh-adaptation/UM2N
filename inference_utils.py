@@ -167,8 +167,8 @@ class InputPack:
         self.conv_feat = torch.tensor(conv_feat).float().to(device)
 
         # Normalise monitor
-        min_val = torch.min(monitor_val, dim=0).values
-        max_val = torch.max(monitor_val, dim=0).values
+        min_val = torch.min(torch.tensor(monitor_val), dim=0).values
+        max_val = torch.max(torch.tensor(monitor_val), dim=0).values
         max_abs_val = torch.max(torch.abs(min_val), torch.abs(max_val))
         monitor_val = monitor_val / max_abs_val
 
