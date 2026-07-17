@@ -5,7 +5,11 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from pytorch3d.loss import chamfer_distance
+try:
+    from pytorch3d.loss import chamfer_distance
+except ImportError:
+    def chamfer_distance(*args, **kwargs):
+        raise ImportError("chamfer_distance requires pytorch3d")
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MessagePassing, knn_graph
 
