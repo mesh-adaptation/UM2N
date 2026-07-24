@@ -214,7 +214,7 @@ if __name__ == "__main__":
     while i < n_samples:
         try:
             print("Generating Sample: " + str(i))
-            unstructured_square_mesh_gen = UM2N.UnstructuredSquareMesh(
+            unstructured_square_mesh_gen = UM2N.UnstructuredSquareMeshGenerator(
                 scale=scale_x, mesh_type=mesh_type
             )  # noqa
             mesh = unstructured_square_mesh_gen.generate_mesh(

@@ -54,7 +54,7 @@ class MeshGenerator:
         )
         mover.move()
         # extract Hessian of the movement
-        sigma = mover.sigma
+        sigma = mover.H
         I = fd.Identity(2)  # noqa
         jacobian = I + sigma
         jacobian_det = fd.Function(mover.P1, name="jacobian_det")
@@ -124,7 +124,7 @@ class MeshGenerator:
 
         grad_norm = fd.Function(res["function_space"])
         grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
-        grad_norm /= grad_norm.vector().max()
+        grad_norm /= grad_norm.dat.data.max()
 
         return grad_norm
 
@@ -175,7 +175,7 @@ class MeshGenerator:
             + l2_projection[1, 0] ** 2
             + l2_projection[1, 1] ** 2
         )
-        hessian_norm /= hessian_norm.vector().max()
+        hessian_norm /= hessian_norm.dat.data.max()
         return hessian_norm
 
     def monitor_func(self, mesh):
@@ -199,7 +199,7 @@ class MeshGenerator:
             + l2_projection[1, 0] ** 2
             + l2_projection[1, 1] ** 2
         )
-        hessian_norm /= hessian_norm.vector().max()
+        hessian_norm /= hessian_norm.dat.data.max()
 
         raw_monitor_val = 1 + 5 * hessian_norm
         monitor_val = fd.Function(function_space)
@@ -237,9 +237,9 @@ class MeshGenerator:
     #     self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
     #     # Normlize the hessian
-    #     self.hessian_norm /= self.hessian_norm.vector().max()
+    #     self.hessian_norm /= self.hessian_norm.dat.data.max()
     #     # Normlize the grad
-    #     self.grad_norm /= self.grad_norm.vector().max()
+    #     self.grad_norm /= self.grad_norm.dat.data.max()
 
     #     self.monitor_val = fd.Function(function_space)
     #     # Choose the max values between grad norm and hessian norm according to

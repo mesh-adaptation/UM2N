@@ -190,7 +190,7 @@ def monitor_func(mesh, u, alpha=5.0):
         + uh_grad[1, 0] ** 2
         + uh_grad[1, 1] ** 2
     )
-    # normalizer = (grad_norm.vector().max() + 1e-6)
+    # normalizer = (grad_norm.dat.data.max() + 1e-6)
     # grad_norm.interpolate(alpha * grad_norm / normalizer + 1.0)
     return grad_norm
 
