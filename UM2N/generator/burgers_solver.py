@@ -239,7 +239,7 @@ class BurgersSolver:
             uh_fine_0.project(self.u_fine[0])
 
             func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-            uh_grad = fd.interpolate(fd.grad(uh_0), func_vec_space)
+            uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(uh_0))
             hessian_norm = self.f_norm
             hessian = self.l2_projection
             phi = adapter.phi

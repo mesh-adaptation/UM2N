@@ -254,7 +254,7 @@ if __name__ == "__main__":
                 }
             )
             # RHS of helmholtz problem
-            f = fd.interpolate(helmholtz_eq.f, helmholtz_eq.function_space)
+            f = fd.Function(helmholtz_eq.function_space).interpolate(helmholtz_eq.f)
             uh = solver.solve_eq()
             # Generate Mesh
             hessian = UM2N.MeshGenerator(
@@ -280,7 +280,7 @@ if __name__ == "__main__":
             hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 
             func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-            grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
+            grad_uh_interpolate = fd.Function(func_vec_space).interpolate(fd.grad(uh))
 
             mesh_gen = UM2N.MeshGenerator(
                 params={
@@ -356,7 +356,10 @@ if __name__ == "__main__":
             ax1 = fig.add_subplot(2, 3, 1, projection="3d")
             # Plot the exact solution
             ax1.set_title("Exact Solution")
-            fd.trisurf(fd.interpolate(res["u_exact"], res["function_space"]), axes=ax1)
+            fd.trisurf(
+                fd.Function(res["function_space"]).interpolate(res["u_exact"]),
+                axes=ax1,
+            )
             # Plot the solved solution
             ax2 = fig.add_subplot(2, 3, 2, projection="3d")
             ax2.set_title("FEM Solution")
@@ -394,8 +397,8 @@ if __name__ == "__main__":
             high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)
 
             res_high_res = helmholtz_eq.discretise(high_res_mesh)
-            u_exact = fd.interpolate(
-                res_high_res["u_exact"], res_high_res["function_space"]
+            u_exact = fd.Function(res_high_res["function_space"]).interpolate(
+                res_high_res["u_exact"]
             )
 
             uh = fd.project(uh, high_res_function_space)

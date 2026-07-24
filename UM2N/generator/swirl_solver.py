@@ -453,7 +453,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # filter_monitor_val = np.minimum(1e3, self.f_norm.dat.data[:])
@@ -526,7 +526,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
@@ -655,7 +655,7 @@ class SwirlSolver:
                 )
 
                 func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-                uh_grad = fd.interpolate(fd.grad(uh), func_vec_space)
+                uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(uh))
 
                 hessian = self.l2_projection
                 phi = adapter.phi

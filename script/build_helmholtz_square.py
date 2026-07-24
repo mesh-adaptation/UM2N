@@ -279,7 +279,7 @@ if __name__ == "__main__":
                 }
             )
             # RHS of helmholtz problem
-            f = fd.interpolate(helmholtz_eq.f, helmholtz_eq.function_space)
+            f = fd.Function(helmholtz_eq.function_space).interpolate(helmholtz_eq.f)
             # fd.trisurf(f)
             # plt.show()
             uh = solver.solve_eq()
@@ -308,7 +308,7 @@ if __name__ == "__main__":
             # ).get_grad_norm(mesh)
 
             func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-            grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
+            grad_uh_interpolate = fd.Function(func_vec_space).interpolate(fd.grad(uh))
 
             grad_norm = fd.Function(res["function_space"])
             grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
@@ -438,8 +438,8 @@ if __name__ == "__main__":
             high_res_function_space = fd.FunctionSpace(high_res_mesh, "CG", 1)
 
             res_high_res = helmholtz_eq.discretise(high_res_mesh)
-            u_exact = fd.interpolate(
-                res_high_res["u_exact"], res_high_res["function_space"]
+            u_exact = fd.Function(res_high_res["function_space"]).interpolate(
+                res_high_res["u_exact"]
             )
 
             uh_proj = fd.project(uh, high_res_function_space)

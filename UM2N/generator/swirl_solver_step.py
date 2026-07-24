@@ -459,7 +459,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         self.adapt_coord = mesh.coordinates.dat.data.copy()  # noqa
@@ -481,7 +481,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the grad
@@ -508,7 +508,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
@@ -568,7 +568,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
@@ -631,7 +631,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.project(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
@@ -749,7 +749,7 @@ class SwirlSolver:
                     uh_fine.project(self.u_cur_fine)
 
                     func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-                    uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
+                    uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.uh))
                     # hessian_norm = self.f_norm
                     # monitor_values = adapter.monitor
                     hessian = self.l2_projection

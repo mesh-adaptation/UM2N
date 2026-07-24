@@ -148,7 +148,7 @@ mesh, V, u = solve_helmholtz(mesh)
 
 def monitor_func(mesh, u, alpha=5.0):
     vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-    uh_grad = fd.interpolate(fd.grad(u), vec_space)
+    uh_grad = fd.Function(vec_space).interpolate(fd.grad(u))
     grad_norm = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
     grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
     # normalizer = (grad_norm.dat.data.max() + 1e-6)

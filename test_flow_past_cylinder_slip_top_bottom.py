@@ -182,7 +182,7 @@ print("Beginning time loop...")
 
 def monitor_func(mesh, u, alpha=5.0):
     tensor_space = fd.TensorFunctionSpace(mesh, "CG", 1)
-    uh_grad = fd.interpolate(fd.grad(u), tensor_space)
+    uh_grad = fd.Function(tensor_space).interpolate(fd.grad(u))
     grad_norm = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
     grad_norm.interpolate(
         uh_grad[0, 0] ** 2

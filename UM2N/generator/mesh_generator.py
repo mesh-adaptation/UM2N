@@ -115,7 +115,7 @@ class MeshGenerator:
         uh = solver.solve_eq()
         self.uh = uh
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.uh), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.uh))
         return uh_grad
 
     def get_grad_norm(self, mesh):
