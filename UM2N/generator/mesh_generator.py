@@ -175,7 +175,7 @@ class MeshGenerator:
             + l2_projection[1, 0] ** 2
             + l2_projection[1, 1] ** 2
         )
-        hessian_norm /= hessian_norm.dat.data.max()
+        hessian_norm /= hessian_norm.dat.data[:].max()
         return hessian_norm
 
     def monitor_func(self, mesh):
@@ -199,7 +199,7 @@ class MeshGenerator:
             + l2_projection[1, 0] ** 2
             + l2_projection[1, 1] ** 2
         )
-        hessian_norm /= hessian_norm.dat.data.max()
+        hessian_norm /= hessian_norm.dat.data[:].max()
 
         raw_monitor_val = 1 + 5 * hessian_norm
         monitor_val = fd.Function(function_space)
