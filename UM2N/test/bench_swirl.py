@@ -75,12 +75,12 @@ class SwirlEvaluator:
         self.num_samples_to_eval = kwargs.pop("num_samples_to_eval", 100)
 
         # Init coords setup
-        self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
+        self.init_coord = self.mesh.coordinates.dat.data.copy()
         self.init_coord_fine = (
-            self.mesh_fine.coordinates.vector().array().reshape(-1, 2)
+            self.mesh_fine.coordinates.dat.data.copy()
         )  # noqa
-        self.best_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
-        self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.best_coord = self.mesh.coordinates.dat.data.copy()
+        self.adapt_coord = self.mesh.coordinates.dat.data.copy()  # noqa
         # error measuring vars
         self.error_adapt_list = []
         self.error_og_list = []

@@ -36,12 +36,12 @@ class BurgersSolver:
 
         self.idx = idx
 
-        self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
+        self.init_coord = self.mesh.coordinates.dat.data.copy()
         self.init_coord_fine = (
-            self.mesh_fine.coordinates.vector().array().reshape(-1, 2)
+            self.mesh_fine.coordinates.dat.data.copy()
         )  # noqa
-        self.best_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
-        self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.best_coord = self.mesh.coordinates.dat.data.copy()
+        self.adapt_coord = self.mesh.coordinates.dat.data.copy()  # noqa
         self.error_adapt_list = []
         self.error_og_list = []
         self.best_error_iter = 0
@@ -174,10 +174,10 @@ class BurgersSolver:
             + self.l2_projection[1, 1] ** 2
         )
 
-        self.f_norm /= self.f_norm.vector().max()
+        self.f_norm /= self.f_norm.dat.data.max()
         monitor = self.f_norm
 
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.adapt_coord = mesh.coordinates.dat.data.copy()  # noqa
 
         return 1 + (5 * monitor)
 
@@ -239,7 +239,7 @@ class BurgersSolver:
             uh_fine_0.project(self.u_fine[0])
 
             func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-            uh_grad = fd.interpolate(fd.grad(uh_0), func_vec_space)
+            uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(uh_0))
             hessian_norm = self.f_norm
             hessian = self.l2_projection
             phi = adapter.phi

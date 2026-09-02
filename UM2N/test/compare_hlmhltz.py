@@ -123,7 +123,7 @@ def compare_error(
 
     # exact solution on high_res mesh
     res_high_res = eq.discretise(high_res_mesh)
-    uh_exact = fd.interpolate(res_high_res["u_exact"], high_res_function_space)
+    uh_exact = fd.Function(high_res_function_space).interpolate(res_high_res["u_exact"])
 
     fig, plot_data_dict = UM2N.plot_compare(
         mesh_fine,

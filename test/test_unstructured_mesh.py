@@ -49,7 +49,6 @@ def generate_mesh(generator, mesh_algorithm, scale=1.0, **kwargs):
     mesh_gen = generator(mesh_type=mesh_algorithm, scale=scale)
     kwargs.setdefault("remove_file", True)
     mesh = mesh_gen.generate_mesh(**kwargs)
-    mesh.init()
     return mesh
 
 
@@ -103,7 +102,7 @@ def test_area_squaremesh(num_elem_bnd, mesh_algorithm, scale):
     mesh = generate_mesh(
         UnstructuredSquareMeshGenerator, 1, res=1.0 / num_elem_bnd, scale=scale
     )
-    assert np.isclose(assemble(Constant(1.0, domain=mesh) * ufl.dx), scale**2)
+    assert np.isclose(assemble(Constant(1.0) * ufl.dx(domain=mesh)), scale**2)
 
 
 def test_num_cells_with_res_and_scale(generator, num_elem_bnd, mesh_algorithm):

@@ -60,7 +60,7 @@ hessian_norm = UM2N.MeshGenerator(
 hessian_norm = fd.project(hessian_norm, fd.FunctionSpace(mesh, "CG", 1))
 
 func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-grad_uh_interpolate = fd.interpolate(fd.grad(uh), func_vec_space)
+grad_uh_interpolate = fd.Function(func_vec_space).interpolate(fd.grad(uh))
 
 mesh_gen = UM2N.MeshGenerator(
     params={

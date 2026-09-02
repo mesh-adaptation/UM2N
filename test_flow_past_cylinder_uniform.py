@@ -183,7 +183,7 @@ for mesh_name in all_mesh_names:
 
     def monitor_func(mesh, u, alpha=5.0):
         tensor_space = fd.TensorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(u), tensor_space)
+        uh_grad = fd.Function(tensor_space).interpolate(fd.grad(u))
         grad_norm = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
         grad_norm.interpolate(
             uh_grad[0, 0] ** 2
@@ -191,7 +191,7 @@ for mesh_name in all_mesh_names:
             + uh_grad[1, 0] ** 2
             + uh_grad[1, 1] ** 2
         )
-        # normalizer = (grad_norm.vector().max() + 1e-6)
+        # normalizer = (grad_norm.dat.data.max() + 1e-6)
         # grad_norm.interpolate(alpha * grad_norm / normalizer + 1.0)
         return grad_norm
 

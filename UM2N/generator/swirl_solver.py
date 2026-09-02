@@ -90,13 +90,13 @@ class SwirlSolver:
             "dataset", None
         )  # dataset containing all data (eval use, set to None when generating data)
         # Init coords setup
-        self.init_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
+        self.init_coord = self.mesh.coordinates.dat.data.copy()
         self.init_coord_fine = (
-            self.mesh_fine.coordinates.vector().array().reshape(-1, 2)
+            self.mesh_fine.coordinates.dat.data.copy()
         )  # noqa
-        self.best_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)
-        self.adapt_coord = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
-        self.adapt_coord_prev = self.mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.best_coord = self.mesh.coordinates.dat.data.copy()
+        self.adapt_coord = self.mesh.coordinates.dat.data.copy()  # noqa
+        self.adapt_coord_prev = self.mesh.coordinates.dat.data.copy()  # noqa
         # error measuring vars
         self.error_adapt_list = []
         self.error_og_list = []
@@ -453,7 +453,7 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # filter_monitor_val = np.minimum(1e3, self.f_norm.dat.data[:])
@@ -466,9 +466,9 @@ class SwirlSolver:
             f"max and min grad norm {self.grad_norm.dat.data[:].max()}, {self.grad_norm.dat.data[:].min()}"
         )
         # Normlize the hessian
-        self.f_norm /= self.f_norm.vector().max()
+        self.f_norm /= self.f_norm.dat.data.max()
         # Normlize the grad
-        self.grad_norm /= self.grad_norm.vector().max()
+        self.grad_norm /= self.grad_norm.dat.data.max()
 
         monitor_values_dg = fd.Function(fd.FunctionSpace(mesh, "DG", 1))
         monitor_values = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
@@ -504,7 +504,7 @@ class SwirlSolver:
 
         # #################
 
-        self.adapt_coord = mesh.coordinates.vector().array().reshape(-1, 2)  # noqa
+        self.adapt_coord = mesh.coordinates.dat.data.copy()  # noqa
         monitor_values.project(1 + monitor_smoothed)
 
         return monitor_values
@@ -526,13 +526,13 @@ class SwirlSolver:
         )
 
         func_vec_space = fd.VectorFunctionSpace(mesh, "CG", 1)
-        uh_grad = fd.interpolate(fd.grad(self.u_cur), func_vec_space)
+        uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(self.u_cur))
         self.grad_norm.interpolate(uh_grad[0] ** 2 + uh_grad[1] ** 2)
 
         # Normlize the hessian
-        self.f_norm /= self.f_norm.vector().max()
+        self.f_norm /= self.f_norm.dat.data.max()
         # Normlize the grad
-        self.grad_norm /= self.grad_norm.vector().max()
+        self.grad_norm /= self.grad_norm.dat.data.max()
 
         monitor_values_dg = fd.Function(fd.FunctionSpace(mesh, "DG", 1))
         monitor_values = fd.Function(fd.FunctionSpace(mesh, "CG", 1))
@@ -655,7 +655,7 @@ class SwirlSolver:
                 )
 
                 func_vec_space = fd.VectorFunctionSpace(self.mesh, "CG", 1)
-                uh_grad = fd.interpolate(fd.grad(uh), func_vec_space)
+                uh_grad = fd.Function(func_vec_space).interpolate(fd.grad(uh))
 
                 hessian = self.l2_projection
                 phi = adapter.phi
