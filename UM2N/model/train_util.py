@@ -5,9 +5,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
 from torch_geometric.loader import DataLoader
-from torch_geometric.nn import MessagePassing, knn_graph, knn
+from torch_geometric.nn import MessagePassing, knn, knn_graph
 
 __all__ = [
     "train",
@@ -38,19 +37,20 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def chamfer_distance(x, y):
     """
-    x: (N, D) 
+    x: (N, D)
     y: (M, D)
     """
     # Find nearest neighbor of x in y
-    assign_x = knn(y, x, k=1) 
+    assign_x = knn(y, x, k=1)
     dist_x = torch.sum((x[assign_x[0]] - y[assign_x[1]]) ** 2, dim=-1)
-    
+
     # Find nearest neighbor of y in x
     assign_y = knn(x, y, k=1)
     dist_y = torch.sum((y[assign_y[0]] - x[assign_y[1]]) ** 2, dim=-1)
-    
+
     loss = dist_x.mean() + dist_y.mean()
     return loss
+
 
 def get_face_area(coord, face):
     """
@@ -541,9 +541,7 @@ def evaluate(
             if use_area_loss:
                 area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
 
-            chamfer_loss = (
-                100 * chamfer_distance(out, data.y)
-            )
+            chamfer_loss = 100 * chamfer_distance(out, data.y)
             loss = (
                 weight_deform_loss * deform_loss
                 + inversion_loss
