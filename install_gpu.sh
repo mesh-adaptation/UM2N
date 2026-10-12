@@ -46,13 +46,17 @@ fi
 . ${INSTALL_DIR}/firedrake/bin/activate
 
 # Install PyTorch
+# WARNING: unpinned -- if this pulls a torch newer than PyG's published
+# wheels below, the torch_cluster install will fail with no matching wheel.
 green_log "Downloading PyTorch..."
 python3 -m pip install torch --index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
 
-# Install PyTorch3d
-green_log "Downloading PyTorch3d..."
-python3 -m pip install "git+https://github.com/facebookresearch/pytorch3d"
-
+# Install PyTorch Geometric extensions (torch-cluster etc.), for knn-based Chamfer loss
+green_log "Downloading PyTorch Geometric compiled companions..."
+TORCH_VERSION=$(python3 -c "import torch; print(torch.__version__)")
+python3 -m pip install torch_scatter torch_sparse torch_cluster torch_spline_conv \
+  -f https://data.pyg.org/whl/torch-${TORCH_VERSION}.html
+  
 # Install Movement
 green_log "Downloading Movement..."
 git clone https://github.com/mesh-adaptation/movement.git ${VIRTUAL_ENV}/src/movement
