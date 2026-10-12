@@ -61,10 +61,16 @@ For gpu support, please execute the:
 4. Install PyTorch into the virtual environment by following the instructions
    on the [PyTorch webpage](https://pytorch.org/get-started/locally).
 
-5. Install PyTorch3d into the virtual environment by running the command
+5. UM2N's Chamfer loss needs `torch_geometric`'s `knn`, which requires the
+   compiled `torch-cluster` package — install it matched to your torch
+   version from step 4:
+   ```shell
+   pip install torch_scatter torch_sparse torch_cluster torch_spline_conv \
+     -f https://data.pyg.org/whl/torch-<TORCH_VERSION>.html
    ```
-   python3 -m pip install "git+https://github.com/facebookresearch/pytorch3d"
-   ```
+   (`<TORCH_VERSION>` e.g. `2.8.0+cu129` — see [PyG's install
+   docs](https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html#installation-via-pre-built-wheels).)
+
 
 6. Run `pip install .` in the root directory of this project to install the
    package and its other dependencies.
