@@ -1148,9 +1148,7 @@ def train_unsupervised(
             meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors
         )
         # chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
-        chamfer_loss = (
-            100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
-        )
+        chamfer_loss = 100 * chamfer_distance(output_coord, data.y)
         # print(output_coord.shape, data.y.shape, chamfer_loss)
 
         # Inversion loss
@@ -1312,9 +1310,7 @@ def evaluate_unsupervised(
         mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(
             meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors
         )
-        chamfer_loss = (
-            100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
-        )
+        chamfer_loss = 100 * chamfer_distance(output_coord, data.y)
 
         loss = (
             weight_deform_loss * deform_loss
