@@ -312,7 +312,7 @@ if __name__ == "__main__":
 
             grad_norm = fd.Function(res["function_space"])
             grad_norm.project(grad_uh_interpolate[0] ** 2 + grad_uh_interpolate[1] ** 2)
-            grad_norm /= grad_norm.dat.data[:].max()
+            grad_norm /= grad_norm.dat.data.max()
             grad_uh_norm = grad_norm
 
             mesh_gen = UM2N.MeshGenerator(params={"eq": helmholtz_eq, "mesh": mesh})
