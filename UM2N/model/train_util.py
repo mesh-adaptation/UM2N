@@ -5,20 +5,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
-# FIXME: Hack to handle the case where pytorch3d cannot be installed (#41)
-try:
-    from pytorch3d.loss import chamfer_distance
-except ImportError:
-
-    def chamfer_distance(*args):
-        raise ImportError(
-            "chamfer_distance depends on pytorch3d, which cannot be imported"
-        )
-
-
 from torch_geometric.loader import DataLoader
-from torch_geometric.nn import MessagePassing, knn_graph
+from torch_geometric.nn import MessagePassing, knn, knn_graph
 
 __all__ = [
     "train",
@@ -41,9 +29,27 @@ __all__ = [
     "count_dataset_tangle_repeat_sampling",
     "evaluate_repeat",
     "get_sample_tangle",
+    "chamfer_distance",
 ]
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def chamfer_distance(x, y):
+    """
+    x: (N, D)
+    y: (M, D)
+    """
+    # Find nearest neighbor of x in y
+    assign_x = knn(y, x, k=1)
+    dist_x = torch.sum((x[assign_x[0]] - y[assign_x[1]]) ** 2, dim=-1)
+
+    # Find nearest neighbor of y in x
+    assign_y = knn(x, y, k=1)
+    dist_y = torch.sum((y[assign_y[0]] - x[assign_y[1]]) ** 2, dim=-1)
+
+    loss = dist_x.mean() + dist_y.mean()
+    return loss
 
 
 def get_face_area(coord, face):
@@ -436,7 +442,7 @@ def train(
         if use_area_loss:
             area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
 
-        chamfer_loss = 100 * chamfer_distance(out.unsqueeze(0), data.y.unsqueeze(0))[0]
+        chamfer_loss = 100 * chamfer_distance(out, data.y)
         loss = (
             weight_deform_loss * deform_loss
             + inversion_loss
@@ -535,9 +541,7 @@ def evaluate(
             if use_area_loss:
                 area_loss = get_area_loss(out, data.y, data.face, bs, scaler)
 
-            chamfer_loss = (
-                100 * chamfer_distance(out.unsqueeze(0), data.y.unsqueeze(0))[0]
-            )
+            chamfer_loss = 100 * chamfer_distance(out, data.y)
             loss = (
                 weight_deform_loss * deform_loss
                 + inversion_loss
@@ -1132,19 +1136,8 @@ def train_unsupervised(
             else jacobLoss(model, output_coord, data, loss_func)
         )
 
-        # Chamfer loss
-        coord_dim = output_coord.shape[-1]
-        # Sampling according to monitor values, sampled 100 nodes per mesh
-        mesh_test_raw = output_coord.view(bs, -1, coord_dim)
-        mesh_target_raw = data.y.view(bs, -1, coord_dim)
-        monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
-        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(
-            meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors
-        )
-        # chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
-        chamfer_loss = (
-            100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
-        )
+        # Chamfer loss    
+        chamfer_loss = 100 * chamfer_distance(output_coord, data.y)
         # print(output_coord.shape, data.y.shape, chamfer_loss)
 
         # Inversion loss
@@ -1298,17 +1291,7 @@ def evaluate_unsupervised(
         area_loss = get_area_loss(output_coord, data.y, data.face, bs, scaler)
 
         # Chamfer loss
-        coord_dim = output_coord.shape[-1]
-        # Sampling according to monitor values, sampled 100 nodes per mesh
-        mesh_test_raw = output_coord.view(bs, -1, coord_dim)
-        mesh_target_raw = data.y.view(bs, -1, coord_dim)
-        monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
-        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(
-            meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors
-        )
-        chamfer_loss = (
-            100 * chamfer_distance(output_coord.unsqueeze(0), data.y.unsqueeze(0))[0]
-        )
+        chamfer_loss = 100 * chamfer_distance(output_coord, data.y)
 
         loss = (
             weight_deform_loss * deform_loss
