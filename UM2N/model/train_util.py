@@ -1136,16 +1136,7 @@ def train_unsupervised(
             else jacobLoss(model, output_coord, data, loss_func)
         )
 
-        # Chamfer loss
-        coord_dim = output_coord.shape[-1]
-        # Sampling according to monitor values, sampled 100 nodes per mesh
-        mesh_test_raw = output_coord.view(bs, -1, coord_dim)
-        mesh_target_raw = data.y.view(bs, -1, coord_dim)
-        monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
-        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(
-            meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors
-        )
-        # chamfer_loss = 100 * (chamfer_distance(mesh_test_sampled, mesh_target_sampled) + chamfer_distance(mesh_target_sampled, mesh_test_sampled))
+        # Chamfer loss    
         chamfer_loss = 100 * chamfer_distance(output_coord, data.y)
         # print(output_coord.shape, data.y.shape, chamfer_loss)
 
@@ -1300,14 +1291,6 @@ def evaluate_unsupervised(
         area_loss = get_area_loss(output_coord, data.y, data.face, bs, scaler)
 
         # Chamfer loss
-        coord_dim = output_coord.shape[-1]
-        # Sampling according to monitor values, sampled 100 nodes per mesh
-        mesh_test_raw = output_coord.view(bs, -1, coord_dim)
-        mesh_target_raw = data.y.view(bs, -1, coord_dim)
-        monitors = data.mesh_feat[:, 2].view(bs, -1, 1)
-        mesh_test_sampled, mesh_target_sampled = sample_nodes_by_monitor(
-            meshes=mesh_test_raw, meshes_target=mesh_target_raw, monitors=monitors
-        )
         chamfer_loss = 100 * chamfer_distance(output_coord, data.y)
 
         loss = (
